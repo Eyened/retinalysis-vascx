@@ -1,0 +1,89 @@
+from pathlib import Path
+from typing import Callable, Tuple, TypeAlias, Union
+
+import cv2
+import numpy as np
+from rtnls_enface import Fundus
+from rtnls_enface.utils.image import match_resolution
+
+from vascx.features.base import FeatureSet, LayerFeature
+from vascx.layer import Layer
+from vascx.segment import Segment
+from vascx.utils.data_loading import load_av_segmentation
+
+Aggregator: TypeAlias = Callable[[np.ndarray], np.float32]
+FeatureType: TypeAlias = Union[Layer, Segment]
+
+
+class Retina(Fundus):
+    @property
+    def arteries(self) -> Layer:
+        return self.layers["arteries"]
+
+    @property
+    def veins(self) -> Layer:
+        return self.layers["veins"]
+
+    def load_annotation(self, fpath: str):
+        layers = load_av_segmentation(fpath)
+        layers = {
+            key: match_resolution(
+                mask.astype(np.uint8), self.resolution, cv2.INTER_NEAREST
+            ).astype(bool)
+            for key, mask in layers.items()
+        }
+
+        self.gt = Retina(layers)
+        if self.disc is not None:
+            self.gt.disc = self.disc
+
+    def dice(self, ignore_disk=True):
+        assert self.gt is not None
+
+        res = {}
+        for layer in self.layers.keys():
+            res[layer] = self.layers[layer].auc(
+                self.gt.layers[layer], remove_disk=ignore_disk
+            )
+
+        return res
+
+    def calc_features(self, feature_set: FeatureSet):
+        layer_features = {
+            p: fn for p, fn in feature_set.items() if isinstance(fn, LayerFeature)
+        }
+
+        all_features = {}
+        for feature_name, feature in layer_features.items():
+            for layer_name, layer in self.layers.items():
+                res = feature.compute(layer)
+                if isinstance(res, dict):
+                    for k, v in res.items():
+                        all_features[f"{feature_name}_{layer_name}_{k}"] = v
+                else:
+                    all_features[f"{feature_name}_{layer_name}"] = res
+
+        return all_features
+
+    @classmethod
+    def from_file(
+        cls,
+        fpath: str,
+        disc_path: str | Path = None,
+        fundus_path: str | Path = None,
+        fovea_location: Tuple[float, float] = None,
+        threshold=0.5,
+        scaling_factor=1,
+    ):
+        layers = load_av_segmentation(fpath, threshold)
+
+        retina = cls(
+            layers,
+            disc_path_or_mask=disc_path,
+            fundus_path_or_mask=fundus_path,
+            fovea_location=fovea_location,
+            scaling_factor=scaling_factor,
+        )
+        retina.id = Path(fpath).stem
+
+        return retina

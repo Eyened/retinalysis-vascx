@@ -1,0 +1,151 @@
+import glob
+import os
+import shutil
+from pathlib import Path
+from typing import List, Union
+
+import numpy as np
+import pydicom
+from PIL import Image
+from rtnls_enface.utils.data_loading import open_mask
+
+
+def get_file_paths(path, files_patterns):
+    files = []
+    for ext in files_patterns:
+        files.extend(glob.glob(os.path.join(path, ext)))
+    files = sorted(files)
+    return [Path(f) for f in files]
+
+
+def load_images(paths: List[str]):
+    return [load_image(p) for p in paths]
+
+
+def load_image_pil(path: Union[Path, str]):
+    if isinstance(path, str):
+        path = Path(path)
+    if path.suffix == ".dcm":
+        ds = pydicom.read_file(str(path))
+        img = Image.fromarray(ds.pixel_array)
+    else:
+        img = Image.open(str(path))
+    return img
+
+
+def load_image(path: Union[Path, str]):
+    if Path(path).suffix == ".npy":
+        return np.load(path)
+    else:
+        return np.array(load_image_pil(path), dtype=np.uint8)
+
+
+def copy_image(source: Union[Path, str], dest: Union[Path, str]):
+    source = Path(source)
+    if source.suffix.lower() == ".png":
+        shutil.copy2(source, dest)
+    else:
+        im = load_image_pil(source)
+        im.save(dest)
+
+
+def load_av(fpath, threshold=0.5):
+    im = open_mask(fpath)
+
+    if len(im.shape) == 2:
+        # single channel image
+        red = np.zeros((im.shape[0], im.shape[1]))
+        red[(im == 1)] = 1
+
+        blue = np.zeros((im.shape[0], im.shape[1]))
+        blue[(im == 2)] = 1
+
+        green = np.zeros((im.shape[0], im.shape[1]))
+        green[(im == 3)] = 1
+
+        return {"arteries": red, "veins": blue, "crossings": green}
+
+    else:
+        # three-channel image
+        if len(np.unique(im)) > 2:
+            t = round(threshold * np.max(im))
+            bin = np.empty(im.shape)
+            bin[im < t] = 0
+            bin[im >= t] = 1
+            im = bin
+
+        assert len(np.unique(im)) <= 2, f"found unique {np.unique(im)}"
+        white_value = np.unique(im)[1]
+
+        # all channels are equal -> vessels image
+        if (im[:, :, 0] == im[:, :, 1]).all() and (im[:, :, 1] == im[:, :, 2]).all():
+            vessels = np.zeros((im.shape[0], im.shape[1]))
+
+            vessels[(im[:, :, 0] == white_value)] = 1
+            layers = {"vessels": vessels}
+        else:
+            # layers are not equal -> artery-vein image
+            red = np.zeros((im.shape[0], im.shape[1]))
+            red[(im[:, :, 0] == white_value)] = 1
+
+            green = np.zeros((im.shape[0], im.shape[1]))
+            green[(im[:, :, 1] == white_value)] = 1
+
+            blue = np.zeros((im.shape[0], im.shape[1]))
+            blue[(im[:, :, 2] == white_value)] = 1
+
+            return {"arteries": red, "veins": blue, "crossings": green}
+
+
+def load_av_segmentation(fpath, threshold=0.5):
+    im = open_mask(fpath)
+
+    if len(im.shape) == 2:
+        # single channel image
+        red = np.zeros((im.shape[0], im.shape[1]))
+        red[(im == 1)] = 1
+
+        blue = np.zeros((im.shape[0], im.shape[1]))
+        blue[(im == 2)] = 1
+
+        green = np.zeros((im.shape[0], im.shape[1]))
+        green[(im == 3)] = 1
+
+        return {
+            "arteries": np.logical_or(red, green),
+            "veins": np.logical_or(blue, green),
+        }
+
+    else:
+        # three-channel image
+        if len(np.unique(im)) > 2:
+            t = round(threshold * np.max(im))
+            bin = np.empty(im.shape)
+            bin[im < t] = 0
+            bin[im >= t] = 1
+            im = bin
+
+        assert len(np.unique(im)) <= 2, f"found unique {np.unique(im)}"
+        white_value = np.unique(im)[1]
+
+        # all channels are equal -> vessels image
+        if (im[:, :, 0] == im[:, :, 1]).all() and (im[:, :, 1] == im[:, :, 2]).all():
+            vessels = np.zeros((im.shape[0], im.shape[1]))
+
+            vessels[(im[:, :, 0] == white_value)] = 1
+            layers = {"vessels": vessels}
+        else:
+            # layers are not equal -> artery-vein image
+            red = np.zeros((im.shape[0], im.shape[1]))
+            red[(im[:, :, 0] == white_value)] = 1
+
+            green = np.zeros((im.shape[0], im.shape[1]))
+            green[(im[:, :, 1] == white_value)] = 1
+
+            blue = np.zeros((im.shape[0], im.shape[1]))
+            blue[(im[:, :, 2] == white_value)] = 1
+
+            return {
+                "arteries": np.logical_or(red, green),
+                "veins": np.logical_or(blue, green),
+            }

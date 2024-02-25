@@ -15,11 +15,9 @@ from vascx.diameters import (
 )
 from vascx.splines import SplineInterpolation
 from vascx.utils.plotting import find_bounding_box
-from vascx.splines import SplineInterpolation
-from vascx.utils.plotting import find_bounding_box
 
 if TYPE_CHECKING:
-    from vascx.layer import Layer
+    from vascx.layer import VesselLayer
 
 
 class Segment:
@@ -43,7 +41,7 @@ class Segment:
         self.neighbors: List[Segment] = []
         self.mask: List[TuplePoint] = []
 
-        self.layer: Layer = None
+        self.layer: VesselLayer = None
 
         self._spline = None
         self._diameter_measurements: List[DiameterMeasurement] = None

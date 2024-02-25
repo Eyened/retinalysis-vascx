@@ -1,12 +1,12 @@
 from __future__ import annotations
-from typing import TYPE_CHECKING
+
 from dataclasses import dataclass
-from typing import Callable, Union, List, Tuple
+from typing import TYPE_CHECKING, Callable, List, Tuple, Union
 
 import numpy as np
 
 if TYPE_CHECKING:
-    from vascx import Layer, Segment, Node, Bifurcation, Crossing
+    from vascx import Segment
 # FeatureType = Union[Layer, Segment, Node, Bifurcation, Crossing]
 
 

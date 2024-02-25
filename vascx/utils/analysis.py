@@ -1,69 +1,22 @@
-import os
 import warnings
-from pathlib import Path
-from typing import Union, Dict, List
+from typing import Dict, List
 
-from joblib import Parallel, delayed
-from tqdm import tqdm, trange
 import pandas as pd
+from joblib import Parallel, delayed
 from sklearn.linear_model import LogisticRegression
+from tqdm import tqdm
 
-from vascx.retina import Retina
 from vascx.feature_sets import feature_sets
-from vascx import Retina
-
-
-def get_examples_dict(data_path: Union[str, Path]):
-    data_path = Path(data_path)
-
-    foveas = pd.read_csv(data_path / "fovea.csv", index_col=0)
-
-    masks_path = data_path / "av"
-    discs_path = data_path / "discs"
-    fundus_path = data_path / "preprocessed_rgb"
-
-    masks = sorted(list(masks_path.glob("*.png")))
-    discs = sorted(list(discs_path.glob("*.png")))
-    fundus = sorted(list(fundus_path.glob("*.png")))
-
-    ids_list = [int(m.stem.split("_")[0]) for m in masks]
-    discs = [d for d in discs if int(d.stem.split("_")[0]) in ids_list]
-    fundus = [f for f in fundus if int(f.stem.split("_")[0]) in ids_list]
-    fovea_locs = [
-        (foveas.loc[id, "mean_x"], foveas.loc[id, "mean_y"]) for id in ids_list
-    ]
-
-    meta_path = data_path / "meta.csv"
-    if meta_path.exists():
-        meta = pd.read_csv(meta_path, index_col="id")
-        if "scaling_w" in meta.columns and "scale" in meta.columns:
-            scale_factors = [
-                meta.loc[id, "scaling_w"] * meta.loc[id, "scale"] for id in ids_list
-            ]
-        else:
-            scale_factors = [1.0 for id in ids_list]
-    else:
-        scale_factors = [1.0 for id in ids_list]
-
-    return {
-        ex[0]: {
-            "scale": ex[1],
-            "av": ex[2],
-            "disc": ex[3],
-            "fundus": ex[4],
-            "fovea": ex[5],
-        }
-        for ex in zip(ids_list, scale_factors, masks, discs, fundus, fovea_locs)
-    }
+from vascx.retina import Retina
 
 
 def make_retina(ex) -> Retina:
     return Retina.from_file(
-        ex["av"],
-        disc_path=ex["disc"] if "disc" in ex else None,
-        fundus_path=ex["fundus"] if "fundus" in ex else None,
-        fovea_location=ex["fovea"] if "fovea" in ex else None,
-        scaling_factor=ex["scale"],
+        ex["av_path"],
+        disc_path=ex["disc_path"] if "disc_path" in ex else None,
+        fundus_path=ex["fundus_path"] if "fundus_path" in ex else None,
+        fovea_location=ex["fovea_location"] if "fovea_location" in ex else None,
+        scaling_factor=ex["scale"] if "scale" in ex else 1.0,
     )
 
 
@@ -72,9 +25,8 @@ def extract_one(ex, feature_set_name):
     try:
         retina = make_retina(ex)
         return retina.calc_features(feature_set)
-    except Exception as e:
-        raise (e)
-        warnings.warn(f"Error computing features for file {ex['av']}")
+    except Exception:
+        warnings.warn(f"Error computing features for example {str(ex)}")
         return {}
 
 

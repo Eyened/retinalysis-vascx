@@ -7,22 +7,25 @@ from rtnls_enface import Fundus
 from rtnls_enface.utils.image import match_resolution
 
 from vascx.features.base import FeatureSet, LayerFeature
-from vascx.layer import Layer
+from vascx.layer import VesselLayer
 from vascx.segment import Segment
 from vascx.utils.data_loading import load_av_segmentation
 
 Aggregator: TypeAlias = Callable[[np.ndarray], np.float32]
-FeatureType: TypeAlias = Union[Layer, Segment]
+FeatureType: TypeAlias = Union[VesselLayer, Segment]
 
 
 class Retina(Fundus):
     @property
-    def arteries(self) -> Layer:
+    def arteries(self) -> VesselLayer:
         return self.layers["arteries"]
 
     @property
-    def veins(self) -> Layer:
+    def veins(self) -> VesselLayer:
         return self.layers["veins"]
+
+    def set_retina(self, retina):
+        self.retina = retina
 
     def load_annotation(self, fpath: str):
         layers = load_av_segmentation(fpath)
@@ -68,22 +71,37 @@ class Retina(Fundus):
     @classmethod
     def from_file(
         cls,
-        fpath: str,
+        av_path: str,
         disc_path: str | Path = None,
         fundus_path: str | Path = None,
         fovea_location: Tuple[float, float] = None,
+        bounds=None,
         threshold=0.5,
         scaling_factor=1,
     ):
-        layers = load_av_segmentation(fpath, threshold)
+        layers = load_av_segmentation(av_path, threshold)
+
+        def get_layer_color(layer_name):
+            if layer_name == "arteries":
+                return (1, 0, 0)
+            elif layer_name == "veins":
+                return (0, 0, 1)
+            else:
+                return (1, 1, 1)
+
+        layers = {
+            key: VesselLayer(val, name=key, color=get_layer_color(key))
+            for key, val in layers.items()
+        }
 
         retina = cls(
-            layers,
             disc_path_or_mask=disc_path,
             fundus_path_or_mask=fundus_path,
+            layers=layers,
             fovea_location=fovea_location,
             scaling_factor=scaling_factor,
+            bounds=bounds,
         )
-        retina.id = Path(fpath).stem
+        retina.id = Path(av_path).stem
 
         return retina

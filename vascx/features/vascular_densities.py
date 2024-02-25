@@ -12,12 +12,12 @@ from rtnls_enface.types import Circle, Ellipse, Line
 from .base import LayerFeature
 
 if TYPE_CHECKING:
-    from vascx.retina import Layer
+    from vascx.retina import VesselLayer
 
 
 @dataclass
 class VascularDensity(LayerFeature):
-    def get_circle(self, layer: Layer):
+    def get_circle(self, layer: VesselLayer):
         disc = layer.retina.disc
         assert disc is not None
 
@@ -44,7 +44,7 @@ class VascularDensity(LayerFeature):
         )
         return ellipse
 
-    def plot_circle(self, layer: Layer, fig=None, ax=None, **kwargs):
+    def plot_circle(self, layer: VesselLayer, fig=None, ax=None, **kwargs):
         if ax is None:
             fig, ax = plt.subplots(1, 1, figsize=(4, 4), dpi=300)
             ax.set_axis_off()
@@ -55,7 +55,7 @@ class VascularDensity(LayerFeature):
             plt.Circle(circle.center.tuple_xy, circle.r, color="w", fill=False, lw=0.5)
         )
 
-    def plot(self, layer: Layer, fig=None, ax=None, **kwargs):
+    def plot(self, layer: VesselLayer, fig=None, ax=None, **kwargs):
         if ax is None:
             fig, ax = plt.subplots(1, 1, figsize=(4, 4), dpi=300)
             ax.set_axis_off()
@@ -76,7 +76,7 @@ class VascularDensity(LayerFeature):
         )
         ax.text(10, 30, f"{density:.3f}", color="white", fontsize=6)
 
-    def compute_for_ellipse(self, layer: Layer, ellipse: Ellipse):
+    def compute_for_ellipse(self, layer: VesselLayer, ellipse: Ellipse):
         # Create an empty mask with the same dimensions as the image
         mask = np.zeros(layer.binary.shape[:2], dtype=np.uint8)
 
@@ -104,7 +104,7 @@ class VascularDensity(LayerFeature):
 
         return np.sum(selected_pixels[mask == 255]) / np.sum(mask == 255)
 
-    def compute(self, layer: Layer):
+    def compute(self, layer: VesselLayer):
         ellipse = self.get_ellipse(layer)
 
         return self.compute_for_ellipse(layer, ellipse)

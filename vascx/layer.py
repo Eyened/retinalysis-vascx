@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Callable, List, Union
+from typing import TYPE_CHECKING, Callable, List, Tuple, Union
 
 import cv2
 import matplotlib.pyplot as plt
@@ -8,6 +8,7 @@ import numpy as np
 import sknw
 from matplotlib.colors import LinearSegmentedColormap
 from networkx import Graph, connected_components, get_node_attributes
+from rtnls_enface.base import Layer
 from rtnls_enface.disc import OpticDisc
 from rtnls_enface.types import BinaryImage, LayerType, Point
 from scipy.ndimage import distance_transform_edt
@@ -39,7 +40,7 @@ def default_seg_color(seg):
 default_vessels_resolver = RecursiveWeightedAverageResolver("median_diameter")
 
 
-class Layer:
+class VesselLayer(Layer):
     # location of the zones in optic disc multiples from the border of the optic disc
     zone_intervals = {"A": (0.0, 0.5), "B": (0.5, 1.0), "C": (1.0, 2.0)}
 
@@ -48,6 +49,7 @@ class Layer:
         mask: np.ndarray,
         retina: Retina = None,
         name: Union[str, LayerType] = "vessels",
+        color: Tuple = (1, 1, 1),
     ):
         self.mask: np.ndarray = mask
         self.retina: Retina = retina
@@ -55,6 +57,7 @@ class Layer:
             self.type = LayerType[name.upper()]
         else:
             self.type = type
+        self.color = color
 
         self._binary = None
         self._skeleton = None
@@ -251,9 +254,9 @@ class Layer:
 
     def extract_zone(self, zone_name):
         assert (
-            zone_name in Layer.zone_intervals
-        ), f"Zone {zone_name} not recognized. Only valid values are {str(Layer.zone_intervals.keys())}"
-        inner, outer = Layer.zone_intervals[zone_name]
+            zone_name in VesselLayer.zone_intervals
+        ), f"Zone {zone_name} not recognized. Only valid values are {str(VesselLayer.zone_intervals.keys())}"
+        inner, outer = VesselLayer.zone_intervals[zone_name]
         zone_mask = np.zeros(self.mask.shape, dtype=np.uint8)
 
         radius = round(self.retina.disc.radius + outer * self.retina.disc.diameter)
@@ -278,9 +281,7 @@ class Layer:
         bin[self.mask >= threshold] = 1
         return bin
 
-    def plot(
-        self, ax=None, fig=None, color=(1, 1, 1), xlim=None, ylim=None, resize=None
-    ):
+    def plot(self, ax=None, fig=None, color=None, xlim=None, ylim=None, resize=None):
         if ax is None:
             fig, ax = plt.subplots(1, 1, figsize=(8, 8), dpi=300)
             ax.imshow(np.zeros(self.binary.shape))
@@ -288,6 +289,8 @@ class Layer:
 
             if self.retina.fundus_image is not None:
                 ax.imshow(self.retina.fundus_image)
+        if color is None:
+            color = self.color
 
         colors = [(0, 0, 0, 0), (*color, 1)]
         cmap = LinearSegmentedColormap.from_list("binary", colors, N=2)
@@ -451,7 +454,7 @@ class Layer:
         plot_all_nodes(ax, self.nodes)
         return fig, ax
 
-    def dice(self, layer: Layer, remove_disk=True):
+    def dice(self, layer: VesselLayer, remove_disk=True):
         mask1 = self.get_binary(remove_disk)
         mask2 = layer.get_binary(remove_disk)
 

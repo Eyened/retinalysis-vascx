@@ -12,7 +12,7 @@ from vascx.segment import Segment, SplineInterpolation
 from .base import LayerFeature
 
 if TYPE_CHECKING:
-    from vascx.retina import Layer
+    from vascx.retina import VesselLayer
 
 
 class Zone(tuple, Enum):
@@ -59,7 +59,7 @@ class Tortuosity(LayerFeature):
         else:
             raise NotImplementedError()
 
-    def compute(self, layer: Layer):
+    def compute(self, layer: VesselLayer):
         segments = layer.vessels.filter_segments_by_numpoints(self.min_numpoints)
         lengths = np.array([vessel.length for vessel in segments])
         tortuosities = np.array(

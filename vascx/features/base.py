@@ -4,7 +4,7 @@ from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING, Any, List, Tuple
 
 if TYPE_CHECKING:
-    from vascx.layer import Layer
+    from vascx.layer import VesselLayer
     from vascx.retina import Retina
 
 
@@ -35,13 +35,13 @@ class Feature(ABC):
 
 class LayerFeature(Feature):
     @abstractmethod
-    def compute(self, layer: Layer):
+    def compute(self, layer: VesselLayer):
         """Compute the feature given its parameters.
         Subclasses are free to define the type and semantics of the parameters.
         """
         pass
 
     @abstractmethod
-    def plot(self, layer: Layer, **kwargs):
+    def plot(self, layer: VesselLayer, **kwargs):
         """Generate plots and/or written explanation about the computation of these features."""
         pass

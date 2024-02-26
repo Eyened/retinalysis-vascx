@@ -1,7 +1,6 @@
 from typing import List
-from vascx.segment import merge_segments
 
-from vessel_analysis import Segment
+from vascx.segment import Segment, merge_segments
 
 
 class VesselResolver:

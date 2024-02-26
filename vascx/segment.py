@@ -4,10 +4,9 @@ from typing import TYPE_CHECKING, List, Tuple
 
 import matplotlib.pyplot as plt
 import numpy as np
-from rtnls_enface.types import Line, Point, TuplePoint
+from rtnls_enface.base import Line, Point, TuplePoint
 from scipy.spatial.distance import euclidean as distance_2p
 from sklearn.linear_model import TheilSenRegressor
-
 from vascx.diameters import (
     DiameterMeasurement,
     retipy_vessel_diameters,

@@ -7,7 +7,7 @@ import cv2
 import matplotlib as mpl
 import numpy as np
 from matplotlib import pyplot as plt
-from rtnls_enface.types import Circle, Ellipse, Line
+from rtnls_enface.base import Circle, Ellipse, Line
 
 from .base import LayerFeature
 

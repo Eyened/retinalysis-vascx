@@ -6,8 +6,7 @@ from typing import TYPE_CHECKING, List, Tuple
 
 import numpy as np
 from matplotlib import pyplot as plt
-from rtnls_enface.types import Circle, LayerType
-
+from rtnls_enface.base import Circle, LayerType
 from vascx.segment import Segment
 from vascx.vessels import Vessels
 

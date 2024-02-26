@@ -4,7 +4,7 @@ import warnings
 from typing import TYPE_CHECKING
 
 import numpy as np
-from rtnls_enface.types import Circle, Point
+from rtnls_enface.base import Circle, Point
 from scipy.interpolate import UnivariateSpline
 from scipy.optimize import fsolve
 from scipy.spatial.distance import euclidean as distance_2p

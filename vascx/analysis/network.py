@@ -1,6 +1,8 @@
 from typing import List, Set
 
-from rtnls_enface.types import PixelGraph, TuplePoint
+from rtnls_enface.base import PixelGraph, TuplePoint
+
+
 # import vascx.segment
 
 # 8 neigbors of a pixel (including diagonal)

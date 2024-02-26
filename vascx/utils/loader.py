@@ -3,7 +3,6 @@ from typing import List
 
 from rtnls_enface.loader import FundusLoader
 
-
 from vascx.retina import Retina
 
 
@@ -30,8 +29,8 @@ class RetinaLoader(FundusLoader):
         fovea_locations_csv: str = None,
         meta_csv: str = None,
     ):
-        disc_paths, fundus_paths, metadata, fovea_locations = cls._read_folders(
-            discs_folder, fundus_folder, meta_csv, fovea_locations_csv
+        disc_paths, fundus_paths, fovea_locations, metadata = cls._read_folders(
+            discs_folder, fundus_folder, fovea_locations_csv, meta_csv
         )
 
         if av_folder is not None:
@@ -48,8 +47,8 @@ class RetinaLoader(FundusLoader):
         av_subfolder: str = "av",
         discs_subfolder: str = "discs",
         fundus_subfolder: str = "rgb",
-        meta_csv: str = "meta.csv",
         fovea_locations_csv: str = "fovea.csv",
+        meta_csv: str = "meta.csv",
     ):
         base = Path(base_folder)
         return cls.from_folders(

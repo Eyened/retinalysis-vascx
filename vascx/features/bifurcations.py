@@ -3,7 +3,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
-from rtnls_enface.types import Point
+from rtnls_enface.base import Point
 
 from .base import LayerFeature
 

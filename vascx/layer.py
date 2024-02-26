@@ -8,9 +8,8 @@ import numpy as np
 import sknw
 from matplotlib.colors import LinearSegmentedColormap
 from networkx import Graph, connected_components, get_node_attributes
-from rtnls_enface.base import Layer
+from rtnls_enface.base import BinaryImage, Layer, LayerType, Point
 from rtnls_enface.disc import OpticDisc
-from rtnls_enface.types import BinaryImage, LayerType, Point
 from scipy.ndimage import distance_transform_edt
 from scipy.spatial.distance import euclidean as distance_2p
 from skimage.morphology import skeletonize as skimage_skeletonize
@@ -20,6 +19,7 @@ from vascx.analysis.vessel_resolve import RecursiveWeightedAverageResolver
 from vascx.segment import Segment
 from vascx.utils.plotting import resize_image_by_width
 from vascx.vessels import Vessels
+
 
 if TYPE_CHECKING:
     from vascx.retina import Retina

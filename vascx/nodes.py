@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from rtnls_enface.types import TuplePoint
+from rtnls_enface.base import TuplePoint
 
 if TYPE_CHECKING:
     from vascx.layer import VesselLayer

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import warnings
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, List, Tuple
 
@@ -17,6 +18,8 @@ if TYPE_CHECKING:
 
 
 def recursive_cre(lst, cte):
+    if len(lst) == 0:
+        return None
     # Base case: if the list is reduced to a single element, return that element
     if len(lst) == 1:
         return lst[0]
@@ -114,6 +117,9 @@ class CRE(LayerFeature):
 
         intersections = self.get_intersections(layer, circle)
         segments = [p[0] for p in intersections]
+        if len(segments) == 0:
+            warnings.warn("Could not find intersecting segmentes for CRE circle.")
+            return None, []
 
         # select the max four largest segments
         calibers = [s.median_diameter for s in segments]
@@ -126,12 +132,15 @@ class CRE(LayerFeature):
         if ax is None:
             fig, ax = plt.subplots(1, 1, figsize=(4, 4), dpi=300)
             ax.set_axis_off()
+            ax.imshow(np.zeros_like(layer.binary))
 
         segments, circles, cres, points = [], [], [], []
         for i in range(0, 6):
             circle = self.get_circle(layer, 0.5 + 0.1 * i)
 
             cre, intersections = self.compute_cre_for_circle(layer, circle)
+            if cre is None:
+                continue
             segments += [p[0] for p in intersections]
             points += [p[0].spline.get_point(p[1]) for p in intersections]
             circles.append(circle)
@@ -149,8 +158,6 @@ class CRE(LayerFeature):
             },
         )
 
-        od = layer.retina.disc.center_of_mass
-
         for circle in circles:
             ax.add_patch(
                 plt.Circle(
@@ -167,12 +174,15 @@ class CRE(LayerFeature):
         return fig, ax
 
     def compute(self, layer: VesselLayer, fig=None, ax=None, **kwargs):
-        cres, circles = [], []
+        cres = []
         for i in range(0, 6):
             circle = self.get_circle(layer, 0.5 + 0.1 * i)
 
             cre, _ = self.compute_cre_for_circle(layer, circle)
-            circles.append(circle)
-            cres.append(cre)
+            if cre is not None:
+                cres.append(cre)
 
-        return np.median(cres).item()
+        if len(cres) == 0:
+            return None
+        else:
+            return np.median(cres).item()

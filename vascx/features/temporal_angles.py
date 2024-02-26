@@ -15,6 +15,7 @@ from .base import LayerFeature
 
 if TYPE_CHECKING:
     from vascx.retina import VesselLayer
+    from vascx.segment import Segment
 
 
 @dataclass
@@ -97,6 +98,7 @@ class TemporalAngle(LayerFeature):
         if ax is None:
             fig, ax = plt.subplots(1, 1, figsize=(4, 4), dpi=300)
             ax.set_axis_off()
+            ax.imshow(np.zeros_like(layer.binary))
 
         pairs, segments, circles = [], [], []
 
@@ -184,10 +186,9 @@ class TemporalAngle(LayerFeature):
             pair = self.get_pair(layer, intersections)
             if pair is not None:
                 angles.append(pair[2])
-            else:
-                warnings.warn("Couldn't find valid angles for circle.")
 
         if len(angles) > 0:
             return np.median(angles)
         else:
+            warnings.warn("Couldn't find valid angles for any circle.")
             return None

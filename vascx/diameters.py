@@ -113,7 +113,9 @@ def segment_interpolate(
     return spline, [evaluate(t) for t in np.linspace(0, 1, n_points)]
 
 
-def retipy_vessel_diameters(segment: Segment, mask: np.ndarray):
+def retipy_vessel_diameters(
+    segment: Segment, mask: np.ndarray
+) -> List[DiameterMeasurement]:
     mask[0, :] = False
     mask[:, 0] = False
     mask[-1, :] = False
@@ -150,21 +152,43 @@ def retipy_vessel_diameters(segment: Segment, mask: np.ndarray):
                 w315 += 1
 
             if mask[i, j + w0 + 1] == False and mask[i, j - w180 - 1] == False:
-                widths.append(w0 + w180 + 1)
+                widths.append(
+                    DiameterMeasurement(
+                        (i, j), (i, j + w0 + 1), (i, j - w180 - 1), w0 + w180 + 1
+                    )
+                )
                 break
             elif mask[i - w90 - 1, j] == False and mask[i + w270 + 1, j] == False:
-                widths.append(w90 + w270 + 1)
+                widths.append(
+                    DiameterMeasurement(
+                        (i, j), (i - w90 - 1, j), (i + w270 + 1, j), w90 + w270 + 1
+                    )
+                )
                 break
             elif (
                 mask[i - w45 - 1, j + w45 + 1] == False
                 and mask[i + w225 + 1, j - w225 - 1] == False
             ):
-                widths.append(w45 + w225 + 1)
+                widths.append(
+                    DiameterMeasurement(
+                        (i, j),
+                        (i - w45 - 1, j + w45 + 1),
+                        (i + w225 + 1, j - w225 - 1),
+                        w45 + w225 + 1,
+                    )
+                )
                 break
             elif (
                 mask[i - w135 - 1, j - w135 - 1] == False
                 and mask[i + w315 + 1, j + w315 + 1] == False
             ):
-                widths.append(w135 + w315 + 1)
+                widths.append(
+                    DiameterMeasurement(
+                        (i, j),
+                        (i - w135 - 1, j - w135 - 1),
+                        (i + w315 + 1, j + w315 + 1),
+                        w135 + w315 + 1,
+                    )
+                )
                 break
     return widths

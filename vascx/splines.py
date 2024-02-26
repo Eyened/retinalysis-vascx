@@ -47,6 +47,11 @@ class SplineInterpolation:
             distance_normalized, self.points[:, 1], k=3, s=self.smoothing
         )
 
+        if np.isnan(self.y_spline(distance_normalized)).any():
+            raise RuntimeError("Spline was not fit correctly")
+        if np.isnan(self.x_spline(distance_normalized)).any():
+            raise RuntimeError("Spline was not fit correctly")
+
         self.dy = self.y_spline.derivative()
         self.dx = self.x_spline.derivative()
 

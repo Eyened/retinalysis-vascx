@@ -61,45 +61,57 @@ class Segment:
         self.start, self.end = self.end, self.start
         self.skeleton = np.flip(self.skeleton, axis=0)
 
+    def filter_outliers(self, measurements: List[DiameterMeasurement]):
+        diams = np.array([r.diameter for r in measurements])
+
+        regressor = TheilSenRegressor()
+        X = np.arange(0, len(diams))[:, None]
+        regressor.fit(X, diams)
+        y_pred = regressor.predict(X)
+        residuals = np.abs(diams - y_pred)
+        MAD = np.median(np.abs(residuals - np.median(residuals)))
+        threshold = 9 * MAD
+        inliers = np.where(residuals < threshold)[0].tolist()
+        return [measurements[i] for i in inliers]
+
+    def calc_diameters_using_splines(self, n_points):
+        if n_points is None:
+            n_points = max(10, round(100 * self.length / 1024))
+        self._spline, measurements = segment_interpolate(
+            self.layer.binary, self, n_points
+        )
+
+        # 30 pixels is a safe maximum
+        measurements = [d for d in measurements if d.diameter < 30]
+        if len(measurements) <= 5:
+            raise RuntimeError("Not enough valid measurements for diameter")
+        # we use theilsenregressor to find outliers
+
+        measurements = self.filter_outliers(measurements)
+        return measurements
+
+    def calc_diameters_retipy(self):
+        measurements = retipy_vessel_diameters(self, self.layer.mask)
+        measurements = [d for d in measurements if d.diameter < 30]
+        return measurements
+
     def set_diameters(self, n_points=None):
         assert self.layer is not None
         if len(self.skeleton) <= 4:
             # segment is too short for cubic spline, use retipy method.
-            segment_diameters = retipy_vessel_diameters(self, self.layer.mask)
+            measurements = self.calc_diameters_retipy()
         else:
-            if n_points is None:
-                n_points = max(10, round(100 * self.length / 1024))
-            self._spline, measurements = segment_interpolate(
-                self.layer.binary, self, n_points
-            )
+            try:
+                measurements = self.calc_diameters_using_splines(n_points)
+            except Exception:
+                # default to using retipy if there are exceptions when using splines
+                measurements = self.calc_diameters_retipy()
 
-            # 30 pixels is a safe maximum
-            measurements = [d for d in measurements if d.diameter < 30]
-            if len(measurements) <= 5:
-                segment_diameters = retipy_vessel_diameters(self, self.layer.mask)
-            else:
-                # we use theilsenregressor to find outliers
-                diams = np.array([r.diameter for r in measurements])
+            if len(measurements) == 0:
+                measurements = self.calc_diameters_retipy()
 
-                regressor = TheilSenRegressor()
-                X = np.arange(0, len(diams))[:, None]
-                regressor.fit(X, diams)
-                y_pred = regressor.predict(X)
-                residuals = np.abs(diams - y_pred)
-                MAD = np.median(np.abs(residuals - np.median(residuals)))
-                threshold = 9 * MAD
-                inliers = np.where(residuals < threshold)[0].tolist()
-
-                measurements = [measurements[i] for i in inliers]
-                self._diameter_measurements = measurements
-
-                segment_diameters = [
-                    r.diameter * self.layer.retina.scaling_factor for r in measurements
-                ]
-
-            if len(segment_diameters) == 0:
-                segment_diameters = retipy_vessel_diameters(self, self.layer.mask)
-
+        segment_diameters = [r.diameter for r in measurements]
+        self._diameter_measurements = measurements
         self._median_diameter = np.median(segment_diameters)
         self._mean_diameter = np.mean(segment_diameters)
 

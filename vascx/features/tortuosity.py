@@ -5,7 +5,6 @@ from enum import Enum
 from typing import TYPE_CHECKING
 
 import numpy as np
-
 from vascx.analysis.aggregators import mean_median_std
 from vascx.segment import Segment, SplineInterpolation
 
@@ -81,7 +80,7 @@ class Tortuosity(LayerFeature):
             format = "{:.4f}"
 
         return layer.vessels.plot(
-            text=lambda x: format.format(self._compute_for_segment(x) * x.chord_length),
+            text=lambda x: format.format(self._compute_for_segment(x)),
             **{
                 "show_index": True,
                 "plot_endpoints": True,

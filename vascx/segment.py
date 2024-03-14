@@ -7,6 +7,7 @@ import numpy as np
 from rtnls_enface.base import Line, Point, TuplePoint
 from scipy.spatial.distance import euclidean as distance_2p
 from sklearn.linear_model import TheilSenRegressor
+
 from vascx.diameters import (
     DiameterMeasurement,
     retipy_vessel_diameters,
@@ -134,7 +135,7 @@ class Segment:
     @property
     def chord_length(self) -> float:
         return (
-            distance_2p(self.start.tuple, self.end.tuple)
+            distance_2p(self.skeleton[0], self.skeleton[-1])
             * self.layer.retina.scaling_factor
         )
 

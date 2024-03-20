@@ -33,11 +33,16 @@ def load_image_pil(path: Union[Path, str]):
     return img
 
 
-def load_image(path: Union[Path, str]):
+def load_image(path: Union[Path, str], dtype: np.uint8 | np.float32 = np.uint8):
     if Path(path).suffix == ".npy":
-        return np.load(path)
+        im = np.load(path)
     else:
-        return np.array(load_image_pil(path), dtype=np.uint8)
+        im = np.array(load_image_pil(path), dtype=np.uint8)
+    if im.dtype == np.uint8 and dtype == np.float32:
+        im = (im / 255).astype(np.float32)
+    if im.dtype == np.float32 and dtype == np.uint8:
+        im = np.round(im * 255).astype(np.uint8)
+    return im
 
 
 def copy_image(source: Union[Path, str], dest: Union[Path, str]):

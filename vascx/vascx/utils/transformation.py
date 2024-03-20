@@ -1,11 +1,10 @@
-import numpy as np
 import cv2
-from sklearn.preprocessing import PolynomialFeatures
+import numpy as np
 from scipy.ndimage import map_coordinates
+from sklearn.preprocessing import PolynomialFeatures
 
 
 class ProjectiveTransform:
-
     def __init__(self, M):
         self.M = M
         self.M_inv = np.linalg.inv(M)
@@ -56,7 +55,6 @@ class ProjectiveTransform:
         return warped
 
     def _repr_html_(self):
-
         html_table = "<h4>Projective Transform:</h4><table>"
 
         for row in self.M:
@@ -70,7 +68,6 @@ class ProjectiveTransform:
 
 
 class ParabolicTransform:
-
     def __init__(self, model_dx, model_dy):
         self.model_dx = model_dx
         self.model_dy = model_dy
@@ -112,7 +109,6 @@ class ParabolicTransform:
         return self.warp(image, out_size, fraction=-1.0)
 
     def _repr_markdown_(self):
-
         def _coeficents(model):
             return ", ".join(f"{x:.3f}" for x in [model.intercept_, *model.coef_])
 
@@ -125,7 +121,6 @@ class ParabolicTransform:
 
 
 class CombinedTransform:
-
     def __init__(self, transforms):
         self.transforms = transforms
 

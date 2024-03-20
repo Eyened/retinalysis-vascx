@@ -1,3 +1,5 @@
+import os
+import warnings
 from pathlib import Path
 from typing import List
 
@@ -51,6 +53,12 @@ class RetinaLoader(FundusLoader):
         meta_csv: str = "meta.csv",
     ):
         base = Path(base_folder)
+        if not os.path.exists(meta_csv):
+            warnings.warn(f"file {base/meta_csv} not found")
+            meta_csv = None
+        if not os.path.exists(fovea_locations_csv):
+            warnings.warn(f"file {base/fovea_locations_csv} not found")
+            fovea_locations_csv = None
         return cls.from_folders(
             base / av_subfolder if av_subfolder is not None else None,
             base / discs_subfolder if discs_subfolder is not None else None,

@@ -1,9 +1,10 @@
 from __future__ import annotations
-from typing import Callable, List
 
-from matplotlib import pyplot as plt
-import numpy as np
+from typing import Callable, List, Union
+
 import matplotlib.colors as mcolors
+import numpy as np
+from matplotlib import pyplot as plt
 
 from vascx.segment import Segment
 
@@ -28,8 +29,8 @@ class Vessels:
 
     def plot(
         self,
-        text: Callable | str = None,
-        color: Callable | str = default_seg_color,
+        text: Union[Callable, str] = None,
+        color: Union[Callable, str] = default_seg_color,
         filter_fn=None,
         min_length_factor=0,
         show_index=True,

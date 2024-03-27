@@ -1,7 +1,7 @@
 import os
 import warnings
 from pathlib import Path
-from typing import List
+from typing import List, Union
 
 from rtnls_enface.loader import FundusLoader
 
@@ -45,7 +45,7 @@ class RetinaLoader(FundusLoader):
     @classmethod
     def from_folder(
         cls,
-        base_folder: str | Path,
+        base_folder: Union[str, Path],
         av_subfolder: str = "av",
         discs_subfolder: str = "discs",
         fundus_subfolder: str = "rgb",

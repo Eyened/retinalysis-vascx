@@ -21,7 +21,6 @@ setup(
     entry_points={"console_scripts": []},
     install_requires=[
         "sknw==0.14",
-        "dllogger @ git+https://github.com/NVIDIA/dllogger#egg=dllogger",
     ],
     python_requires=">=3.10",
 )

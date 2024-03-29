@@ -53,10 +53,10 @@ class RetinaLoader(FundusLoader):
         meta_csv: str = "meta.csv",
     ):
         base = Path(base_folder)
-        if not os.path.exists(meta_csv):
+        if not os.path.exists(base / meta_csv):
             warnings.warn(f"file {base/meta_csv} not found")
             meta_csv = None
-        if not os.path.exists(fovea_locations_csv):
+        if not os.path.exists(base / fovea_locations_csv):
             warnings.warn(f"file {base/fovea_locations_csv} not found")
             fovea_locations_csv = None
         return cls.from_folders(

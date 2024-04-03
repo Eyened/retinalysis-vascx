@@ -10,6 +10,7 @@ from matplotlib.colors import LinearSegmentedColormap
 from networkx import Graph, connected_components, get_node_attributes
 from rtnls_enface.base import BinaryImage, Layer, LayerType, Point
 from rtnls_enface.disc import OpticDisc
+from rtnls_utils.eval import dice_score
 from scipy.ndimage import distance_transform_edt
 from scipy.spatial.distance import euclidean as distance_2p
 from skimage.morphology import skeletonize as skimage_skeletonize
@@ -19,7 +20,6 @@ from vascx.analysis.vessel_resolve import RecursiveWeightedAverageResolver
 from vascx.segment import Segment
 from vascx.utils.plotting import resize_image_by_width
 from vascx.vessels import Vessels
-
 
 if TYPE_CHECKING:
     from vascx.retina import Retina
@@ -345,8 +345,8 @@ class VesselLayer(Layer):
 
     def plot_segments(
         self,
-        text: Callable | str = None,
-        color: Callable | str = default_seg_color,
+        text: Union[Callable, str] = None,
+        color: Union[Callable, str] = default_seg_color,
         filter_fn=None,
         min_length_factor=0,
         show_id=True,
@@ -367,7 +367,7 @@ class VesselLayer(Layer):
 
         im = np.full_like(self.binary, np.nan)
 
-        def get_value(accesor: Callable | str | None, segment, default=None):
+        def get_value(accesor: Union[Callable, str, None], segment, default=None):
             if isinstance(accesor, str):
                 return getattr(segment, accesor)
             elif callable(accesor):

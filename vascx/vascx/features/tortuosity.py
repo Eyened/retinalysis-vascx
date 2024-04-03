@@ -5,6 +5,7 @@ from enum import Enum
 from typing import TYPE_CHECKING
 
 import numpy as np
+
 from vascx.analysis.aggregators import mean_median_std
 from vascx.segment import Segment, SplineInterpolation
 
@@ -12,6 +13,11 @@ from .base import LayerFeature
 
 if TYPE_CHECKING:
     from vascx.retina import VesselLayer
+
+
+class TortuosityMode(str, Enum):
+    Segments = "segments"
+    Vessels = "vessels"
 
 
 class Zone(tuple, Enum):
@@ -36,11 +42,14 @@ class Tortuosity(LayerFeature):
 
     def __init__(
         self,
+        mode: TortuosityMode = TortuosityMode.Segments,
         measure: TortuosityMeasure = TortuosityMeasure.Distance,
         min_numpoints: int = 25,
         zone: Zone = Zone.All,
         aggregator=mean_median_std,
+        **kwargs,
     ):
+        self.mode = mode
         self.measure = measure
         self.min_numpoints = min_numpoints
         self.zone = zone
@@ -58,8 +67,22 @@ class Tortuosity(LayerFeature):
         else:
             raise NotImplementedError()
 
+    def get_segments(self, layer: VesselLayer):
+        if self.mode == TortuosityMode.Segments:
+            segments = layer.segments
+            segments = [
+                segment
+                for segment in segments
+                if len(segment.skeleton) >= self.min_numpoints
+            ]
+        elif self.mode == TortuosityMode.Vessels:
+            segments = layer.vessels.filter_segments_by_numpoints(self.min_numpoints)
+        else:
+            raise ValueError(f"Unknown mode {self.mode}")
+        return segments
+
     def compute(self, layer: VesselLayer):
-        segments = layer.vessels.filter_segments_by_numpoints(self.min_numpoints)
+        segments = self.get_segments(layer)
         lengths = np.array([vessel.length for vessel in segments])
         tortuosities = np.array(
             [self._compute_for_segment(vessel) for vessel in segments]

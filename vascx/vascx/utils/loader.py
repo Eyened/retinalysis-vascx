@@ -1,5 +1,7 @@
+import os
+import warnings
 from pathlib import Path
-from typing import List
+from typing import List, Union
 
 from rtnls_enface.loader import FundusLoader
 
@@ -43,7 +45,7 @@ class RetinaLoader(FundusLoader):
     @classmethod
     def from_folder(
         cls,
-        base_folder: str | Path,
+        base_folder: Union[str, Path],
         av_subfolder: str = "av",
         discs_subfolder: str = "discs",
         fundus_subfolder: str = "rgb",
@@ -51,6 +53,12 @@ class RetinaLoader(FundusLoader):
         meta_csv: str = "meta.csv",
     ):
         base = Path(base_folder)
+        if not os.path.exists(base / meta_csv):
+            warnings.warn(f"file {base/meta_csv} not found")
+            meta_csv = None
+        if not os.path.exists(base / fovea_locations_csv):
+            warnings.warn(f"file {base/fovea_locations_csv} not found")
+            fovea_locations_csv = None
         return cls.from_folders(
             base / av_subfolder if av_subfolder is not None else None,
             base / discs_subfolder if discs_subfolder is not None else None,

@@ -5,11 +5,11 @@ import cv2
 import numpy as np
 from rtnls_enface import Fundus
 from rtnls_enface.utils.image import match_resolution
+from rtnls_utils.data_loading import load_av_segmentation
 
 from vascx.features.base import FeatureSet, LayerFeature
 from vascx.layer import VesselLayer
 from vascx.segment import Segment
-from vascx.utils.data_loading import load_av_segmentation
 
 Aggregator: TypeAlias = Callable[[np.ndarray], np.float32]
 FeatureType: TypeAlias = Union[VesselLayer, Segment]
@@ -72,8 +72,8 @@ class Retina(Fundus):
     def from_file(
         cls,
         av_path: str,
-        disc_path: str | Path = None,
-        fundus_path: str | Path = None,
+        disc_path: Union[str, Path] = None,
+        fundus_path: Union[str, Path] = None,
         fovea_location: Tuple[float, float] = None,
         bounds=None,
         threshold=0.5,

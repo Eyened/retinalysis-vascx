@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, List, Tuple
+from typing import TYPE_CHECKING, List, Tuple, Union
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -181,7 +181,7 @@ class Segment:
 
         return line1.angle_to(line2)
 
-    def fod_angle(self) -> float | None:
+    def fod_angle(self) -> Union[float, None]:
         if self.layer.retina.fovea_location is None or self.layer.retina.disc is None:
             return None
         line1 = Line(

@@ -22,5 +22,5 @@ setup(
     install_requires=[
         "sknw==0.14",
     ],
-    python_requires=">=3.10",
+    python_requires=">=3.9",
 )

@@ -7,6 +7,7 @@ from typing import TYPE_CHECKING, List, Tuple
 import numpy as np
 from matplotlib import pyplot as plt
 from rtnls_enface.base import Circle, LayerType
+
 from vascx.segment import Segment
 from vascx.vessels import Vessels
 
@@ -72,6 +73,7 @@ class CRE(LayerFeature):
             and seg.orientation() is not None
             and seg.orientation() < 90
         ]
+
         return filtered_segments
 
     def get_intersections(
@@ -153,6 +155,8 @@ class CRE(LayerFeature):
                 "cmap": "tab20",
                 "ax": ax,
                 "fig": fig,
+                "text": lambda s: f"{s.orientation():.2f}",
+                "plot_endpoints": True,
                 **kwargs,
             },
         )

@@ -1,13 +1,13 @@
 from pathlib import Path
-from typing import Callable, Tuple, Union
+from typing import Any, Callable, Tuple, Union
 
 import cv2
 import numpy as np
-from typing_extensions import TypeAlias
-
 from rtnls_enface import Fundus
 from rtnls_enface.utils.image import match_resolution
 from rtnls_utils.data_loading import load_av_segmentation
+from typing_extensions import TypeAlias
+
 from vascx.features.base import FeatureSet, LayerFeature
 from vascx.layer import VesselLayer
 from vascx.segment import Segment
@@ -79,6 +79,7 @@ class Retina(Fundus):
         bounds=None,
         threshold=0.5,
         scaling_factor=1,
+        id: Any = None,
     ):
         layers = load_av_segmentation(av_path, threshold)
 
@@ -102,6 +103,7 @@ class Retina(Fundus):
             fovea_location=fovea_location,
             scaling_factor=scaling_factor,
             bounds=bounds,
+            id=id,
         )
         retina.id = Path(av_path).stem
 

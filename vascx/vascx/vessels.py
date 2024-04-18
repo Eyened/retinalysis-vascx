@@ -2,7 +2,6 @@ from __future__ import annotations
 
 from typing import Callable, List, Union
 
-import matplotlib.colors as mcolors
 import numpy as np
 from matplotlib import pyplot as plt
 
@@ -34,6 +33,7 @@ class Vessels:
         filter_fn=None,
         min_length_factor=0,
         show_index=True,
+        plot_fundus=True,
         plot_skeleton=True,
         plot_endpoints=False,
         plot_chord=False,
@@ -47,7 +47,10 @@ class Vessels:
         if ax is None:
             fig, ax = plt.subplots(1, 1, figsize=(4, 4), dpi=300)
             ax.set_axis_off()
-            ax.imshow(np.zeros_like(self.layer.binary))
+            ax.imshow(np.zeros_like(self.layer.binary), cmap="binary")
+
+        if plot_fundus and self.layer.retina is not None:
+            self.layer.retina.plot_fundus(ax=ax)
 
         segments = self.filter_segments_by_numpoints(min_numpoints)
 
@@ -83,15 +86,10 @@ class Vessels:
                     for p in segment.skeleton:
                         skeleton_overlay[p[0], p[1]] = 255
 
-        # ax.imshow(np.zeros_like(im))
-        cmap = plt.cm.tab20
-        colors = cmap.colors
-        colors = ((0, 0, 0, 0), *colors)
-        cmap = mcolors.ListedColormap(colors)
-
-        # ax.imshow(np.zeros_like(im))
-        # masked = np.ma.masked_where(im == 0, im)
-        ax.imshow(im, cmap=cmap, interpolation="nearest")
+        cmap = plt.get_cmap(cmap)
+        cmap.set_bad((0, 0, 0, 0))
+        masked = np.ma.masked_where(im == 0, im)
+        ax.imshow(masked, cmap=cmap, interpolation="nearest")
 
         for i, segment in enumerate(segments):
             if text != False:

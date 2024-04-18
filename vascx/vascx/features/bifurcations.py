@@ -27,11 +27,12 @@ class BifurcationCount(LayerFeature):
 
     def plot(self, layer: VesselLayer, **kwargs):
         fig, ax = layer.vessels.plot(
-            cmap="tab20",
+            cmap="binary",
+            color=lambda x: 1,
             min_numpoints=0,
             **kwargs,
         )
 
         bifurcations = self.get_bifurcation_points(layer)
         for p in bifurcations:
-            ax.scatter(*p.tuple_xy, s=1)
+            ax.scatter(*p.tuple_xy, s=1, color="g")

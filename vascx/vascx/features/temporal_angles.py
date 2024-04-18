@@ -8,6 +8,7 @@ from typing import TYPE_CHECKING, List, Tuple
 import numpy as np
 from matplotlib import pyplot as plt
 from rtnls_enface.base import Circle, Line, Point
+
 from vascx.vessels import Vessels
 
 from .base import LayerFeature
@@ -113,11 +114,9 @@ class TemporalAngle(LayerFeature):
                 pairs.append(pair)
 
         segments = list(set(segments))
-        layer.retina.plot_fundus(ax=ax)
         Vessels(layer, segments).plot(
             **{
                 "show_index": True,
-                "cmap": "tab20",
                 "ax": ax,
                 "fig": fig,
                 **kwargs,

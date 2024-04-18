@@ -31,7 +31,7 @@ class RetinaLoader(FundusLoader):
         fovea_locations_csv: str = None,
         meta_csv: str = None,
     ):
-        disc_paths, fundus_paths, fovea_locations, metadata = cls._read_folders(
+        ids, disc_paths, fundus_paths, fovea_locations, metadata = cls._read_folders(
             discs_folder, fundus_folder, fovea_locations_csv, meta_csv
         )
 
@@ -40,7 +40,9 @@ class RetinaLoader(FundusLoader):
         else:
             av_paths = None
 
-        return cls(av_paths, disc_paths, fundus_paths, fovea_locations, metadata)
+        return cls(
+            av_paths, disc_paths, fundus_paths, fovea_locations, metadata, ids=ids
+        )
 
     @classmethod
     def from_folder(

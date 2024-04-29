@@ -13,7 +13,7 @@ def default_seg_color(seg):
 
 
 class Vessels:
-    def __init__(self, layer, segments):
+    def __init__(self, layer, segments: List[Segment]):
         self.layer = layer
         self.segments = segments
 
@@ -25,6 +25,43 @@ class Vessels:
 
     def filter_segments_by_numpoints(self, min_numpoints=4) -> List[Segment]:
         return [s for s in self.segments if len(s.skeleton) >= min_numpoints]
+
+    def plot_skeleton(self, ax=None, fig=None, plot_endpoints=True):
+        if ax is None:
+            fig, ax = plt.subplots(1, 1, figsize=(4, 4), dpi=300)
+            ax.set_axis_off()
+            ax.imshow(np.zeros_like(self.layer.binary))
+
+        im = np.full_like(self.layer.binary, 0)
+        for i, segment in enumerate(self.segments):
+            for p in segment.skeleton:
+                im[p[0], p[1]] = 255
+
+        cmap = plt.get_cmap("binary")
+        cmap.set_bad((0, 0, 0, 0))
+        masked = np.ma.masked_where(im == 0, im)
+        ax.imshow(masked, cmap=cmap, interpolation="nearest")
+        # ax.imshow(im, cmap=cmap, interpolation="nearest")
+
+        if plot_endpoints:
+            for segment in self.segments:
+                ax.plot(
+                    segment.skeleton[0][1],
+                    segment.skeleton[0][0],
+                    marker="o",
+                    markersize=1,
+                    color="green",
+                )
+            for segment in self.segments:
+                ax.plot(
+                    segment.skeleton[-1][1],
+                    segment.skeleton[-1][0],
+                    marker="o",
+                    markersize=0.5,
+                    color="red",
+                )
+
+        return fig, ax
 
     def plot(
         self,
@@ -57,8 +94,6 @@ class Vessels:
         if filter_fn is not None:
             segments = [s for s in segments if filter_fn(s)]
 
-        im = np.full_like(self.layer.binary, np.nan)
-
         def get_value(accesor: Callable | str | None, segment, default=None):
             if isinstance(accesor, str):
                 return getattr(segment, accesor)
@@ -70,7 +105,7 @@ class Vessels:
         color_values = [get_value(color, s) for s in segments]
         max_color_value = max([c for c in color_values if c is not None])
 
-        skeleton_overlay = np.zeros_like(im)
+        im = np.full_like(self.layer.binary, np.nan)
         for i, segment in enumerate(segments):
             w, h = im.shape
             for p in segment.pixels:
@@ -81,10 +116,6 @@ class Vessels:
                     if color_values[i] is not None
                     else 0
                 )
-
-                if plot_skeleton:
-                    for p in segment.skeleton:
-                        skeleton_overlay[p[0], p[1]] = 255
 
         cmap = plt.get_cmap(cmap)
         cmap.set_bad((0, 0, 0, 0))

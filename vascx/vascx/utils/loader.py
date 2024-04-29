@@ -11,16 +11,35 @@ from vascx.retina import Retina
 class RetinaLoader(FundusLoader):
     def __init__(self, av_paths: List[str], *args, **kwargs):
         super().__init__(*args, **kwargs)
-        if self.num_items != 0:
-            assert len(av_paths) == self.num_items
-        else:
-            self.num_items = len(av_paths)
         self.av_paths = av_paths
+        self.num_items = self._check_lengths(
+            av_paths,
+            self.disc_paths,
+            self.fundus_paths,
+            self.fovea_locations,
+            self.metadata,
+            self.ids,
+        )
 
     def _get_one(self, index):
         args = super()._get_one_dict(index)
         args["av_path"] = self.av_paths[index]
         return Retina.from_file(**args)
+
+    @classmethod
+    def from_paths(
+        cls, av_paths, disc_paths, fundus_paths, fovea_locations_path, meta_path
+    ):
+        if av_paths is None and disc_paths is None and fundus_paths is None:
+            raise ValueError(
+                "One of av_paths, disc_paths or fundus_paths must be provided"
+            )
+        (av_paths, disc_paths, fundus_paths), stems = cls._get_filenames(
+            av_paths, disc_paths, fundus_paths
+        )
+        fovea_locations = cls._read_fovea_locations(fovea_locations_path, stems)
+        metadata = cls._read_meta(meta_path, stems)
+        return cls(av_paths, disc_paths, fundus_paths, fovea_locations, metadata, stems)
 
     @classmethod
     def from_folders(
@@ -31,17 +50,29 @@ class RetinaLoader(FundusLoader):
         fovea_locations_csv: str = None,
         meta_csv: str = None,
     ):
-        ids, disc_paths, fundus_paths, fovea_locations, metadata = cls._read_folders(
-            discs_folder, fundus_folder, fovea_locations_csv, meta_csv
+        av_paths = (
+            sorted(list(Path(av_folder).glob("*.png")))
+            if av_folder is not None
+            else None
         )
-
-        if av_folder is not None:
-            av_paths = sorted(list(Path(av_folder).glob("*.png")))
-        else:
-            av_paths = None
+        disc_paths = (
+            sorted(list(Path(discs_folder).glob("*.png")))
+            if discs_folder is not None
+            else None
+        )
+        fundus_paths = (
+            sorted(list(Path(fundus_folder).glob("*.png")))
+            if fundus_folder is not None
+            else None
+        )
+        (av_paths, disc_paths, fundus_paths), stems = cls._get_filenames(
+            av_paths, disc_paths, fundus_paths
+        )
+        fovea_locations = cls._read_fovea_locations(fovea_locations_csv, stems)
+        metadata = cls._read_meta(meta_csv, stems)
 
         return cls(
-            av_paths, disc_paths, fundus_paths, fovea_locations, metadata, ids=ids
+            av_paths, disc_paths, fundus_paths, fovea_locations, metadata, ids=stems
         )
 
     @classmethod

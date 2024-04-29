@@ -21,25 +21,13 @@ if TYPE_CHECKING:
 
 
 class Segment:
-    def __init__(
-        self, skeleton: List[TuplePoint] = None, start: Point = None, end: Point = None
-    ):
+    def __init__(self, skeleton: List[TuplePoint], edge=None):
         self.id = None
         self.index = None
-        self.start = start
-        self.end = end
 
-        if distance_2p(self.start.tuple, skeleton[0]) > distance_2p(
-            self.end.tuple, skeleton[0]
-        ):
-            skeleton = np.flip(skeleton, axis=0)
         self.skeleton = skeleton
-
-        self.connectors = frozenset([start, end])
-
+        self.edge = edge
         self.pixels = []
-        self.neighbors: List[Segment] = []
-        self.mask: List[TuplePoint] = []
 
         self.layer: VesselLayer = None
 
@@ -57,8 +45,15 @@ class Segment:
         self.visited = False
         self.original_segments = None
 
+    @property
+    def start(self) -> Point:
+        return Point(*self.skeleton[0])
+
+    @property
+    def end(self) -> Point:
+        return Point(*self.skeleton[-1])
+
     def reverse(self):
-        self.start, self.end = self.end, self.start
         self.skeleton = np.flip(self.skeleton, axis=0)
 
     def filter_outliers(self, measurements: List[DiameterMeasurement]):
@@ -116,7 +111,7 @@ class Segment:
         self._mean_diameter = np.mean(segment_diameters)
 
     def get_mean_xy(self):
-        return np.mean(self.pixels, axis=0)
+        return np.mean(self.skeleton, axis=0)
 
     @property
     def spline(self) -> SplineInterpolation:
@@ -193,14 +188,14 @@ class Segment:
     def __eq__(self, other):
         # segments are equal if their ends are equal.
         if isinstance(other, Segment):
-            return self.connectors == other.connectors
+            return self.start == other.start and self.end == other.end
         return False
 
     def __hash__(self):
         return hash(self.connectors)
 
     def __repr__(self):
-        return f"ID:{self.id}"
+        return str(self.edge)
 
     def intersections_with_circle(self, circle) -> Tuple[List[Point], List[float]]:
         if self.spline is None:
@@ -286,12 +281,8 @@ def merge_segments(*segments) -> Segment:
     assert len(segments) > 0, "Must provide at least one segment to merge"
 
     skeleton = np.concatenate([s.skeleton for s in segments], axis=0)
-    seg = Segment(skeleton, start=segments[0].start, end=segments[-1].end)
-
-    # seg.id = segments[0].id
+    seg = Segment(skeleton, edge=(segments[0].edge[0], segments[-1].edge[1]))
     seg.pixels = concatenate(*[s.pixels for s in segments])
-    seg.neighbors = concatenate(*[s.neighbors for s in segments])
     seg.layer = segments[0].layer
-    seg.original_segments = segments
 
     return seg

@@ -1,16 +1,18 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, List
 
-from rtnls_enface.base import TuplePoint
+from rtnls_enface.base import Point
+
+from vascx.segment import Segment
 
 if TYPE_CHECKING:
     from vascx.layer import VesselLayer
 
 
 class Node:
-    def __init__(self, position: TuplePoint):
-        self.position: TuplePoint = position
+    def __init__(self, position: Point):
+        self.position: Point = position
         self.layer: VesselLayer = None
 
 
@@ -19,8 +21,14 @@ class Endpoint(Node):
 
 
 class Bifurcation(Node):
-    pass
+    def __init__(self, position: Point, incoming: Segment, outgoing: List[Segment]):
+        super().__init__(position)
+        self.incoming = incoming
+        self.outgoing = outgoing
 
 
 class Crossing(Node):
-    pass
+    def __init(self, position: Point, over: Segment, under: Segment):
+        super().__init__(position)
+        self.over = over
+        self.under = under

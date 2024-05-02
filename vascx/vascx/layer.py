@@ -4,6 +4,7 @@ from typing import TYPE_CHECKING, List, Tuple, Union
 
 import cv2
 import matplotlib.pyplot as plt
+import networkx as nx
 import numpy as np
 import sknw
 from matplotlib.colors import LinearSegmentedColormap
@@ -123,6 +124,7 @@ class VesselLayer(Layer):
         """
         if self._trees is None:
             self.calc_digraph()
+            self.correct_digraph()
         return self._trees
 
     @property
@@ -130,10 +132,11 @@ class VesselLayer(Layer):
         """Digraph of the vasculature"""
         if self._digraph is None:
             self.calc_digraph()
+            self.correct_digraph()
         return self._digraph
 
     @property
-    def nodes(self):
+    def nodes(self) -> List[Node]:
         """
         Nodes of a networkx graph
         """
@@ -143,7 +146,7 @@ class VesselLayer(Layer):
         return self._nodes
 
     @property
-    def bifurcations(self):
+    def bifurcations(self) -> List[Bifurcation]:
         """
         Bifurcations of a networkx graph
         """
@@ -183,42 +186,48 @@ class VesselLayer(Layer):
             else:
                 return (edge[1], edge[0])
 
+        # graph may contain a few self loops. we remove them.
+        self_loops = list(nx.selfloop_edges(graph))
+        graph.remove_edges_from(self_loops)
+
+        # now we remove nodes of degree 2
+        # we substitute the their edges with a single edge
         deg_2_nodes = [n for n in graph.nodes() if graph.degree(n) == 2]
         while len(deg_2_nodes) > 0:
             n = deg_2_nodes.pop()
-            if graph.degree(n) == 2:
-                edges = list(graph.edges(n))
-                in_edge = edge_to(graph, edges[0], n)
-                out_edge = edge_from(graph, edges[1], n)
+            edges = list(graph.edges(n))
 
-                # print(in_edge, out_edge)
-                # print(
-                #     "in_edge",
-                #     graph[in_edge[0]][in_edge[1]]["pts"][0, :],
-                #     "-",
-                #     graph[in_edge[0]][in_edge[1]]["pts"][-1, :],
-                # )
-                # print(
-                #     "out_edge",
-                #     graph[out_edge[0]][out_edge[1]]["pts"][0, :],
-                #     "-",
-                #     graph[out_edge[0]][out_edge[1]]["pts"][-1, :],
-                # )
+            in_edge = edge_to(graph, edges[0], n)
+            out_edge = edge_from(graph, edges[1], n)
 
-                graph.add_edge(
-                    in_edge[0],
-                    out_edge[1],
-                    pts=np.concatenate(
-                        [
-                            graph.get_edge_data(*in_edge)["pts"][:-1, :],
-                            graph.get_edge_data(*out_edge)["pts"],
-                        ],
-                        axis=0,
-                    ),
-                )
-                graph.remove_edge(*in_edge)
-                graph.remove_edge(*out_edge)
-                graph.remove_node(n)
+            # print(in_edge, out_edge)
+            # print(
+            #     "in_edge",
+            #     graph[in_edge[0]][in_edge[1]]["pts"][0, :],
+            #     "-",
+            #     graph[in_edge[0]][in_edge[1]]["pts"][-1, :],
+            # )
+            # print(
+            #     "out_edge",
+            #     graph[out_edge[0]][out_edge[1]]["pts"][0, :],
+            #     "-",
+            #     graph[out_edge[0]][out_edge[1]]["pts"][-1, :],
+            # )
+
+            graph.add_edge(
+                in_edge[0],
+                out_edge[1],
+                pts=np.concatenate(
+                    [
+                        graph.get_edge_data(*in_edge)["pts"][:-1, :],
+                        graph.get_edge_data(*out_edge)["pts"],
+                    ],
+                    axis=0,
+                ),
+            )
+            graph.remove_edge(*in_edge)
+            graph.remove_edge(*out_edge)
+            graph.remove_node(n)
             deg_2_nodes = [n for n in graph.nodes() if graph.degree(n) == 2]
 
         for s, e in graph.edges():
@@ -352,11 +361,13 @@ class VesselLayer(Layer):
             )
 
             if len(incoming) != 1:
-                nodes.append(Node(Point(*self.digraph.nodes[node]["o"])))
+                nodes.append(Node(Point(*self.digraph.nodes[node]["o"]), node=node))
             else:
                 if len(outgoing) == 0:
-                    nodes.append(Endpoint(Point(*self.digraph.nodes[node]["o"])))
-                elif len(outgoing) == 2:
+                    nodes.append(
+                        Endpoint(Point(*self.digraph.nodes[node]["o"]), node=node)
+                    )
+                elif len(outgoing) == 2 or len(outgoing) == 3:
                     nodes.append(
                         Bifurcation(
                             Point(*self.digraph.nodes[node]["o"]),
@@ -364,10 +375,11 @@ class VesselLayer(Layer):
                             outgoing=[
                                 self.digraph.edges[e]["segment"] for e in outgoing
                             ],
+                            node=node,
                         )
                     )
                 else:
-                    nodes.append(Node(Point(*self.digraph.nodes[node]["o"])))
+                    nodes.append(Node(Point(*self.digraph.nodes[node]["o"]), node=node))
         self._nodes = nodes
 
     def correct_digraph(self, threshold=10):
@@ -375,13 +387,19 @@ class VesselLayer(Layer):
         This avoid spurious small edges that will affect eg. bifurcation detection.
         """
         self._nodes = None
-        segments = [self.digraph.edges[e]["segment"] for e in self.digraph.edges()]
+        segments = [
+            self.digraph.edges[e]["segment"]
+            for e in self.digraph.edges()
+            if self.digraph.out_degree(e[1]) == 0
+        ]
+        if len(segments) == 0:
+            print("Nothing to be done")
+            return
 
         def get_value(obj: Segment):
             return obj.length
 
         queue = SortedListWithKey(segments, key=get_value)
-        print(queue)
 
         while queue[0].length < threshold:
             seg: Segment = queue.pop(0)
@@ -392,21 +410,12 @@ class VesselLayer(Layer):
                 in_edges = list(self.digraph.in_edges(s))
                 out_edges = list(self.digraph.out_edges(s))
 
-                # print(in_edges, out_edges)
-                # print(type(out_edges[0][0]))
-                # print(type(seg.edge[0]))
                 out_edges = [e for e in out_edges if e != seg.edge]
 
                 # this is an endpoint, may remove
                 if len(in_edges) == 1 and len(out_edges) == 1:
-                    # print("in_edge", in_edges[0])
-                    # print("out_edge", out_edges[0])
-
                     seg1 = self.digraph.get_edge_data(*in_edges[0])["segment"]
                     seg2 = self.digraph.get_edge_data(*out_edges[0])["segment"]
-
-                    # print(seg1.start, seg1.end)
-                    # print(seg2.start, seg2.end)
 
                     new_segment = merge_segments(seg1, seg2)
                     self.digraph.add_edge(
@@ -414,14 +423,10 @@ class VesselLayer(Layer):
                     )
 
                     # remove old edges
-                    # print(in_edges[0], out_edges[0])
                     self.digraph.remove_edge(*in_edges[0])
                     self.digraph.remove_edge(*out_edges[0])
                     self.digraph.remove_node(s)
                     self.digraph.remove_node(e)
-
-                    print("Added new segment", new_segment)
-                    print("Removed segments", seg, seg1, seg2)
 
                     # update the queue
                     queue.discard(seg1)
@@ -558,7 +563,7 @@ class VesselLayer(Layer):
 
             dx = end[1] - start[1]
             dy = end[0] - start[0]
-            ax.arrow(start[1], start[0], dx, dy, color="white", head_width=5, width=0.5)
+            ax.arrow(start[1], start[0], dx, dy, color="white", head_width=5, width=0.2)
 
         return fig, ax
 
@@ -623,7 +628,7 @@ class VesselLayer(Layer):
         self.calc_digraph()
         fig, ax = self._get_base_fig(None, None)
         vessels = Vessels(self, self.segments)
-        return vessels.plot_skeleton(fig=fig, ax=ax, **kwargs)
+        return vessels.plot(fig=fig, ax=ax, **kwargs)
 
     def plot_some_segments(self, ids, ax=None, fig=None):
         from .utils import bounding_box, concat, pad_bounding_box

@@ -4,7 +4,7 @@ from vascx.features.bifurcations import BifurcationCount
 from vascx.features.caliber import Caliber
 from vascx.features.cre import CRE
 from vascx.features.temporal_angles import TemporalAngle
-from vascx.features.tortuosity import Tortuosity
+from vascx.features.tortuosity import LengthMeasure, Tortuosity
 from vascx.features.vascular_densities import VascularDensity
 
 bergmann_features = FeatureSet(
@@ -13,7 +13,10 @@ bergmann_features = FeatureSet(
         "cre": CRE(),
         "vd": VascularDensity(),
         "diam": Caliber(aggregator=median_std),
-        "tort": Tortuosity(aggregator=median),
+        "tort": Tortuosity(length_measure=LengthMeasure.Skeleton, aggregator=median),
+        "tort_splines": Tortuosity(
+            length_measure=LengthMeasure.Splines, aggregator=median
+        ),
         "bif": BifurcationCount(),
     }
 )

@@ -5,7 +5,6 @@ from typing import TYPE_CHECKING, Any, List, Tuple
 
 if TYPE_CHECKING:
     from vascx.layer import VesselLayer
-    from vascx.retina import Retina
 
 
 class FeatureSet:
@@ -17,9 +16,6 @@ class FeatureSet:
 
 
 class Feature(ABC):
-    def __init__(self, retina: Retina):
-        self.retina = retina
-
     @abstractmethod
     def compute(self, parameters: List[Tuple[Any]]):
         """Compute the feature given its parameters.

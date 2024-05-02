@@ -11,8 +11,9 @@ if TYPE_CHECKING:
 
 
 class Node:
-    def __init__(self, position: Point):
+    def __init__(self, position: Point, node: int = None):
         self.position: Point = position
+        self.node = node  # networkx node id
         self.layer: VesselLayer = None
 
 
@@ -21,8 +22,14 @@ class Endpoint(Node):
 
 
 class Bifurcation(Node):
-    def __init__(self, position: Point, incoming: Segment, outgoing: List[Segment]):
-        super().__init__(position)
+    def __init__(
+        self,
+        position: Point,
+        incoming: Segment,
+        outgoing: List[Segment],
+        node: int = None,
+    ):
+        super().__init__(position, node=node)
         self.incoming = incoming
         self.outgoing = outgoing
 

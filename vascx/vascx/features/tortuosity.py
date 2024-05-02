@@ -20,6 +20,11 @@ class TortuosityMode(str, Enum):
     Vessels = "vessels"
 
 
+class LengthMeasure(str, Enum):
+    Splines = "splines"
+    Skeleton = "skeleton"
+
+
 class Zone(tuple, Enum):
     All = None
     A = (0.0, 0.5)
@@ -44,6 +49,7 @@ class Tortuosity(LayerFeature):
         self,
         mode: TortuosityMode = TortuosityMode.Segments,
         measure: TortuosityMeasure = TortuosityMeasure.Distance,
+        length_measure: LengthMeasure = LengthMeasure.Splines,
         min_numpoints: int = 25,
         zone: Zone = Zone.All,
         aggregator=mean_median_std,
@@ -51,13 +57,19 @@ class Tortuosity(LayerFeature):
     ):
         self.mode = mode
         self.measure = measure
+        self.length_measure = length_measure
         self.min_numpoints = min_numpoints
         self.zone = zone
         self.aggregator = aggregator
 
     def _compute_for_segment(self, segment: Segment):
         if self.measure == TortuosityMeasure.Distance:
-            return np.mean(segment.length / segment.chord_length)
+            if self.length_measure == LengthMeasure.Splines:
+                return segment.spline.length() / segment.chord_length
+            elif self.length_measure == LengthMeasure.Skeleton:
+                return np.mean(segment.length / segment.chord_length)
+            else:
+                raise NotImplementedError()
         elif self.measure == TortuosityMeasure.Curvature:
             spline = SplineInterpolation(segment, 0.25)
             return np.mean(spline.curvatures())
@@ -81,14 +93,17 @@ class Tortuosity(LayerFeature):
             raise ValueError(f"Unknown mode {self.mode}")
         return segments
 
-    def compute(self, layer: VesselLayer):
+    def raw(self, layer: VesselLayer):
         segments = self.get_segments(layer)
         lengths = np.array([vessel.length for vessel in segments])
         tortuosities = np.array(
             [self._compute_for_segment(vessel) for vessel in segments]
         )
+        return tortuosities
+
+    def compute(self, layer: VesselLayer):
+        tortuosities = self.raw(layer)
         return self.aggregator(tortuosities)
-        # return np.sum(lengths * tortuosities) / np.sum(lengths)
 
     def explain(self):
         pass

@@ -82,6 +82,14 @@ class SplineInterpolation:
         length = np.sqrt(p.dot(p))
         return p / length
 
+    def length(self, every=1, min_values=10):
+        n_points = max(round(self.total_distance / every), min_values)
+        t = np.linspace(0, 1, n_points)
+        x, y = self.x_spline(t), self.y_spline(t)
+        points = np.stack([x, y], axis=1)
+        length = np.sum(np.sqrt(np.sum(np.diff(points, axis=0) ** 2, axis=1)))
+        return length
+
     def curvatures(self, every=5, min_values=10):
         n_points = max(round(self.total_distance / every), min_values)
 

@@ -76,18 +76,8 @@ class BifurcationAP(LayerMetric):
         layer: VesselLayer,
         oks_threshold=0.75,
     ):
-        gt_keypoints = np.array(
-            [node.position.tuple for node in gt.nodes if isinstance(node, node_type)],
-            dtype=float,
-        )
-        detections = np.array(
-            [
-                node.position.tuple
-                for node in layer.nodes
-                if isinstance(node, node_type)
-            ],
-            dtype=float,
-        )
+        gt_keypoints = [node for node in gt.nodes if isinstance(node, node_type)]
+        detections = [node for node in layer.nodes if isinstance(node, node_type)]
         fod_distance = gt.retina.fovea_location.distance_to(
             gt.retina.disc.center_of_mass
         )
@@ -103,7 +93,7 @@ class BifurcationAP(LayerMetric):
         layer: VesselLayer,
         oks_threshold=0.75,
     ):
-        metrics, _ = self.evaluate_node_type(node_type, gt, layer, oks_threshold)
+        _, metrics = self.evaluate_node_type(node_type, gt, layer, oks_threshold)
         precision = metrics["TP"] / (metrics["TP"] + metrics["FP"])
         recall = metrics["TP"] / (metrics["TP"] + metrics["FN"])
         return precision, recall
@@ -149,18 +139,6 @@ class BifurcationAP(LayerMetric):
         layer: VesselLayer,
         oks_threshold=0.75,
     ):
-        # gt_keypoints = np.array(
-        #     [node.position.tuple for node in gt.nodes if isinstance(node, node_type)],
-        #     dtype=float,
-        # )
-        # detections = np.array(
-        #     [
-        #         node.position.tuple
-        #         for node in layer.nodes
-        #         if isinstance(node, node_type)
-        #     ],
-        #     dtype=float,
-        # )
         gt_keypoints = [node for node in gt.nodes if isinstance(node, node_type)]
         detections = [node for node in layer.nodes if isinstance(node, node_type)]
         fod_distance = gt.retina.fovea_location.distance_to(
@@ -175,15 +153,14 @@ class BifurcationAP(LayerMetric):
         fig, ax = gt.plot_skeleton(ax=ax, fig=fig)
 
         threshold_distance = oks_to_distance(oks_threshold, s=fod_distance)
-        print(threshold_distance)
         for node in gt_keypoints:
             # ax.scatter(node[1], node[0], c="w", s=3, marker="x")
             ax.add_patch(
                 mpl.patches.Circle(
                     node.position.tuple_xy,
                     threshold_distance,
-                    edgecolor=(1, 0, 0, 1.0),
-                    facecolor=(1, 0, 0, 0.5),
+                    edgecolor=(0, 1, 0, 1.0),
+                    facecolor=(0, 1, 0, 0.5),
                     fill=True,
                     lw=0.5,
                 )
@@ -192,7 +169,8 @@ class BifurcationAP(LayerMetric):
         for match in matches:
             pt_gt = match[1].position
             pt_lbl = match[0].position
-            ax.plot([pt_gt.x, pt_lbl.x], [pt_gt.y, pt_lbl.y], c="g", lw=1, alpha=0.5)
+            ax.plot(*pt_lbl.tuple_xy, marker="+", color="red", markersize=5)
+            # ax.plot([pt_gt.x, pt_lbl.x], [pt_gt.y, pt_lbl.y], c="g", lw=1, alpha=0.5)
 
     def __call__(self, layer1: VesselLayer, layer2: VesselLayer) -> Any:
         pass

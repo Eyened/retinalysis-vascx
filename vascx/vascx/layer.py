@@ -20,7 +20,6 @@ from sortedcontainers import SortedListWithKey
 from vascx.analysis.vessel_resolve import RecursiveWeightedAverageResolver
 from vascx.nodes import Bifurcation, Endpoint, Node
 from vascx.segment import Segment, merge_segments
-from vascx.utils.plotting import resize_image_by_width
 from vascx.vessels import Vessels
 
 if TYPE_CHECKING:
@@ -501,7 +500,20 @@ class VesselLayer(Layer):
         # Invert the image back to original form where small holes are now filled
         return np.invert(labeled_image > 0)
 
-    def plot(self, ax=None, fig=None, color=None, xlim=None, ylim=None, resize=None):
+    def plot(
+        self,
+        ax=None,
+        fig=None,
+        mask=True,
+        color=None,
+        xlim=None,
+        ylim=None,
+        skeleton=True,
+        skeleton_color=None,
+        skeleton_dilate=None,
+        nodes=True,
+        digraph=True,
+    ):
         if ax is None:
             fig, ax = plt.subplots(1, 1, figsize=(8, 8), dpi=300)
             ax.imshow(np.zeros(self.binary.shape))
@@ -512,14 +524,26 @@ class VesselLayer(Layer):
         if color is None:
             color = self.color
 
-        colors = [(0, 0, 0, 0), (*color, 1)]
-        cmap = LinearSegmentedColormap.from_list("binary", colors, N=2)
+        if mask:
+            colors = [(0, 0, 0, 0), color]
+            cmap = LinearSegmentedColormap.from_list("binary", colors, N=2)
+            im = self.binary
+            ax.imshow(im, cmap=cmap)
 
-        # alpha = np.zeros(self.binary.shape)
-        im = self.binary
-        if resize is not None:
-            im = resize_image_by_width(im, resize)
-        ax.imshow(im, cmap=cmap)
+        if skeleton:
+            self.plot_skeleton(
+                ax,
+                fig,
+                color=skeleton_color if skeleton_color is not None else (1, 1, 1, 0.5),
+                dilate=skeleton_dilate,
+            )
+
+        if nodes:
+            self.plot_nodes(ax, fig)
+
+        if digraph:
+            self._plot_digraph(self.digraph, ax, fig)
+
         if xlim is not None:
             ax.set_xlim(*xlim)
         if ylim is not None:
@@ -536,13 +560,15 @@ class VesselLayer(Layer):
                 ax.imshow(self.retina.fundus_image)
         return fig, ax
 
-    def plot_skeleton(self, ax=None, fig=None):
+    def plot_skeleton(self, ax=None, fig=None, color=(1, 1, 1, 1), dilate=None):
         fig, ax = self._get_base_fig(fig, ax)
-        im = self.skeleton
-        cmap = plt.get_cmap("binary")
-        cmap.set_bad((0, 0, 0, 0))
-        masked = np.ma.masked_where(im == 0, im)
-        ax.imshow(masked, cmap=cmap, interpolation="nearest")
+        mask = self.skeleton
+
+        if dilate is not None:
+            mask = cv2.dilate(mask, np.ones((3, 3)), iterations=dilate)
+        colors = [(0, 0, 0, 0), color]
+        cmap = LinearSegmentedColormap.from_list("binary", colors, N=2)
+        ax.imshow(mask, cmap=cmap, interpolation="nearest")
         return fig, ax
 
     def _plot_graph(self, g: Graph, ax=None, fig=None):
@@ -556,14 +582,15 @@ class VesselLayer(Layer):
         return fig, ax
 
     def _plot_digraph(self, g: Graph, ax=None, fig=None):
-        fig, ax = self._get_base_fig(fig, ax)
         for s, e in g.edges():
             start = self.graph.nodes[s]["o"].astype(np.int32)
             end = self.graph.nodes[e]["o"].astype(np.int32)
 
             dx = end[1] - start[1]
             dy = end[0] - start[0]
-            ax.arrow(start[1], start[0], dx, dy, color="white", head_width=5, width=0.2)
+            ax.arrow(
+                start[1], start[0], dx, dy, color="white", head_width=5, linewidth=0.4
+            )
 
         return fig, ax
 
@@ -571,19 +598,22 @@ class VesselLayer(Layer):
         g = Graph(self.trees)
         return self._plot_graph(g)
 
-    def plot_digraph(self):
-        return self._plot_digraph(self.digraph)
+    def plot_digraph(self, ax=None, fig=None):
+        if ax is None:
+            fig, ax = self._get_base_fig(fig, ax)
+        return self._plot_digraph(self.digraph, ax, fig)
 
-    def plot_nodes(self):
-        fig, ax = self._get_base_fig(None, None)
-        self.plot_skeleton(ax, fig)
+    def plot_nodes(self, ax=None, fig=None):
+        if ax is None:
+            fig, ax = self._get_base_fig(None, None)
+            self.plot_skeleton(ax, fig)
         for node in self.nodes:
             if isinstance(node, Bifurcation):
-                ax.scatter(*node.position.tuple_xy, s=3, marker="^", color="g")
+                ax.scatter(*node.position.tuple_xy, s=5, marker="^", color="g")
             elif isinstance(node, Endpoint):
-                ax.scatter(*node.position.tuple_xy, s=3, marker="o", color="r")
+                ax.scatter(*node.position.tuple_xy, s=5, marker="o", color="r")
             else:
-                ax.scatter(*node.position.tuple_xy, s=3, marker="s", color="b")
+                ax.scatter(*node.position.tuple_xy, s=5, marker="s", color="b")
 
         return fig, ax
 

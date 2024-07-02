@@ -511,8 +511,8 @@ class VesselLayer(Layer):
         skeleton=True,
         skeleton_color=None,
         skeleton_dilate=None,
-        nodes=True,
-        digraph=True,
+        nodes=False,
+        digraph=False,
     ):
         if ax is None:
             fig, ax = plt.subplots(1, 1, figsize=(8, 8), dpi=300)

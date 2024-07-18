@@ -1,4 +1,3 @@
-import versioneer
 from setuptools import find_packages, setup
 
 with open("README.md", "r") as fh:
@@ -8,8 +7,8 @@ setup(
     name="vascx",
     # using versioneer for versioning using git tags
     # https://github.com/python-versioneer/python-versioneer/blob/master/INSTALL.md
-    version=versioneer.get_version(),
-    cmdclass=versioneer.get_cmdclass(),
+    # version=versioneer.get_version(),
+    # cmdclass=versioneer.get_cmdclass(),
     author="Jose Vargas",
     author_email="j.vargasquiros@erasmusmc.nl",
     description="Retinal analysis toolbox for Python",

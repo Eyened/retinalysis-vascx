@@ -6,15 +6,15 @@ from typing import TYPE_CHECKING, List, Tuple
 
 import numpy as np
 from matplotlib import pyplot as plt
-from rtnls_enface.base import Circle, LayerType
 
-from vascx.segment import Segment
-from vascx.vessels import Vessels
+from rtnls_enface.base import Circle, LayerType
+from vascx.shared.segment import Segment
+from vascx.shared.vessels import Vessels
 
 from .base import LayerFeature
 
 if TYPE_CHECKING:
-    from vascx.retina import VesselLayer
+    from vascx.fundus.layer import VesselTreeLayer
 
 
 def recursive_cre(lst, cte):
@@ -46,7 +46,7 @@ def recursive_cre(lst, cte):
 
 @dataclass
 class CRE(LayerFeature):
-    def get_circle(self, layer: VesselLayer, od_multiple=0.5):
+    def get_circle(self, layer: VesselTreeLayer, od_multiple=0.5):
         disc = layer.retina.disc
         assert disc is not None
 
@@ -56,7 +56,7 @@ class CRE(LayerFeature):
         circle = Circle(center=disc_center, r=radius)
         return circle
 
-    def get_filtered_segments(self, layer: VesselLayer, circle: Circle):
+    def get_filtered_segments(self, layer: VesselTreeLayer, circle: Circle):
         # to speed it up only at the segments with one endpoint inside and one outside of the circle
         filtered_segments = [
             seg
@@ -77,7 +77,7 @@ class CRE(LayerFeature):
         return filtered_segments
 
     def get_intersections(
-        self, layer: VesselLayer, circle: Circle
+        self, layer: VesselTreeLayer, circle: Circle
     ) -> List[Tuple[Segment, float]]:
         filtered_segments = self.get_filtered_segments(layer, circle)
 
@@ -90,7 +90,7 @@ class CRE(LayerFeature):
                     pairs.append((segment, t))
         return pairs
 
-    def plot_filtered_segments(self, layer: VesselLayer, **kwargs):
+    def plot_filtered_segments(self, layer: VesselTreeLayer, **kwargs):
         circle = self.get_circle(layer, 2 / 3)
         segments = self.get_filtered_segments(layer, circle)
         fig, ax = layer.retina.plot_fundus()
@@ -108,7 +108,7 @@ class CRE(LayerFeature):
         sc = sorted(calibers)
         return recursive_cre(sc, cte)
 
-    def compute_cre_for_circle(self, layer: VesselLayer, circle: Circle):
+    def compute_cre_for_circle(self, layer: VesselTreeLayer, circle: Circle):
         if layer.type == LayerType.ARTERIES:
             cte = 0.88
         elif layer.type == LayerType.VEINS:
@@ -126,7 +126,7 @@ class CRE(LayerFeature):
         calibers = [s.median_diameter for s in segments]
         return self.recursive_cre(calibers, cte), intersections
 
-    def plot(self, layer: VesselLayer, fig=None, ax=None, **kwargs):
+    def plot(self, layer: VesselTreeLayer, fig=None, ax=None, **kwargs):
         """This plot shows the circles used to compute CRE,
         the segments used in the CRE computation and the CRE next to each circle
         """
@@ -176,7 +176,7 @@ class CRE(LayerFeature):
 
         return fig, ax
 
-    def compute(self, layer: VesselLayer, fig=None, ax=None, **kwargs):
+    def compute(self, layer: VesselTreeLayer, fig=None, ax=None, **kwargs):
         cres = []
         for i in range(0, 6):
             circle = self.get_circle(layer, 0.5 + 0.1 * i)

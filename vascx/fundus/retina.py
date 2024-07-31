@@ -3,26 +3,26 @@ from typing import Any, Callable, Tuple, Union
 
 import cv2
 import numpy as np
-from rtnls_enface import Fundus
-from rtnls_enface.utils.image import match_resolution
-from rtnls_utils.data_loading import load_av_segmentation
 from typing_extensions import TypeAlias
 
-from vascx.features.base import FeatureSet, LayerFeature
-from vascx.layer import VesselLayer
-from vascx.segment import Segment
+from rtnls_enface import Fundus
+from rtnls_enface.utils.image import match_resolution
+from vascx.fundus.features.base import FeatureSet, LayerFeature
+from vascx.fundus.layer import VesselTreeLayer
+from vascx.shared.segment import Segment
+from vascx.utils import load_av_segmentation
 
 Aggregator: TypeAlias = Callable[[np.ndarray], np.float32]
-FeatureType: TypeAlias = Union[VesselLayer, Segment]
+FeatureType: TypeAlias = Union[VesselTreeLayer, Segment]
 
 
 class Retina(Fundus):
     @property
-    def arteries(self) -> VesselLayer:
+    def arteries(self) -> VesselTreeLayer:
         return self.layers["arteries"]
 
     @property
-    def veins(self) -> VesselLayer:
+    def veins(self) -> VesselTreeLayer:
         return self.layers["veins"]
 
     def set_retina(self, retina):
@@ -92,7 +92,7 @@ class Retina(Fundus):
                 return (1, 1, 1)
 
         layers = {
-            key: VesselLayer(val, name=key, color=get_layer_color(key))
+            key: VesselTreeLayer(val, name=key, color=get_layer_color(key))
             for key, val in layers.items()
         }
 

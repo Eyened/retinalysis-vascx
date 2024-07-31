@@ -4,17 +4,16 @@ from typing import TYPE_CHECKING, List
 
 from rtnls_enface.base import Point
 
-from vascx.segment import Segment
-
 if TYPE_CHECKING:
-    from vascx.layer import VesselLayer
+    from vascx.fundus.layer import VesselTreeLayer
+    from vascx.shared.segment import Segment
 
 
 class Node:
     def __init__(self, position: Point, node: int = None):
         self.position: Point = position
         self.node = node  # networkx node id
-        self.layer: VesselLayer = None
+        self.layer: VesselTreeLayer = None
 
 
 class Endpoint(Node):

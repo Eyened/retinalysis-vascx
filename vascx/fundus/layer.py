@@ -4,26 +4,25 @@ from typing import TYPE_CHECKING, List, Tuple, Union
 
 import cv2
 import matplotlib.pyplot as plt
-import networkx as nx
 import numpy as np
-import sknw
 from matplotlib.colors import LinearSegmentedColormap
 from networkx import DiGraph, Graph, connected_components, get_node_attributes
-from rtnls_enface.base import BinaryImage, Layer, LayerType, Point
-from rtnls_enface.disc import OpticDisc
 from rtnls_utils.eval import dice_score
 from scipy.spatial.distance import euclidean as distance_2p
 from skimage import measure
 from skimage.morphology import skeletonize as skimage_skeletonize
 from sortedcontainers import SortedListWithKey
 
-from vascx.analysis.vessel_resolve import RecursiveWeightedAverageResolver
-from vascx.nodes import Bifurcation, Endpoint, Node
-from vascx.segment import Segment, merge_segments
-from vascx.vessels import Vessels
+from rtnls_enface.base import BinaryImage, Layer, LayerType, Point
+from rtnls_enface.disc import OpticDisc
+from vascx.fundus.vessel_resolve import RecursiveWeightedAverageResolver
+from vascx.shared.graph import make_graph
+from vascx.shared.nodes import Bifurcation, Endpoint, Node
+from vascx.shared.segment import Segment, merge_segments
+from vascx.shared.vessels import Vessels
 
 if TYPE_CHECKING:
-    from vascx.retina import Retina
+    from vascx.fundus.retina import Retina
 
 
 def seg_length(seg):
@@ -41,8 +40,9 @@ def default_seg_color(seg):
 default_vessels_resolver = RecursiveWeightedAverageResolver("median_diameter")
 
 
-class VesselLayer(Layer):
-    # location of the zones in optic disc multiples from the border of the optic disc
+class VesselTreeLayer(Layer):
+    """Represents an artery or vein layer with a (probably imperfect) tree structure for the vessel graph."""
+
     zone_intervals = {"A": (0.0, 0.5), "B": (0.5, 1.0), "C": (1.0, 2.0)}
 
     def __init__(
@@ -161,74 +161,9 @@ class VesselLayer(Layer):
         return self.get_vessels()
 
     def calc_graph(self):
+        graph = make_graph(self.skeleton)
+
         segments = []
-        graph = sknw.build_sknw(self.skeleton)
-
-        def edge_from(G, edge, node):
-            node_pt = G.nodes[node]["o"]
-            pts = G[edge[0]][edge[1]]["pts"]
-            if tuple(pts[0, :]) != tuple(node_pt):
-                G[edge[0]][edge[1]]["pts"] = G[edge[0]][edge[1]]["pts"][::-1]
-            if edge[0] == node:
-                return edge
-            else:
-                return (edge[1], edge[0])
-
-        def edge_to(G, edge, node):
-            node_pt = G.nodes[node]["o"]
-            pts = G[edge[0]][edge[1]]["pts"]
-            if tuple(pts[-1, :]) != tuple(node_pt):
-                G[edge[0]][edge[1]]["pts"] = G[edge[0]][edge[1]]["pts"][::-1]
-
-            if edge[1] == node:
-                return edge
-            else:
-                return (edge[1], edge[0])
-
-        # graph may contain a few self loops. we remove them.
-        self_loops = list(nx.selfloop_edges(graph))
-        graph.remove_edges_from(self_loops)
-
-        # now we remove nodes of degree 2
-        # we substitute the their edges with a single edge
-        deg_2_nodes = [n for n in graph.nodes() if graph.degree(n) == 2]
-        while len(deg_2_nodes) > 0:
-            n = deg_2_nodes.pop()
-            edges = list(graph.edges(n))
-
-            in_edge = edge_to(graph, edges[0], n)
-            out_edge = edge_from(graph, edges[1], n)
-
-            # print(in_edge, out_edge)
-            # print(
-            #     "in_edge",
-            #     graph[in_edge[0]][in_edge[1]]["pts"][0, :],
-            #     "-",
-            #     graph[in_edge[0]][in_edge[1]]["pts"][-1, :],
-            # )
-            # print(
-            #     "out_edge",
-            #     graph[out_edge[0]][out_edge[1]]["pts"][0, :],
-            #     "-",
-            #     graph[out_edge[0]][out_edge[1]]["pts"][-1, :],
-            # )
-
-            graph.add_edge(
-                in_edge[0],
-                out_edge[1],
-                pts=np.concatenate(
-                    [
-                        graph.get_edge_data(*in_edge)["pts"][:-1, :],
-                        graph.get_edge_data(*out_edge)["pts"],
-                    ],
-                    axis=0,
-                ),
-            )
-            graph.remove_edge(*in_edge)
-            graph.remove_edge(*out_edge)
-            graph.remove_node(n)
-            deg_2_nodes = [n for n in graph.nodes() if graph.degree(n) == 2]
-
         for s, e in graph.edges():
             skl = graph[s][e]["pts"]
 
@@ -316,40 +251,6 @@ class VesselLayer(Layer):
 
         self._trees = trees
         self._digraph = digraph
-
-        # # asign the neighbors to the segments to have a segment graph
-        # for seg in segments:
-        #     edge = list(seg.id)  # contains the 1 or 2 end nodes of this edge
-        #     seg.neighbors += [
-        #         edge_to_segment[frozenset(edge)]
-        #         for edge in self.graph.edges(edge[0])
-        #         if frozenset(edge) != seg.id
-        #     ]
-        #     if len(edge) > 1:
-        #         seg.neighbors += [
-        #             edge_to_segment[frozenset(edge)]
-        #             for edge in self.graph.edges(edge[1])
-        #             if frozenset(edge) != seg.id
-        #         ]
-
-        # # assign pixels from segmentation to segments
-        # skeleton_pixel_to_segment = {
-        #     (p[0], p[1]): i for i, s in enumerate(segments) for p in s.skeleton
-        # }
-
-        # img = self.skeleton.astype(np.uint8) * 255
-        # x_closest, y_closest = distance_transform_edt(
-        #     ~img, return_distances=False, return_indices=True
-        # )
-
-        # binary = self.binary if self.disc is None else self.binary & ~self.disc.mask
-        # for x, y in zip(*np.where(binary)):
-        #     closest_point = (x_closest[x, y], y_closest[x, y])
-        #     if closest_point in skeleton_pixel_to_segment:
-        #         segment_index = skeleton_pixel_to_segment[closest_point]
-        #         segments[segment_index].pixels.append((x, y))
-
-        # self._segments = segments
 
     def calc_nodes(self):
         nodes = []
@@ -461,9 +362,9 @@ class VesselLayer(Layer):
 
     def extract_zone(self, zone_name):
         assert (
-            zone_name in VesselLayer.zone_intervals
-        ), f"Zone {zone_name} not recognized. Only valid values are {str(VesselLayer.zone_intervals.keys())}"
-        inner, outer = VesselLayer.zone_intervals[zone_name]
+            zone_name in VesselTreeLayer.zone_intervals
+        ), f"Zone {zone_name} not recognized. Only valid values are {str(VesselTreeLayer.zone_intervals.keys())}"
+        inner, outer = VesselTreeLayer.zone_intervals[zone_name]
         zone_mask = np.zeros(self.mask.shape, dtype=np.uint8)
 
         radius = round(self.retina.disc.radius + outer * self.retina.disc.diameter)
@@ -684,7 +585,7 @@ class VesselLayer(Layer):
         ax.imshow(im, cmap="viridis")
         return fig, ax
 
-    def dice(self, layer: VesselLayer, remove_disk=True):
+    def dice(self, layer: VesselTreeLayer, remove_disk=True):
         mask1 = self.get_binary(remove_disk)
         mask2 = layer.get_binary(remove_disk)
 

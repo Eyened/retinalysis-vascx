@@ -2,9 +2,10 @@ from typing import Any, List
 
 import matplotlib as mpl
 import numpy as np
-from vascx.layer import VesselLayer
-from vascx.metrics.base import LayerMetric
-from vascx.nodes import Node
+from vascx.fundus.layer import VesselTreeLayer
+from vascx.shared.nodes import Node
+
+from .base import LayerMetric
 
 
 def calculate_OKS(detections, gt_keypoint, s, k=0.1):
@@ -72,8 +73,8 @@ class BifurcationAP(LayerMetric):
     def evaluate_node_type(
         self,
         node_type,
-        gt: VesselLayer,
-        layer: VesselLayer,
+        gt: VesselTreeLayer,
+        layer: VesselTreeLayer,
         oks_threshold=0.75,
     ):
         gt_keypoints = [node for node in gt.nodes if isinstance(node, node_type)]
@@ -89,8 +90,8 @@ class BifurcationAP(LayerMetric):
     def precision_recall(
         self,
         node_type,
-        gt: VesselLayer,
-        layer: VesselLayer,
+        gt: VesselTreeLayer,
+        layer: VesselTreeLayer,
         oks_threshold=0.75,
     ):
         _, metrics = self.evaluate_node_type(node_type, gt, layer, oks_threshold)
@@ -98,7 +99,9 @@ class BifurcationAP(LayerMetric):
         recall = metrics["TP"] / (metrics["TP"] + metrics["FN"])
         return precision, recall
 
-    def edge_recall(self, gt: VesselLayer, layer: VesselLayer, oks_threshold=0.75):
+    def edge_recall(
+        self, gt: VesselTreeLayer, layer: VesselTreeLayer, oks_threshold=0.75
+    ):
         fod_distance = gt.retina.fovea_location.distance_to(
             gt.retina.disc.center_of_mass
         )
@@ -135,8 +138,8 @@ class BifurcationAP(LayerMetric):
     def plot_matches_node_type(
         self,
         node_type,
-        gt: VesselLayer,
-        layer: VesselLayer,
+        gt: VesselTreeLayer,
+        layer: VesselTreeLayer,
         oks_threshold=0.75,
     ):
         gt_keypoints = [node for node in gt.nodes if isinstance(node, node_type)]
@@ -172,5 +175,5 @@ class BifurcationAP(LayerMetric):
             ax.plot(*pt_lbl.tuple_xy, marker="+", color="red", markersize=5)
             # ax.plot([pt_gt.x, pt_lbl.x], [pt_gt.y, pt_lbl.y], c="g", lw=1, alpha=0.5)
 
-    def __call__(self, layer1: VesselLayer, layer2: VesselLayer) -> Any:
+    def __call__(self, layer1: VesselTreeLayer, layer2: VesselTreeLayer) -> Any:
         pass

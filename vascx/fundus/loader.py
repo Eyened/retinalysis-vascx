@@ -4,8 +4,7 @@ from pathlib import Path
 from typing import List, Union
 
 from rtnls_enface.loader import FundusLoader
-
-from vascx.retina import Retina
+from vascx.fundus.retina import Retina
 
 
 class RetinaLoader(FundusLoader):

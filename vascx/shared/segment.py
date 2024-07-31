@@ -4,20 +4,20 @@ from typing import TYPE_CHECKING, List, Tuple, Union
 
 import matplotlib.pyplot as plt
 import numpy as np
-from rtnls_enface.base import Line, Point, TuplePoint
 from scipy.spatial.distance import euclidean as distance_2p
 from sklearn.linear_model import TheilSenRegressor
 
-from vascx.diameters import (
+from rtnls_enface.base import Line, Point, TuplePoint
+from vascx.shared.diameters import (
     DiameterMeasurement,
     retipy_vessel_diameters,
     segment_interpolate,
 )
-from vascx.splines import SplineInterpolation
+from vascx.shared.splines import SplineInterpolation
 from vascx.utils.plotting import find_bounding_box
 
 if TYPE_CHECKING:
-    from vascx.layer import VesselLayer
+    from vascx.fundus.layer import VesselTreeLayer
 
 
 class Segment:
@@ -29,7 +29,7 @@ class Segment:
         self.edge = edge
         self.pixels = []
 
-        self.layer: VesselLayer = None
+        self.layer: VesselTreeLayer = None
 
         self._spline = None
         self._diameter_measurements: List[DiameterMeasurement] = None

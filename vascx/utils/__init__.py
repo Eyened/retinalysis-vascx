@@ -1,57 +1,50 @@
-def bounding_box(points):
-    """
-    Returns the tightest bounding box for a list of 2D points.
+import numpy as np
 
-    Args:
-    - points (list of tuple): List of 2D points where each point is represented as (x, y)
-
-    Returns:
-    - (tuple): A tuple containing two tuples. The first tuple represents the bottom-left corner of the bounding box
-               and the second tuple represents the top-right corner of the bounding box.
-    """
-
-    min_x, min_y = float("inf"), float("inf")
-    max_x, max_y = float("-inf"), float("-inf")
-
-    for x, y in points:
-        min_x = min(min_x, x)
-        min_y = min(min_y, y)
-        max_x = max(max_x, x)
-        max_y = max(max_y, y)
-
-    return ((min_x, min_y), (max_x, max_y))
+from rtnls_enface.utils.data_loading import open_mask
 
 
-def pad_bounding_box(corner1, corner2, padding):
-    """
-    Pads a bounding box by a specified number of pixels.
+def load_av_segmentation(fpath, threshold=0.5):
+    im = open_mask(fpath)
 
-    Args:
-    - corner1 (tuple): Top-left corner coordinates as (x1, y1).
-    - corner2 (tuple): Bottom-right corner coordinates as (x2, y2).
-    - padding (int): Number of pixels to pad the bounding box.
+    if len(im.shape) == 2:
+        # single channel image
+        red = np.zeros((im.shape[0], im.shape[1]))
+        red[(im == 1)] = 1
 
-    Returns:
-    - (tuple): A tuple containing two tuples. The first tuple represents the new top-left corner and the second
-               tuple represents the new bottom-right corner of the padded bounding box.
-    """
-    x1, y1 = corner1
-    x2, y2 = corner2
+        blue = np.zeros((im.shape[0], im.shape[1]))
+        blue[(im == 2)] = 1
 
-    return ((x1 - padding, y1 - padding), (x2 + padding, y2 + padding))
+        green = np.zeros((im.shape[0], im.shape[1]))
+        green[(im == 3)] = 1
 
+        return {
+            "arteries": np.logical_or(red, green),
+            "veins": np.logical_or(blue, green),
+        }
 
-def concat(*args):
-    """
-    Concatenates an arbitrary number of lists.
+    else:
+        # three-channel image
+        if len(np.unique(im)) > 2:
+            t = round(threshold * np.max(im))
+            bin = np.empty(im.shape)
+            bin[im < t] = 0
+            bin[im >= t] = 1
+            im = bin
 
-    Args:
-    - *args (multiple lists): An arbitrary number of lists to be concatenated.
+        unique_vals = np.unique(im)
+        assert len(unique_vals) <= 2, f"found unique {np.unique(im)}"
+        white_value = unique_vals[1] if len(unique_vals) > 1 else 1.0
 
-    Returns:
-    - list: A concatenated list.
-    """
-    result = []
-    for lst in args:
-        result.extend(lst)
-    return result
+        red = np.zeros((im.shape[0], im.shape[1]))
+        red[(im[:, :, 0] == white_value)] = 1
+
+        green = np.zeros((im.shape[0], im.shape[1]))
+        green[(im[:, :, 1] == white_value)] = 1
+
+        blue = np.zeros((im.shape[0], im.shape[1]))
+        blue[(im[:, :, 2] == white_value)] = 1
+
+        return {
+            "arteries": np.logical_or(red, green),
+            "veins": np.logical_or(blue, green),
+        }

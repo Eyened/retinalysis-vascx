@@ -4,12 +4,10 @@ from typing import TYPE_CHECKING
 
 import numpy as np
 
-from vascx.layer import VesselLayer
-
 from .base import LayerFeature
 
 if TYPE_CHECKING:
-    pass
+    from vascx.fundus.layer import VesselTreeLayer
 
 
 class Length(LayerFeature):
@@ -24,7 +22,7 @@ class Length(LayerFeature):
     ):
         self.min_numpoints = min_numpoints
 
-    def compute_with_spline(self, layer: VesselLayer):
+    def compute_with_spline(self, layer: VesselTreeLayer):
         segments = [
             segment
             for segment in layer.segments
@@ -32,7 +30,7 @@ class Length(LayerFeature):
         ]
         return np.mean([segment.spline.length() for segment in segments])
 
-    def compute(self, layer: VesselLayer):
+    def compute(self, layer: VesselTreeLayer):
         segments = [
             segment
             for segment in layer.segments

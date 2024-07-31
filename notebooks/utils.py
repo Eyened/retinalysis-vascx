@@ -1,12 +1,8 @@
-import os
-from pathlib import Path
-import pandas as pd
-from tqdm.notebook import tqdm
 from joblib import Parallel, delayed
-
-from vascx import Retina
-from vascx.features import Tortuosity
-from vascx.features.tortuosity import TortuosityMeasure, Zone
+from tqdm.notebook import tqdm
+from vascx.fundus.features import Tortuosity
+from vascx.fundus.features.tortuosity import TortuosityMeasure, Zone
+from vascx.fundus.retina import Retina
 
 
 def process_one(av_path, disc_path, scaling_factor, id=None):

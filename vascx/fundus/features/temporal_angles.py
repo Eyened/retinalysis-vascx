@@ -7,15 +7,15 @@ from typing import TYPE_CHECKING, List, Tuple
 
 import numpy as np
 from matplotlib import pyplot as plt
-from rtnls_enface.base import Circle, Line, Point
 
-from vascx.vessels import Vessels
+from rtnls_enface.base import Circle, Line, Point
+from vascx.shared.vessels import Vessels
 
 from .base import LayerFeature
 
 if TYPE_CHECKING:
-    from vascx.retina import VesselLayer
-    from vascx.segment import Segment
+    from vascx.fundus.layer import VesselTreeLayer
+    from vascx.shared.segment import Segment
 
 
 @dataclass
@@ -23,7 +23,7 @@ class TemporalAngle(LayerFeature):
     od_to_fovea_fraction: float = 2 / 3
     increment: float = 0.03
 
-    def get_circle(self, layer: VesselLayer, fractional_distance=0.5):
+    def get_circle(self, layer: VesselTreeLayer, fractional_distance=0.5):
         disc = layer.retina.disc
         assert disc is not None
 
@@ -35,7 +35,7 @@ class TemporalAngle(LayerFeature):
         circle = Circle(center=disc_center, r=radius)
         return circle
 
-    def get_filtered_segments(self, layer: VesselLayer, circle: Circle):
+    def get_filtered_segments(self, layer: VesselTreeLayer, circle: Circle):
         # to speed it up only at the segments with one endpoint inside and one outside of the circle
         filtered_segments = [
             seg
@@ -51,7 +51,7 @@ class TemporalAngle(LayerFeature):
         ]
         return filtered_segments
 
-    def get_intersections(self, layer: VesselLayer, circle: Circle):
+    def get_intersections(self, layer: VesselTreeLayer, circle: Circle):
         filtered_segments = self.get_filtered_segments(layer, circle)
 
         # for now we measure on the segments directly
@@ -63,7 +63,9 @@ class TemporalAngle(LayerFeature):
                     pairs.append((segment, t))
         return pairs
 
-    def get_pair(self, layer: VesselLayer, intersections: List[Tuple[Segment, float]]):
+    def get_pair(
+        self, layer: VesselTreeLayer, intersections: List[Tuple[Segment, float]]
+    ):
         od_center = layer.disc.center_of_mass
         pairs = []
         for (s1, t1), (s2, t2) in combinations(intersections, 2):
@@ -80,7 +82,7 @@ class TemporalAngle(LayerFeature):
         else:
             return None
 
-    def plot_filtered_segments(self, layer: VesselLayer, **kwargs):
+    def plot_filtered_segments(self, layer: VesselTreeLayer, **kwargs):
         circle = self.get_circle(layer, self.od_to_fovea_fraction)
         segments = self.get_filtered_segments(layer, circle)
         fig, ax = layer.retina.plot_fundus()
@@ -149,7 +151,7 @@ class TemporalAngle(LayerFeature):
             )
         return fig, ax
 
-    def plot_intersections(self, layer: VesselLayer, **kwargs):
+    def plot_intersections(self, layer: VesselTreeLayer, **kwargs):
         circle = self.get_circle(layer, 0.5)
         intersections = self.get_intersections(layer, circle)
 
@@ -174,7 +176,7 @@ class TemporalAngle(LayerFeature):
         for p in points:
             ax.scatter(x=p[1], y=p[0], c="blue", s=1)
 
-    def compute(self, layer: VesselLayer, **kwargs):
+    def compute(self, layer: VesselTreeLayer, **kwargs):
         angles = []
         for i in range(0, 5):
             circle = self.get_circle(

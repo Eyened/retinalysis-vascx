@@ -1,6 +1,3 @@
-import cv2
-
-
 def find_bounding_box(points, padding=10):
     """
     Find the bounding box for a list of points.
@@ -39,29 +36,3 @@ def pad_bounding_box(top_left, bottom_right, padding):
     new_bottom_right = (x2 + padding, y2 + padding)
 
     return new_top_left, new_bottom_right
-
-
-def resize_image_by_height(image, new_width):
-    """
-    Resize an image to a specific width while maintaining its aspect ratio.
-
-    :param image: The input image as a NumPy array.
-    :param new_width: The desired new width of the image.
-    :return: The resized image.
-    """
-    # Get the original dimensions of the image
-    original_height, original_width = image.shape[:2]
-
-    # Calculate the new height to maintain the aspect ratio
-    aspect_ratio = original_height / original_width
-    new_height = int(new_width * aspect_ratio)
-
-    # Resize the image
-    resized_image = cv2.resize(
-        image, (new_width, new_height), interpolation=cv2.INTER_AREA
-    )
-
-    return resized_image
-
-
-resize_image_by_width = resize_image_by_height

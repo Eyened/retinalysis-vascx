@@ -4,11 +4,12 @@ from dataclasses import dataclass
 from typing import TYPE_CHECKING, List, Tuple
 
 import numpy as np
+
 from rtnls_enface.base import TuplePoint
-from vascx.splines import SplineInterpolation
+from vascx.shared.splines import SplineInterpolation
 
 if TYPE_CHECKING:
-    from vascx.layer import Segment
+    from .segment import Segment
 
 
 @dataclass

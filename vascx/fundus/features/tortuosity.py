@@ -6,13 +6,13 @@ from typing import TYPE_CHECKING
 
 import numpy as np
 
-from vascx.analysis.aggregators import mean_median_std
-from vascx.segment import Segment, SplineInterpolation
+from vascx.shared.aggregators import mean_median_std
+from vascx.shared.segment import Segment, SplineInterpolation
 
 from .base import LayerFeature
 
 if TYPE_CHECKING:
-    from vascx.retina import VesselLayer
+    from vascx.fundus.layer import VesselTreeLayer
 
 
 class TortuosityMode(str, Enum):
@@ -79,7 +79,7 @@ class Tortuosity(LayerFeature):
         else:
             raise NotImplementedError()
 
-    def get_segments(self, layer: VesselLayer):
+    def get_segments(self, layer: VesselTreeLayer):
         if self.mode == TortuosityMode.Segments:
             segments = layer.segments
             segments = [
@@ -93,7 +93,7 @@ class Tortuosity(LayerFeature):
             raise ValueError(f"Unknown mode {self.mode}")
         return segments
 
-    def raw(self, layer: VesselLayer):
+    def raw(self, layer: VesselTreeLayer):
         segments = self.get_segments(layer)
         lengths = np.array([vessel.length for vessel in segments])
         tortuosities = np.array(
@@ -101,7 +101,7 @@ class Tortuosity(LayerFeature):
         )
         return tortuosities
 
-    def compute(self, layer: VesselLayer):
+    def compute(self, layer: VesselTreeLayer):
         tortuosities = self.raw(layer)
         return self.aggregator(tortuosities)
 

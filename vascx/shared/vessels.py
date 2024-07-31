@@ -5,7 +5,7 @@ from typing import Callable, List, Union
 import numpy as np
 from matplotlib import pyplot as plt
 
-from vascx.segment import Segment
+from vascx.shared.segment import Segment
 
 
 def default_seg_color(seg):

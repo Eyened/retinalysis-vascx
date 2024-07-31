@@ -8,12 +8,12 @@ from rtnls_enface.base import Point
 from .base import LayerFeature
 
 if TYPE_CHECKING:
-    from vascx.retina import VesselLayer
+    from vascx.fundus.layer import VesselTreeLayer
 
 
 @dataclass
 class BifurcationCount(LayerFeature):
-    def get_bifurcation_points(self, layer: VesselLayer):
+    def get_bifurcation_points(self, layer: VesselTreeLayer):
         bifurcations = [
             Point(*layer.graph.nodes[n]["o"])
             for n in layer.graph.nodes()
@@ -21,11 +21,11 @@ class BifurcationCount(LayerFeature):
         ]
         return bifurcations
 
-    def compute(self, layer: VesselLayer):
+    def compute(self, layer: VesselTreeLayer):
         bifurcations = self.get_bifurcation_points(layer)
         return len(bifurcations)
 
-    def plot(self, layer: VesselLayer, **kwargs):
+    def plot(self, layer: VesselTreeLayer, **kwargs):
         fig, ax = layer.vessels.plot(
             cmap="binary",
             color=lambda x: 1,

@@ -3,8 +3,9 @@ from typing import Any
 
 import numpy as np
 from rtnls_utils.data_loading import load_image
+from vascx.faz.features.base import FazLayerFeature
 from vascx.faz.layer import FazLayer
-from vascx.fundus.features.base import FeatureSet, LayerFeature
+from vascx.shared.features import FeatureSet
 from vascx.utils import load_av_segmentation
 
 from rtnls_enface.faz_enface import FAZEnface
@@ -25,7 +26,7 @@ class Retina(FAZEnface):
 
     def calc_features(self, feature_set: FeatureSet):
         layer_features = {
-            p: fn for p, fn in feature_set.items() if isinstance(fn, LayerFeature)
+            p: fn for p, fn in feature_set.items() if isinstance(fn, FazLayerFeature)
         }
 
         all_features = {}

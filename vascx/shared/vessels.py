@@ -70,14 +70,14 @@ class Vessels:
         filter_fn=None,
         min_length_factor=0,
         show_index=True,
-        plot_fundus=True,
+        plot_image=True,
         plot_skeleton=True,
         plot_endpoints=False,
         plot_chord=False,
         plot_spline_points=False,
         ax=None,
         fig=None,
-        cmap="viridis",
+        cmap="tab20",
         min_numpoints=4,
         min_numpoints_caliber=25,
     ):
@@ -86,8 +86,8 @@ class Vessels:
             ax.set_axis_off()
             ax.imshow(np.zeros_like(self.layer.binary), cmap="binary")
 
-        if plot_fundus and self.layer.retina is not None:
-            self.layer.retina.plot_fundus(ax=ax)
+        if plot_image and self.layer.retina is not None:
+            self.layer.retina.plot_image(ax=ax)
 
         segments = self.filter_segments_by_numpoints(min_numpoints)
 
@@ -105,7 +105,7 @@ class Vessels:
         color_values = [get_value(color, s) for s in segments]
         max_color_value = max([c for c in color_values if c is not None])
 
-        im = np.full_like(self.layer.binary, np.nan)
+        im = np.full_like(self.layer.binary, np.nan, dtype=np.float32)
         for i, segment in enumerate(segments):
             w, h = im.shape
             for p in segment.pixels:
@@ -119,8 +119,9 @@ class Vessels:
 
         cmap = plt.get_cmap(cmap)
         cmap.set_bad((0, 0, 0, 0))
-        masked = np.ma.masked_where(im == 0, im)
-        ax.imshow(masked, cmap=cmap, interpolation="nearest")
+        ax.imshow(im, cmap=cmap, interpolation="nearest")
+        # masked = np.ma.masked_where(im == 0, im)
+        # ax.imshow(masked, cmap=cmap, interpolation="nearest")
 
         for i, segment in enumerate(segments):
             if text != False:

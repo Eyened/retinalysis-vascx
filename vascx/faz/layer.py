@@ -1,27 +1,28 @@
 from __future__ import annotations
 
 from functools import cached_property
-from typing import TYPE_CHECKING, List, Tuple
+from typing import TYPE_CHECKING, Dict, List, Tuple
 
 import cv2
 import numpy as np
 from matplotlib import pyplot as plt
 from matplotlib.colors import LinearSegmentedColormap
 from networkx import DiGraph, Graph, connected_components, get_node_attributes
-from scipy.spatial.distance import euclidean as distance_2p
-from skimage import measure
+from scipy.ndimage import distance_transform_edt
 from skimage.morphology import skeletonize as skimage_skeletonize
-from vascx.shared.graph import make_graph
-from vascx.shared.nodes import Bifurcation, Endpoint
+from vascx.shared.base import VesselLayer
+from vascx.shared.graph import calc_digraph, correct_digraph, make_graph, make_nodes
+from vascx.shared.masks import binarize_and_fill, min_distance_to_edge
+from vascx.shared.nodes import Bifurcation, Endpoint, Node
 from vascx.shared.segment import Segment
 
-from rtnls_enface.base import Layer
+from rtnls_enface.base import Point
 
 if TYPE_CHECKING:
     from vascx.faz.retina import Retina
 
 
-class FazLayer(Layer):
+class FazLayer(VesselLayer):
     """Represents an artery or vein layer around the faz
     which contains many trees starting at the edges and with leaves near the FAZ
     """
@@ -40,7 +41,7 @@ class FazLayer(Layer):
 
     @cached_property
     def binary(self) -> np.ndarray:
-        return self.get_binarized()
+        return binarize_and_fill(self.mask)
 
     # STAGE 1 of processing, calc the skeleton
     @cached_property
@@ -50,70 +51,94 @@ class FazLayer(Layer):
     # STAGE 2: graph and undirected segments
     @cached_property
     def graph(self) -> Graph:
-        return make_graph(self.skeleton)
-
-    @cached_property
-    def segments(self) -> List[Segment]:
-        """List of all vessel segments
-        Each segment corresponts to an edge in the skeletonization graph
-        """
+        graph = make_graph(self.skeleton)
         segments = []
-        for s, e in self.graph.edges():
-            skl = self.graph[s][e]["pts"]
+        for s, e in graph.edges():
+            skl = graph[s][e]["pts"]
 
             seg = Segment(skl, edge=(s, e))
-            self.graph[s][e]["segment"] = seg
+            graph[s][e]["segment"] = seg
             seg.id = frozenset([s, e])
             segments.append(seg)
 
         for index, s in enumerate(segments):
             s.layer = self
             s.index = index
+        return graph
 
-        return segments
+    @cached_property
+    def undirected_segments(self) -> List[Segment]:
+        """List of all vessel segments
+        Each segment corresponts to an edge in the skeletonization graph
+        """
+        return [self.graph.edges[e]["segment"] for e in self.graph.edges()]
 
     # STAGE 3: trees / digraph and bifurcations (everything that requires direction)
     @cached_property
     def trees(self) -> List[Segment]:
         """Roots of the trees of the vasculature.
         These are nodes of a networkx graph.
-        Each edge has attached Segment instance in edge['segment]
+        Each edge has attached Segment instance in edge['segment']
         """
-        if self._trees is None:
-            self.calc_digraph()
-            self.correct_digraph()
-        return self._trees
+        return self.make_trees()
 
-    def get_binarized(self, threshold=0.5, area_threshold=25):
-        # binarize
-        bin = np.empty(self.mask.shape, dtype=np.uint8)
-        bin[self.mask < threshold] = 0
-        bin[self.mask >= threshold] = 255
+    @cached_property
+    def digraph(self) -> DiGraph:
+        """Digraph of the vasculature"""
+        digraph = calc_digraph(self.graph, self.trees)
+        digraph = correct_digraph(digraph, threshold=3)
+        for index, (s, e) in enumerate(digraph.edges()):
+            digraph[s][e]["segment"].layer = self
+            digraph[s][e]["segment"].index = index
+        return digraph
 
-        # fill in small holes in the segmentation mask
-        inverted_image = np.invert(bin)
-        labeled_image, num_features = measure.label(
-            inverted_image, return_num=True, connectivity=1, background=0
+    @cached_property
+    def segments(self) -> List[Segment]:
+        return [self.digraph.edges[e]["segment"] for e in self.digraph.edges()]
+
+    @cached_property
+    def segment_pixels(self) -> Dict[Segment, List[Tuple[int, int]]]:
+        # assign pixels from segmentation to segments
+        skeleton_pixel_to_segment = {
+            (p[0], p[1]): s for s in self.segments for p in s.skeleton
+        }
+
+        img = self.skeleton.astype(np.uint8) * 255
+        x_closest, y_closest = distance_transform_edt(
+            ~img, return_distances=False, return_indices=True
         )
-        properties = measure.regionprops(labeled_image)
-        for prop in properties:
-            if prop.area < area_threshold:
-                labeled_image[labeled_image == prop.label] = 0
 
-        # Invert the image back to original form where small holes are now filled
-        return np.invert(labeled_image > 0)
+        binary = self.binary
 
-    def calc_digraph(self):
-        """From self.graph, creates segment instances
-        Each edge in the graph is mapped to a segment
-        Each connected component is mapped to a tree (self.trees) defined by its starting segment (the one closest to the optic disc)
-        Segments are linked to their neighbors (neighbors property)
+        segment_to_pixels = {s: [] for s in self.segments}
+        for x, y in zip(*np.where(binary)):
+            closest_point = (x_closest[x, y], y_closest[x, y])
+            if closest_point in skeleton_pixel_to_segment:
+                s = skeleton_pixel_to_segment[closest_point]
+                segment_to_pixels[s].append((x, y))
+        return segment_to_pixels
+
+    def get_segment_pixels(self, segment: Segment) -> List[Tuple[int]]:
+        return self.segment_pixels[segment]
+
+    @cached_property
+    def nodes(self) -> List[Node]:
         """
-        if self.disc is None:
-            raise NotImplementedError("disc must be provided for graph analysis")
+        Nodes of a networkx graph
+        """
+        return make_nodes(self.digraph)
 
-        # make one segment per graph edge
+    @cached_property
+    def bifurcations(self) -> List[Bifurcation]:
+        """
+        Bifurcations of a networkx graph
+        """
+        return [n for n in self.nodes if isinstance(n, Bifurcation)]
 
+    def min_distance_to_edge(self, point: Point):
+        return min_distance_to_edge(self.mask, point)
+
+    def make_trees(self):
         # _trees is a list of segments, each is the root of a separate tree
         # starting from the optic disc
         trees = []
@@ -127,41 +152,13 @@ class FazLayer(Layer):
                 continue
 
             nodes_distances = [
-                (n, self.disc.distance_to_center(node_positions[n])) for n in cc_nodes
+                (n, self.min_distance_to_edge(Point(*node_positions[n])))
+                for n in cc_nodes
             ]
             closest_node = sorted(nodes_distances, key=lambda x: x[1])[0][0]
 
             trees.append(closest_node)
-
-        def dfs_create_directed(graph, start, directed_graph, visited):
-            """Create a directed graph from an undirected graph using depth-first search (DFS) traversal"""
-            visited.add(start)
-            # Iterate over each neighbor of the start node
-            for neighbor in graph[start]:
-                if neighbor not in visited:
-                    segment = graph[start][neighbor]["segment"]
-                    # make sure skeleton is in the right order
-                    if distance_2p(
-                        segment.start.tuple, graph.nodes[start]["o"]
-                    ) > distance_2p(segment.end.tuple, graph.nodes[start]["o"]):
-                        segment.reverse()
-
-                    segment.edge = (start, neighbor)
-                    directed_graph.add_edge(
-                        start, neighbor, segment=segment
-                    )  # Add edge in the direction of traversal
-                    dfs_create_directed(graph, neighbor, directed_graph, visited)
-            return directed_graph
-
-        visited = set()
-        digraph = DiGraph()
-        for node, data in self.graph.nodes(data=True):
-            digraph.add_node(node, **data)
-        for node in trees:
-            digraph = dfs_create_directed(self.graph, node, digraph, visited)
-
-        self._trees = trees
-        self._digraph = digraph
+        return trees
 
     def plot(
         self,
@@ -171,7 +168,7 @@ class FazLayer(Layer):
         color=None,
         xlim=None,
         ylim=None,
-        skeleton=True,
+        skeleton=False,
         skeleton_color=None,
         skeleton_dilate=None,
         nodes=False,
@@ -182,8 +179,8 @@ class FazLayer(Layer):
             ax.imshow(np.zeros(self.binary.shape))
             ax.set_axis_off()
 
-            if self.retina.fundus_image is not None:
-                ax.imshow(self.retina.fundus_image)
+            if self.retina.image is not None:
+                ax.imshow(self.retina.image)
         if color is None:
             color = self.color
 

@@ -27,7 +27,6 @@ class Segment:
 
         self.skeleton = skeleton
         self.edge = edge
-        self.pixels = []
 
         self.layer: VesselTreeLayer = None
 
@@ -52,6 +51,52 @@ class Segment:
     @property
     def end(self) -> Point:
         return Point(*self.skeleton[-1])
+
+    @property
+    def pixels(self) -> List[Tuple[int, int]]:
+        return self.layer.get_segment_pixels(self)
+
+    @property
+    def spline(self) -> SplineInterpolation:
+        if self._spline is None:
+            self.set_diameters()
+        return self._spline
+
+    @property
+    def length(self) -> float:
+        distance = 0
+        x, y = zip(*self.skeleton)
+        for i in range(0, len(x) - 1):
+            distance += distance_2p([x[i], y[i]], [x[i + 1], y[i + 1]])
+        return distance
+
+    @property
+    def chord_length(self) -> float:
+        return distance_2p(self.skeleton[0], self.skeleton[-1])
+
+    @property
+    def mean_diameter(self) -> float:
+        if self._mean_diameter is None:
+            self.set_diameters()
+        return self._mean_diameter
+
+    @property
+    def median_diameter(self) -> float:
+        if self._median_diameter is None:
+            self.set_diameters()
+        return self._median_diameter
+
+    @property
+    def diameters(self) -> float:
+        if self._diameter_measurements is None:
+            self.set_diameters()
+        return self._diameter_measurements
+
+    @property
+    def mean_xy(self) -> float:
+        if self._mean_xy is None:
+            self._mean_xy = self.get_mean_xy()
+        return self._mean_xy
 
     def reverse(self):
         self.skeleton = np.flip(self.skeleton, axis=0)
@@ -113,51 +158,6 @@ class Segment:
     def get_mean_xy(self):
         return np.mean(self.skeleton, axis=0)
 
-    @property
-    def spline(self) -> SplineInterpolation:
-        if self._spline is None:
-            self.set_diameters()
-        return self._spline
-
-    @property
-    def length(self) -> float:
-        distance = 0
-        x, y = zip(*self.skeleton)
-        for i in range(0, len(x) - 1):
-            distance += distance_2p([x[i], y[i]], [x[i + 1], y[i + 1]])
-        return distance * self.layer.retina.scaling_factor
-
-    @property
-    def chord_length(self) -> float:
-        return (
-            distance_2p(self.skeleton[0], self.skeleton[-1])
-            * self.layer.retina.scaling_factor
-        )
-
-    @property
-    def mean_diameter(self) -> float:
-        if self._mean_diameter is None:
-            self.set_diameters()
-        return self._mean_diameter
-
-    @property
-    def median_diameter(self) -> float:
-        if self._median_diameter is None:
-            self.set_diameters()
-        return self._median_diameter
-
-    @property
-    def diameters(self) -> float:
-        if self._diameter_measurements is None:
-            self.set_diameters()
-        return self._diameter_measurements
-
-    @property
-    def mean_xy(self) -> float:
-        if self._mean_xy is None:
-            self._mean_xy = self.get_mean_xy()
-        return self._mean_xy
-
     def mean_position(self) -> Point:
         return Point(*np.mean(self.skeleton, axis=0))
 
@@ -192,7 +192,7 @@ class Segment:
         return False
 
     def __hash__(self):
-        return hash(self.connectors)
+        return hash((self.start, self.end))
 
     def __repr__(self):
         return str(self.edge)
@@ -282,7 +282,6 @@ def merge_segments(*segments) -> Segment:
 
     skeleton = np.concatenate([s.skeleton for s in segments], axis=0)
     seg = Segment(skeleton, edge=(segments[0].edge[0], segments[-1].edge[1]))
-    seg.pixels = concatenate(*[s.pixels for s in segments])
     seg.layer = segments[0].layer
 
     return seg

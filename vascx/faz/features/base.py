@@ -3,21 +3,21 @@ from __future__ import annotations
 from abc import abstractmethod
 from typing import TYPE_CHECKING
 
-from vascx.faz.features.base import Feature
+from vascx.shared.features import Feature
 
 if TYPE_CHECKING:
-    from vascx.fundus.layer import VesselTreeLayer
+    from vascx.faz.layer import FazLayer
 
 
-class LayerFeature(Feature):
+class FazLayerFeature(Feature):
     @abstractmethod
-    def compute(self, layer: VesselTreeLayer):
+    def compute(self, layer: FazLayer):
         """Compute the feature given its parameters.
         Subclasses are free to define the type and semantics of the parameters.
         """
         pass
 
     @abstractmethod
-    def plot(self, layer: VesselTreeLayer, **kwargs):
+    def plot(self, layer: FazLayer, **kwargs):
         """Generate plots and/or written explanation about the computation of these features."""
         pass

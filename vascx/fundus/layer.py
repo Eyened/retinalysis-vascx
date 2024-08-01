@@ -1,6 +1,7 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, List, Tuple, Union
+from functools import cached_property
+from typing import TYPE_CHECKING, Dict, List, Tuple, Union
 
 import cv2
 import matplotlib.pyplot as plt
@@ -8,29 +9,21 @@ import numpy as np
 from matplotlib.colors import LinearSegmentedColormap
 from networkx import DiGraph, Graph, connected_components, get_node_attributes
 from rtnls_utils.eval import dice_score
-from scipy.spatial.distance import euclidean as distance_2p
-from skimage import measure
+from scipy.ndimage import distance_transform_edt
 from skimage.morphology import skeletonize as skimage_skeletonize
-from sortedcontainers import SortedListWithKey
 
-from rtnls_enface.base import BinaryImage, Layer, LayerType, Point
+from rtnls_enface.base import LayerType
 from rtnls_enface.disc import OpticDisc
 from vascx.fundus.vessel_resolve import RecursiveWeightedAverageResolver
-from vascx.shared.graph import make_graph
+from vascx.shared.base import VesselLayer
+from vascx.shared.graph import calc_digraph, correct_digraph, make_graph, make_nodes
+from vascx.shared.masks import binarize_and_fill
 from vascx.shared.nodes import Bifurcation, Endpoint, Node
-from vascx.shared.segment import Segment, merge_segments
+from vascx.shared.segment import Segment
 from vascx.shared.vessels import Vessels
 
 if TYPE_CHECKING:
     from vascx.fundus.retina import Retina
-
-
-def seg_length(seg):
-    x, y = zip(*seg.pixels)
-    distance = 0
-    for i in range(0, len(x) - 1):
-        distance += distance_2p([x[i], y[i]], [x[i + 1], y[i + 1]])
-    return distance
 
 
 def default_seg_color(seg):
@@ -40,10 +33,8 @@ def default_seg_color(seg):
 default_vessels_resolver = RecursiveWeightedAverageResolver("median_diameter")
 
 
-class VesselTreeLayer(Layer):
+class VesselTreeLayer(VesselLayer):
     """Represents an artery or vein layer with a (probably imperfect) tree structure for the vessel graph."""
-
-    zone_intervals = {"A": (0.0, 0.5), "B": (0.5, 1.0), "C": (1.0, 2.0)}
 
     def __init__(
         self,
@@ -60,109 +51,27 @@ class VesselTreeLayer(Layer):
             self.type = type
         self.color = color
 
-        self._binary = None
-        self._skeleton = None
-        self._graph = None
-        self._segments = None
-        self._trees = None
-        self._digraph = None
-        self._nodes = None
-        self._id_to_segment = None
-
-    def get_binary(self, remove_disk=False):
-        if remove_disk:
-            assert self.retina.disc is not None
-            mask = self.binary.copy()
-            mask[self.retina.disc.mask != 0] = 0
-            return mask
-        else:
-            return self.binary
-
     @property
     def disc(self) -> OpticDisc:
         return self.retina.disc
 
-    @property
+    @cached_property
     def binary(self) -> np.ndarray:
-        if self._binary is None:
-            self._binary = self.get_binarized()
-        return self._binary
+        return binarize_and_fill(self.mask)
 
     # STAGE 1 of processing, calc the skeleton
-    @property
+    @cached_property
     def skeleton(self) -> np.ndarray:
-        if self._skeleton is None:
-            self._skeleton = skimage_skeletonize(self.binary)[:, :]
-            if self.disc is not None:
-                # mask out the skeletonization using the disc
-                self._skeleton = self._skeleton & ~self.disc.mask
-        return self._skeleton
+        skeleton = skimage_skeletonize(self.binary)[:, :]
+        if self.disc is not None:
+            # mask out the skeletonization using the disc
+            skeleton = skeleton & ~self.disc.mask
+        return skeleton
 
     # STAGE 2: graph and undirected segments
-    @property
+    @cached_property
     def graph(self) -> Graph:
-        if self._graph is None:
-            self.calc_graph()
-        return self._graph
-
-    @property
-    def segments(self) -> List[Segment]:
-        """List of all vessel segments
-        Each segment corresponts to an edge in the skeletonization graph
-        """
-        if self._segments is None:
-            self.calc_graph()
-        return self._segments
-
-    # STAGE 3: trees / digraph and bifurcations (everything that requires direction)
-    @property
-    def trees(self) -> List[Segment]:
-        """Roots of the trees of the vasculature.
-        These are nodes of a networkx graph.
-        Each edge has attached Segment instance in edge['segment]
-        """
-        if self._trees is None:
-            self.calc_digraph()
-            self.correct_digraph()
-        return self._trees
-
-    @property
-    def digraph(self) -> DiGraph:
-        """Digraph of the vasculature"""
-        if self._digraph is None:
-            self.calc_digraph()
-            self.correct_digraph()
-        return self._digraph
-
-    @property
-    def nodes(self) -> List[Node]:
-        """
-        Nodes of a networkx graph
-        """
-        if self._nodes is None:
-            self.calc_nodes()
-
-        return self._nodes
-
-    @property
-    def bifurcations(self) -> List[Bifurcation]:
-        """
-        Bifurcations of a networkx graph
-        """
-        if self._nodes is None:
-            self.calc_nodes()
-
-        return [n for n in self.nodes if isinstance(n, Bifurcation)]
-
-    # STAGE 4: vessels
-    @property
-    def vessels(self):
-        """Resolved vessels (segments) of the vasculature, after running a vessel resolving algorithm on the trees."""
-        return self.get_vessels()
-
-    def calc_graph(self):
         graph = make_graph(self.skeleton)
-
         segments = []
         for s, e in graph.edges():
             skl = graph[s][e]["pts"]
@@ -175,34 +84,84 @@ class VesselTreeLayer(Layer):
         for index, s in enumerate(segments):
             s.layer = self
             s.index = index
-        self._graph = graph
+        return graph
 
-        self._segments = segments
-
-    def make_graph_img(self):
-        img = np.zeros((*self.binary.shape, 3), dtype=np.uint8)
-        for s, e in self.graph.edges():
-            pts = self.graph[s][e]["pts"]
-            for p in pts:
-                img[p[0], p[1], :] = 255
-
-        for n in self.graph.nodes():
-            pts = self.graph.nodes[n]["pts"]
-            for p in pts:
-                img[p[0], p[1], :] = [255, 0, 0]
-        return img
-
-    def calc_digraph(self):
-        """From self.graph, creates segment instances
-        Each edge in the graph is mapped to a segment
-        Each connected component is mapped to a tree (self.trees) defined by its starting segment (the one closest to the optic disc)
-        Segments are linked to their neighbors (neighbors property)
+    @cached_property
+    def undirected_segments(self) -> List[Segment]:
+        """List of all vessel segments
+        Each segment corresponts to an edge in the skeletonization graph
         """
-        if self.disc is None:
-            raise NotImplementedError("disc must be provided for graph analysis")
+        return [self.graph.edges[e]["segment"] for e in self.graph.edges()]
 
-        # make one segment per graph edge
+    # STAGE 3: trees / digraph and bifurcations (everything that requires direction)
+    @cached_property
+    def trees(self) -> List[Segment]:
+        """Roots of the trees of the vasculature.
+        These are nodes of a networkx graph.
+        Each edge has attached Segment instance in edge['segment']
+        """
+        return self.make_trees()
 
+    @cached_property
+    def digraph(self) -> DiGraph:
+        """Digraph of the vasculature"""
+        digraph = calc_digraph(self.graph, self.trees)
+        digraph = correct_digraph(digraph, threshold=3)
+        for index, (s, e) in enumerate(digraph.edges()):
+            digraph[s][e]["segment"].layer = self
+            digraph[s][e]["segment"].index = index
+        return digraph
+
+    @cached_property
+    def segments(self) -> List[Segment]:
+        return [self.digraph.edges[e]["segment"] for e in self.digraph.edges()]
+
+    @cached_property
+    def segment_pixels(self) -> Dict[Segment, List[Tuple[int, int]]]:
+        # assign pixels from segmentation to segments
+        skeleton_pixel_to_segment = {
+            (p[0], p[1]): s for s in self.segments for p in s.skeleton
+        }
+
+        img = self.skeleton.astype(np.uint8) * 255
+        x_closest, y_closest = distance_transform_edt(
+            ~img, return_distances=False, return_indices=True
+        )
+
+        binary = self.binary
+
+        segment_to_pixels = {s: [] for s in self.segments}
+        for x, y in zip(*np.where(binary)):
+            closest_point = (x_closest[x, y], y_closest[x, y])
+            if closest_point in skeleton_pixel_to_segment:
+                s = skeleton_pixel_to_segment[closest_point]
+                segment_to_pixels[s].append((x, y))
+        return segment_to_pixels
+
+    def get_segment_pixels(self, segment: Segment) -> List[Tuple[int]]:
+        return self.segment_pixels[segment]
+
+    @cached_property
+    def nodes(self) -> List[Node]:
+        """
+        Nodes of a networkx graph
+        """
+        return make_nodes(self.digraph)
+
+    @cached_property
+    def bifurcations(self) -> List[Bifurcation]:
+        """
+        Bifurcations of a networkx graph
+        """
+        return [n for n in self.nodes if isinstance(n, Bifurcation)]
+
+    # STAGE 4: vessels
+    @property
+    def vessels(self):
+        """Resolved vessels (segments) of the vasculature, after running a vessel resolving algorithm on the trees."""
+        return self.get_vessels()
+
+    def make_trees(self):
         # _trees is a list of segments, each is the root of a separate tree
         # starting from the optic disc
         trees = []
@@ -222,123 +181,20 @@ class VesselTreeLayer(Layer):
 
             trees.append(closest_node)
 
-        def dfs_create_directed(graph, start, directed_graph, visited):
-            """Create a directed graph from an undirected graph using depth-first search (DFS) traversal"""
-            visited.add(start)
-            # Iterate over each neighbor of the start node
-            for neighbor in graph[start]:
-                if neighbor not in visited:
-                    segment = graph[start][neighbor]["segment"]
-                    # make sure skeleton is in the right order
-                    if distance_2p(
-                        segment.start.tuple, graph.nodes[start]["o"]
-                    ) > distance_2p(segment.end.tuple, graph.nodes[start]["o"]):
-                        segment.reverse()
+        return trees
 
-                    segment.edge = (start, neighbor)
-                    directed_graph.add_edge(
-                        start, neighbor, segment=segment
-                    )  # Add edge in the direction of traversal
-                    dfs_create_directed(graph, neighbor, directed_graph, visited)
-            return directed_graph
+    def make_graph_img(self):
+        img = np.zeros((*self.binary.shape, 3), dtype=np.uint8)
+        for s, e in self.graph.edges():
+            pts = self.graph[s][e]["pts"]
+            for p in pts:
+                img[p[0], p[1], :] = 255
 
-        visited = set()
-        digraph = DiGraph()
-        for node, data in self.graph.nodes(data=True):
-            digraph.add_node(node, **data)
-        for node in trees:
-            digraph = dfs_create_directed(self.graph, node, digraph, visited)
-
-        self._trees = trees
-        self._digraph = digraph
-
-    def calc_nodes(self):
-        nodes = []
-        for node in self.digraph.nodes():
-            incoming, outgoing = (
-                list(self.digraph.in_edges(node)),
-                list(self.digraph.out_edges(node)),
-            )
-
-            if len(incoming) != 1:
-                nodes.append(Node(Point(*self.digraph.nodes[node]["o"]), node=node))
-            else:
-                if len(outgoing) == 0:
-                    nodes.append(
-                        Endpoint(Point(*self.digraph.nodes[node]["o"]), node=node)
-                    )
-                elif len(outgoing) == 2 or len(outgoing) == 3:
-                    nodes.append(
-                        Bifurcation(
-                            Point(*self.digraph.nodes[node]["o"]),
-                            incoming=self.digraph.edges[incoming[0]]["segment"],
-                            outgoing=[
-                                self.digraph.edges[e]["segment"] for e in outgoing
-                            ],
-                            node=node,
-                        )
-                    )
-                else:
-                    nodes.append(Node(Point(*self.digraph.nodes[node]["o"]), node=node))
-        self._nodes = nodes
-
-    def correct_digraph(self, threshold=10):
-        """Here we remove edges / segments less than a threshold in length
-        This avoid spurious small edges that will affect eg. bifurcation detection.
-        """
-        self._nodes = None
-        segments = [
-            self.digraph.edges[e]["segment"]
-            for e in self.digraph.edges()
-            if self.digraph.out_degree(e[1]) == 0
-        ]
-        if len(segments) == 0:
-            print("Nothing to be done")
-            return
-
-        def get_value(obj: Segment):
-            return obj.length
-
-        queue = SortedListWithKey(segments, key=get_value)
-
-        while queue[0].length < threshold:
-            seg: Segment = queue.pop(0)
-            s, e = seg.edge
-
-            if self.digraph.in_degree(e) == 1:
-                # analyze the s node
-                in_edges = list(self.digraph.in_edges(s))
-                out_edges = list(self.digraph.out_edges(s))
-
-                out_edges = [e for e in out_edges if e != seg.edge]
-
-                # this is an endpoint, may remove
-                if len(in_edges) == 1 and len(out_edges) == 1:
-                    seg1 = self.digraph.get_edge_data(*in_edges[0])["segment"]
-                    seg2 = self.digraph.get_edge_data(*out_edges[0])["segment"]
-
-                    new_segment = merge_segments(seg1, seg2)
-                    self.digraph.add_edge(
-                        seg1.edge[0], seg2.edge[1], segment=new_segment
-                    )
-
-                    # remove old edges
-                    self.digraph.remove_edge(*in_edges[0])
-                    self.digraph.remove_edge(*out_edges[0])
-                    self.digraph.remove_node(s)
-                    self.digraph.remove_node(e)
-
-                    # update the queue
-                    queue.discard(seg1)
-                    queue.discard(seg2)
-                    queue.add(new_segment)
-
-        self._segments = [
-            self.digraph.edges[e]["segment"] for e in self.digraph.edges()
-        ]
-
-    def calc_bifurcations(self):
-        raise NotImplementedError()
+        for n in self.graph.nodes():
+            pts = self.graph.nodes[n]["pts"]
+            for p in pts:
+                img[p[0], p[1], :] = [255, 0, 0]
+        return img
 
     def get_segment(self, id: int):
         for seg in self.segments:
@@ -346,60 +202,8 @@ class VesselTreeLayer(Layer):
                 return seg
         return None
 
-    def get_vessels(self, resolver=default_vessels_resolver):
-        vessels = resolver(self.trees)
-
-        vessels = [v for v in vessels if len(v.pixels) > 5]
-        return Vessels(self, vessels)
-
-    def filter_segments(self, min_length_factor) -> List[Segment]:
-        segments = self.segments
-        minimum_length = min_length_factor * np.sum(self.mask.shape).item() / 2
-        return [s for s in segments if seg_length(s) >= minimum_length]
-
     def filter_segments_by_numpoints(self, min_numpoints) -> List[Segment]:
         return [s for s in self.segments if len(s.skeleton) >= min_numpoints]
-
-    def extract_zone(self, zone_name):
-        assert (
-            zone_name in VesselTreeLayer.zone_intervals
-        ), f"Zone {zone_name} not recognized. Only valid values are {str(VesselTreeLayer.zone_intervals.keys())}"
-        inner, outer = VesselTreeLayer.zone_intervals[zone_name]
-        zone_mask = np.zeros(self.mask.shape, dtype=np.uint8)
-
-        radius = round(self.retina.disc.radius + outer * self.retina.disc.diameter)
-        zone_mask = cv2.circle(zone_mask, self.retina.disc.center, radius, 255, -1)
-
-        radius = round(self.retina.disc.radius + inner * self.retina.disc.diameter)
-        zone_mask = cv2.circle(zone_mask, self.retina.disc.center, radius, 0, -1)
-
-        # return zone_mask
-        return cv2.bitwise_and(self.mask, self.mask, mask=zone_mask)
-
-    def annotation_to_data(self, annot):
-        if annot == BinaryImage:
-            return self.binary
-        if annot == List[Segment]:
-            return self.segments
-
-    def get_binarized(self, threshold=0.5, area_threshold=25):
-        # binarize
-        bin = np.empty(self.mask.shape, dtype=np.uint8)
-        bin[self.mask < threshold] = 0
-        bin[self.mask >= threshold] = 255
-
-        # fill in small holes in the segmentation mask
-        inverted_image = np.invert(bin)
-        labeled_image, num_features = measure.label(
-            inverted_image, return_num=True, connectivity=1, background=0
-        )
-        properties = measure.regionprops(labeled_image)
-        for prop in properties:
-            if prop.area < area_threshold:
-                labeled_image[labeled_image == prop.label] = 0
-
-        # Invert the image back to original form where small holes are now filled
-        return np.invert(labeled_image > 0)
 
     def plot(
         self,
@@ -561,29 +365,14 @@ class VesselTreeLayer(Layer):
         vessels = Vessels(self, self.segments)
         return vessels.plot(fig=fig, ax=ax, **kwargs)
 
-    def plot_some_segments(self, ids, ax=None, fig=None):
-        from .utils import bounding_box, concat, pad_bounding_box
-
-        if ax is None:
-            fig, ax = plt.subplots(1, 1, figsize=(8, 8), dpi=300)
-            ax.set_axis_off()
-
-        segments = [self.get_segment(id) for id in ids]
-        all_pixels = concat(*[seg.pixels for seg in segments])
-
-        bb = bounding_box(all_pixels)
-        bb = pad_bounding_box(*bb, 5)
-
-        skl = self.skeleton.copy().astype(np.uint8)
-        for i, segment in enumerate(segments):
-            for p in segment.skeleton:
-                skl[p] = 2 + i * 2
-            for p in segment.connectors:
-                skl[p] = 2 + i * 2 + 1
-        im = skl[bb[0][0] : bb[1][0], bb[0][1] : bb[1][1]]
-
-        ax.imshow(im, cmap="viridis")
-        return fig, ax
+    def get_binary(self, remove_disk=False):
+        if remove_disk:
+            assert self.retina.disc is not None
+            mask = self.binary.copy()
+            mask[self.retina.disc.mask != 0] = 0
+            return mask
+        else:
+            return self.binary
 
     def dice(self, layer: VesselTreeLayer, remove_disk=True):
         mask1 = self.get_binary(remove_disk)

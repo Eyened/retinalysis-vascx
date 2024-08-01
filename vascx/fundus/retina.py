@@ -7,8 +7,9 @@ from typing_extensions import TypeAlias
 
 from rtnls_enface import Fundus
 from rtnls_enface.utils.image import match_resolution
-from vascx.fundus.features.base import FeatureSet, LayerFeature
+from vascx.fundus.features.base import LayerFeature
 from vascx.fundus.layer import VesselTreeLayer
+from vascx.shared.features import FeatureSet
 from vascx.shared.segment import Segment
 from vascx.utils import load_av_segmentation
 
@@ -80,6 +81,7 @@ class Retina(Fundus):
         threshold=0.5,
         scaling_factor=1,
         id: Any = None,
+        **kwargs,
     ):
         layers = load_av_segmentation(av_path, threshold)
 

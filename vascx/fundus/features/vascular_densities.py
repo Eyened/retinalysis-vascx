@@ -100,6 +100,8 @@ class VascularDensity(LayerFeature):
             -1,
         )
 
+        print(layer.binary.shape, layer.binary.dtype)
+
         # Use the mask to select pixels within the ellipse in the image
         selected_pixels = cv2.bitwise_and(layer.binary, layer.binary, mask=mask)
 

@@ -12,10 +12,7 @@ bergmann_features = FeatureSet(
         "cre": CRE(),
         # "vd": VascularDensity(),
         "diam": Caliber(aggregator=median_std),
-        "tort": Tortuosity(length_measure=LengthMeasure.Skeleton, aggregator=median),
-        "tort_splines": Tortuosity(
-            length_measure=LengthMeasure.Splines, aggregator=median
-        ),
+        "tort": Tortuosity(length_measure=LengthMeasure.Splines, aggregator=median),
         "bif": BifurcationCount(),
     },
 )

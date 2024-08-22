@@ -55,4 +55,7 @@ def extract_in_parallel(
         for w in warnings:
             logger.warning(w)
 
-    return pd.DataFrame(features)
+    df = pd.DataFrame(features)
+    if "id" in examples[0]:
+        df.index = [ex["id"] for ex in examples]
+    return df

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import warnings
 from typing import TYPE_CHECKING, List, Tuple, Union
 
 import matplotlib.pyplot as plt
@@ -144,6 +145,10 @@ class Segment:
             try:
                 measurements = self.calc_diameters_using_splines(n_points)
             except Exception:
+                warnings.warn(
+                    "Exception when using splines for diameter calculation, "
+                    "falling back to retipy."
+                )
                 # default to using retipy if there are exceptions when using splines
                 measurements = self.calc_diameters_retipy()
 

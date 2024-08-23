@@ -59,6 +59,10 @@ class VesselTreeLayer(VesselLayer):
     def binary(self) -> np.ndarray:
         return binarize_and_fill(self.mask)
 
+    @cached_property
+    def binary_nodisc(self) -> np.ndarray:
+        return self.binary & ~self.disc.mask
+
     # STAGE 1 of processing, calc the skeleton
     @cached_property
     def skeleton(self) -> np.ndarray:
@@ -128,13 +132,13 @@ class VesselTreeLayer(VesselLayer):
             ~img, return_distances=False, return_indices=True
         )
 
-        binary = self.binary
+        binary = self.binary_nodisc
 
         segment_to_pixels = {s: [] for s in self.segments}
         for x, y in zip(*np.where(binary)):
             closest_point = (x_closest[x, y], y_closest[x, y])
             if closest_point in skeleton_pixel_to_segment:
-                s = skeleton_pixel_to_segment[closest_point]
+                s = skeleton_pixel_to_segment[closest_point]  # get closest segment
                 segment_to_pixels[s].append((x, y))
         return segment_to_pixels
 
@@ -318,7 +322,8 @@ class VesselTreeLayer(VesselLayer):
         # self.calc_digraph()
         # fig, ax = self._get_base_fig(None, None)
         vessels = Vessels(self, self.segments)
-        return vessels.plot(fig=fig, ax=ax, **kwargs)
+        mask = self.disc.mask if self.disc is not None else None
+        return vessels.plot(fig=fig, ax=ax, mask=mask, **kwargs)
 
     def plot_nodes(self, ax=None, fig=None):
         if ax is None:

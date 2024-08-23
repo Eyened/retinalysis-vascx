@@ -4,13 +4,14 @@ import warnings
 from typing import TYPE_CHECKING
 
 import numpy as np
-from rtnls_enface.base import Circle, Point
 from scipy.interpolate import UnivariateSpline
 from scipy.optimize import fsolve
 from scipy.spatial.distance import euclidean as distance_2p
 
+from rtnls_enface.base import Circle, Point
+
 if TYPE_CHECKING:
-    from vascx.layer import Segment
+    from vascx.shared.segment import Segment
 
 
 class SplineInterpolation:
@@ -67,6 +68,22 @@ class SplineInterpolation:
             Returns the interpolated point on the spline at parameter t.
         """
         return np.array([self.y_spline(t), self.x_spline(t)])
+
+    def get_point_pixels(self, t_pixels: float) -> np.ndarray:
+        """
+        Args:
+            t: The parameter value along the spline (0 - 1).
+
+        Returns:
+            Returns the interpolated point on the spline at parameter t.
+        """
+        return np.array(
+            [
+                self.y_spline(t_pixels / self.total_distance),
+                self.x_spline(t_pixels / self.total_distance),
+            ],
+            dtype=int,
+        )
 
     def get_perpendicular(self, t: float) -> np.ndarray:
         """

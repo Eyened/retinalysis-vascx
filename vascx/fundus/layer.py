@@ -216,6 +216,7 @@ class VesselTreeLayer(VesselLayer):
         skeleton=True,
         skeleton_color=None,
         skeleton_dilate=None,
+        segments=False,
         nodes=False,
         digraph=False,
     ):
@@ -224,8 +225,8 @@ class VesselTreeLayer(VesselLayer):
             ax.imshow(np.zeros(self.binary.shape))
             ax.set_axis_off()
 
-            if self.retina.fundus_image is not None:
-                ax.imshow(self.retina.fundus_image)
+            if self.retina.image is not None:
+                ax.imshow(self.retina.image)
         if color is None:
             color = self.color
 
@@ -242,6 +243,9 @@ class VesselTreeLayer(VesselLayer):
                 color=skeleton_color if skeleton_color is not None else (1, 1, 1, 0.5),
                 dilate=skeleton_dilate,
             )
+
+        if segments:
+            self.plot_segments(ax, fig)
 
         if nodes:
             self.plot_nodes(ax, fig)
@@ -308,6 +312,14 @@ class VesselTreeLayer(VesselLayer):
             fig, ax = self._get_base_fig(fig, ax)
         return self._plot_digraph(self.digraph, ax, fig)
 
+    def plot_segments(self, ax=None, fig=None, **kwargs):
+        if ax is None:
+            fig, ax = self._get_base_fig(None, None)
+        # self.calc_digraph()
+        # fig, ax = self._get_base_fig(None, None)
+        vessels = Vessels(self, self.segments)
+        return vessels.plot(fig=fig, ax=ax, **kwargs)
+
     def plot_nodes(self, ax=None, fig=None):
         if ax is None:
             fig, ax = self._get_base_fig(None, None)
@@ -358,12 +370,6 @@ class VesselTreeLayer(VesselLayer):
             ax.set_ylim(*ylim)
 
         return fig, ax
-
-    def plot_segments(self, **kwargs):
-        self.calc_digraph()
-        fig, ax = self._get_base_fig(None, None)
-        vessels = Vessels(self, self.segments)
-        return vessels.plot(fig=fig, ax=ax, **kwargs)
 
     def get_binary(self, remove_disk=False):
         if remove_disk:

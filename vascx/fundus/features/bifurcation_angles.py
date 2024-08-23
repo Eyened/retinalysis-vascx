@@ -3,8 +3,6 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
-from rtnls_enface.base import Point
-
 from .base import LayerFeature
 
 if TYPE_CHECKING:
@@ -12,26 +10,17 @@ if TYPE_CHECKING:
 
 
 @dataclass
-class BifurcationCount(LayerFeature):
-    def get_bifurcation_points(self, layer: VesselTreeLayer):
-        bifurcations = [
-            Point(*layer.graph.nodes[n]["o"])
-            for n in layer.graph.nodes()
-            if layer.graph.degree(n) > 1
-        ]
-        return bifurcations
-
+class BifurcationAngles(LayerFeature):
     def compute(self, layer: VesselTreeLayer):
         bifurcations = self.get_bifurcation_points(layer)
         return len(bifurcations)
 
     def plot(self, layer: VesselTreeLayer, **kwargs):
-        fig, ax = layer.vessels.plot(
-            cmap="binary",
-            color=lambda x: 1,
-            min_numpoints=0,
-            **kwargs,
+        fig, ax = layer.plot(
+            segments=True,
         )
+
+        bifurcations = layer.bifurcations
 
         bifurcations = self.get_bifurcation_points(layer)
         for p in bifurcations:

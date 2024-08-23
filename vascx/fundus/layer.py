@@ -8,7 +8,6 @@ import matplotlib.pyplot as plt
 import numpy as np
 from matplotlib.colors import LinearSegmentedColormap
 from networkx import DiGraph, Graph, connected_components, get_node_attributes
-from rtnls_utils.eval import dice_score
 from scipy.ndimage import distance_transform_edt
 from skimage.morphology import skeletonize as skimage_skeletonize
 
@@ -21,6 +20,7 @@ from vascx.shared.masks import binarize_and_fill
 from vascx.shared.nodes import Bifurcation, Endpoint, Node
 from vascx.shared.segment import Segment
 from vascx.shared.vessels import Vessels
+from vascx.utils.eval import dice_score
 
 if TYPE_CHECKING:
     from vascx.fundus.retina import Retina

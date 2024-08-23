@@ -2,11 +2,10 @@ from pathlib import Path
 from typing import Any
 
 import numpy as np
-from rtnls_utils.data_loading import load_image
 from vascx.faz.features.base import FazLayerFeature
 from vascx.faz.layer import FazLayer
 from vascx.shared.features import FeatureSet
-from vascx.utils import load_av_segmentation
+from vascx.utils import load_av_segmentation, load_image
 
 from rtnls_enface.faz_enface import FAZEnface
 from rtnls_enface.utils.data_loading import open_mask

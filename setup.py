@@ -28,7 +28,7 @@ setup(
         "Pillow == 9.*",
         "click==8.*",
         "sknw==0.14",
-        "sortedcontainers==2.4.0*",
+        "sortedcontainers==2.4.0",
     ],
     python_requires=">=3.9",
 )

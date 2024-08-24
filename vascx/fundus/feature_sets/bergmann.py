@@ -1,4 +1,4 @@
-from vascx.fundus.features.bifurcations import BifurcationCount
+from vascx.fundus.features.bifurcation_counts import BifurcationCount
 from vascx.fundus.features.caliber import Caliber
 from vascx.fundus.features.cre import CRE
 from vascx.fundus.features.tortuosity import LengthMeasure, Tortuosity

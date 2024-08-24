@@ -6,9 +6,11 @@ import numpy as np
 from typing_extensions import TypeAlias
 
 from rtnls_enface import Fundus
+from rtnls_enface.utils.data_loading import open_binary_mask
 from rtnls_enface.utils.image import match_resolution
 from vascx.fundus.features.base import LayerFeature
 from vascx.fundus.layer import VesselTreeLayer
+from vascx.fundus.vessels_layer import FundusVesselsLayer
 from vascx.shared.features import FeatureSet
 from vascx.shared.segment import Segment
 from vascx.utils import load_av_segmentation
@@ -25,6 +27,10 @@ class Retina(Fundus):
     @property
     def veins(self) -> VesselTreeLayer:
         return self.layers["veins"]
+
+    @property
+    def vessels(self) -> FundusVesselsLayer:
+        return self.layers["vessels"]
 
     def set_retina(self, retina):
         self.retina = retina
@@ -73,9 +79,10 @@ class Retina(Fundus):
     @classmethod
     def from_file(
         cls,
-        av_path: str,
-        disc_path: Union[str, Path] = None,
-        fundus_path: Union[str, Path] = None,
+        av_path: str | Path = None,
+        vessels_path: str | Path = None,
+        disc_path: str | Path = None,
+        fundus_path: str | Path = None,
         fovea_location: Tuple[float, float] = None,
         bounds=None,
         threshold=0.5,
@@ -83,20 +90,27 @@ class Retina(Fundus):
         id: Any = None,
         **kwargs,
     ):
-        layers = load_av_segmentation(av_path, threshold)
+        assert (
+            av_path is not None or vessels_path is not None
+        ), "Either av_path or vessels_path must be provided"
 
-        def get_layer_color(layer_name):
-            if layer_name == "arteries":
-                return (1, 0, 0)
-            elif layer_name == "veins":
-                return (0, 0, 1)
-            else:
-                return (1, 1, 1)
+        layers = {}
+        if av_path is not None:
+            av_layers = load_av_segmentation(av_path, threshold)
 
-        layers = {
-            key: VesselTreeLayer(val, name=key, color=get_layer_color(key))
-            for key, val in layers.items()
-        }
+            def get_layer_color(layer_name):
+                if layer_name == "arteries":
+                    return (1, 0, 0)
+                elif layer_name == "veins":
+                    return (0, 0, 1)
+                else:
+                    return (1, 1, 1)
+
+            for key, val in av_layers.items():
+                layers[key] = VesselTreeLayer(val, name=key, color=get_layer_color(key))
+
+        if vessels_path is not None:
+            layers["vessels"] = FundusVesselsLayer(open_binary_mask(vessels_path))
 
         retina = cls(
             disc_path_or_mask=disc_path,
@@ -107,6 +121,5 @@ class Retina(Fundus):
             bounds=bounds,
             id=id,
         )
-        retina.id = Path(av_path).stem
 
         return retina

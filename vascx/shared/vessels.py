@@ -74,7 +74,6 @@ class Vessels:
         plot_chord=False,
         plot_spline_points=False,
         ax=None,
-        fig=None,
         cmap="tab20",
         min_numpoints=4,
         min_numpoints_caliber=25,

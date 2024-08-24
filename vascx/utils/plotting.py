@@ -1,3 +1,36 @@
+import cv2
+import numpy as np
+from matplotlib import pyplot as plt
+from matplotlib.colors import LinearSegmentedColormap
+from networkx import DiGraph, Graph
+
+
+def plot_mask(ax: plt.Axes, mask, color=(1, 1, 1, 1), dilate=None):
+    if dilate is not None:
+        mask = cv2.dilate(mask, np.ones((3, 3)), iterations=dilate)
+    colors = [(0, 0, 0, 0), color]
+    cmap = LinearSegmentedColormap.from_list("binary", colors, N=2)
+    ax.imshow(mask, cmap=cmap, interpolation="nearest")
+
+
+def plot_graph(ax: plt.Axes, graph: Graph):
+    for s, e in graph.edges():
+        start = graph.nodes[s]["o"]
+        end = graph.nodes[e]["o"]
+
+        ax.plot([start[1], end[1]], [start[0], end[0]], color="white", markersize=2)
+
+
+def plot_digraph(ax: plt.Axes, graph: DiGraph):
+    for s, e in graph.edges():
+        start = graph.nodes[s]["o"].astype(np.int32)
+        end = graph.nodes[e]["o"].astype(np.int32)
+
+        dx = end[1] - start[1]
+        dy = end[0] - start[0]
+        ax.arrow(start[1], start[0], dx, dy, color="white", head_width=5, linewidth=0.4)
+
+
 def find_bounding_box(points, padding=10):
     """
     Find the bounding box for a list of points.

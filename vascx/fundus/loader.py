@@ -1,29 +1,15 @@
 import os
 import warnings
 from pathlib import Path
-from typing import List, Union
+from typing import Union
 
 from rtnls_enface.loader import FundusLoader
 from vascx.fundus.retina import Retina
 
 
 class RetinaLoader(FundusLoader):
-    def __init__(self, av_paths: List[str], *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.av_paths = av_paths
-        self.num_items = self._check_lengths(
-            av_paths,
-            self.disc_paths,
-            self.fundus_paths,
-            self.fovea_locations,
-            self.metadata,
-            self.ids,
-        )
-
-    def _get_one(self, index):
-        args = super()._get_one_dict(index)
-        args["av_path"] = self.av_paths[index]
-        return Retina.from_file(**args)
+    def make_object(self, id):
+        return Retina.from_file(**self.get_item(id))
 
     @classmethod
     def from_paths(
@@ -33,58 +19,56 @@ class RetinaLoader(FundusLoader):
             raise ValueError(
                 "One of av_paths, disc_paths or fundus_paths must be provided"
             )
-        (av_paths, disc_paths, fundus_paths), stems = cls._get_filenames(
-            av_paths, disc_paths, fundus_paths
-        )
-        fovea_locations = cls._read_fovea_locations(fovea_locations_path, stems)
-        metadata = cls._read_meta(meta_path, stems)
-        return cls(av_paths, disc_paths, fundus_paths, fovea_locations, metadata, stems)
+        items = cls._get_items_from_files(av_paths, disc_paths, fundus_paths)
+        cls._add_fovea_locations(items, fovea_locations_path)
+        cls._add_meta(items, meta_path)
+        return cls(items)
 
     @classmethod
     def from_folders(
         cls,
         av_folder: str = None,
+        vessels_folder: str = None,
         discs_folder: str = None,
         fundus_folder: str = None,
         fovea_locations_csv: str = None,
         meta_csv: str = None,
     ):
-        av_paths = (
-            sorted(list(Path(av_folder).glob("*.png")))
-            if av_folder is not None
-            else None
+        items = cls._get_items_from_folders(
+            av_path=av_folder,
+            disc_path=discs_folder,
+            fundus_path=fundus_folder,
+            vessels_path=vessels_folder,
         )
-        disc_paths = (
-            sorted(list(Path(discs_folder).glob("*.png")))
-            if discs_folder is not None
-            else None
-        )
-        fundus_paths = (
-            sorted(list(Path(fundus_folder).glob("*.png")))
-            if fundus_folder is not None
-            else None
-        )
-        (av_paths, disc_paths, fundus_paths), stems = cls._get_filenames(
-            av_paths, disc_paths, fundus_paths
-        )
-        fovea_locations = cls._read_fovea_locations(fovea_locations_csv, stems)
-        metadata = cls._read_meta(meta_csv, stems)
+        cls._add_fovea_locations(items, fovea_locations_csv)
+        cls._add_meta(items, meta_csv)
 
-        return cls(
-            av_paths, disc_paths, fundus_paths, fovea_locations, metadata, ids=stems
-        )
+        return cls(items)
 
     @classmethod
     def from_folder(
         cls,
-        base_folder: Union[str, Path],
+        base: Union[str, Path],
         av_subfolder: str = "av",
+        vessels_subfolder: str = "vessels",
         discs_subfolder: str = "discs",
         fundus_subfolder: str = "rgb",
         fovea_locations_csv: str = "fovea.csv",
         meta_csv: str = "meta.csv",
     ):
-        base = Path(base_folder)
+        base = Path(base)
+        if not os.path.exists(base / av_subfolder):
+            warnings.warn(f"folder {base/av_subfolder} not found")
+            av_subfolder = None
+        if not os.path.exists(base / vessels_subfolder):
+            warnings.warn(f"folder {base/vessels_subfolder} not found")
+            vessels_subfolder = None
+        if not os.path.exists(base / discs_subfolder):
+            warnings.warn(f"folder {base/discs_subfolder} not found")
+            discs_subfolder = None
+        if not os.path.exists(base / fundus_subfolder):
+            warnings.warn(f"folder {base/fundus_subfolder} not found")
+            fundus_subfolder = None
         if not os.path.exists(base / meta_csv):
             warnings.warn(f"file {base/meta_csv} not found")
             meta_csv = None
@@ -93,14 +77,9 @@ class RetinaLoader(FundusLoader):
             fovea_locations_csv = None
         return cls.from_folders(
             base / av_subfolder if av_subfolder is not None else None,
+            base / vessels_subfolder if vessels_subfolder is not None else None,
             base / discs_subfolder if discs_subfolder is not None else None,
             base / fundus_subfolder if fundus_subfolder is not None else None,
             base / fovea_locations_csv if fovea_locations_csv is not None else None,
             base / meta_csv if meta_csv is not None else None,
         )
-
-    def to_dict(self):
-        res = super().to_dict()
-        for el, av_path in zip(res, self.av_paths):
-            el["av_path"] = av_path
-        return res

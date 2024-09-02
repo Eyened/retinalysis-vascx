@@ -12,10 +12,14 @@ To install the entire fundus analysis pipeline including fundus preprocessing, m
 
 3. Download the vascx models and place them in the folder pointed by `$RTNLS_MODEL_RELEASES`.
 
-4. Install retinalysis-enface:
+4. Install retinalysis-enface and retinalysis-fundusprep:
 ```
 git clone git@github.com:Eyened/retinalysis-enface.git rtnls_enface
 cd rtnls_enface
+pip install -e .
+
+git clone git@github.com:Eyened/retinalysis-fundusprep.git rtnls_fundusprep
+cd rtnls_fundusprep
 pip install -e .
 ```
 

@@ -26,6 +26,7 @@ setup(
         "opencv-python == 4.*",
         "matplotlib==3.*",
         "joblib==1.*",
+        "tqdm == 4.*",
         "Pillow == 9.*",
         "click==8.*",
         "sknw==0.14",

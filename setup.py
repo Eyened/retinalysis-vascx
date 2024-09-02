@@ -22,6 +22,7 @@ setup(
         "numpy == 1.*",
         "pandas == 2.*",
         "scikit-learn==1.*",
+        "scipy == 1.*",
         "opencv-python == 4.*",
         "matplotlib==3.*",
         "joblib==1.*",
@@ -29,6 +30,7 @@ setup(
         "click==8.*",
         "sknw==0.14",
         "sortedcontainers==2.4.0",
+        "scikit-image == 0.24.0",
     ],
     python_requires=">=3.9",
 )

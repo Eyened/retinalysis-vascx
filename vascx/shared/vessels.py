@@ -193,4 +193,4 @@ class Vessels:
                         color="black",
                     )
 
-        return fig, ax
+        return ax

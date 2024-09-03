@@ -31,8 +31,9 @@ class BifurcationAngles(LayerFeature):
         bifurcations = self.get_bifurcation_points(layer)
         return len(bifurcations)
 
-    def plot(self, layer: VesselTreeLayer, **kwargs):
-        fig, ax = layer.plot(
+    def plot(self, ax, layer: VesselTreeLayer, **kwargs):
+        ax = layer.plot(
+            ax=ax,
             segments=True,
         )
 
@@ -83,3 +84,4 @@ class BifurcationAngles(LayerFeature):
                 fontsize=3.6,
                 color="white",
             )
+        return ax

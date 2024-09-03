@@ -152,7 +152,7 @@ class BifurcationAP(LayerMetric):
             detections, gt_keypoints, s=fod_distance, oks_threshold=oks_threshold
         )
 
-        fig, ax = gt._get_base_fig(None, None)
+        fig, ax = gt._get_base_axes(None, None)
         fig, ax = gt.plot_skeleton(ax=ax, fig=fig)
 
         threshold_distance = oks_to_distance(oks_threshold, s=fod_distance)

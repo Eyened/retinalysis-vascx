@@ -68,18 +68,16 @@ class Vessels:
         text: Union[Callable, str] = None,
         color: Union[Callable, str] = default_seg_color,
         filter_fn=None,
-        min_length_factor=0,
         show_index=True,
         plot_image=True,
-        plot_skeleton=True,
         plot_endpoints=False,
         plot_chord=False,
         plot_spline_points=False,
         ax=None,
-        fig=None,
         cmap="tab20",
         min_numpoints=4,
         min_numpoints_caliber=25,
+        mask: np.ndarray = None,
     ):
         if ax is None:
             fig, ax = plt.subplots(1, 1, figsize=(4, 4), dpi=300)
@@ -116,6 +114,9 @@ class Vessels:
                     if color_values[i] is not None
                     else 0
                 )
+
+        if mask is not None:
+            im[mask] = np.nan
 
         cmap = plt.get_cmap(cmap)
         cmap.set_bad((0, 0, 0, 0))
@@ -192,4 +193,4 @@ class Vessels:
                         color="black",
                     )
 
-        return fig, ax
+        return ax

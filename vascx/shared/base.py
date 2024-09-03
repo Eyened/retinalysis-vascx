@@ -57,3 +57,15 @@ class VesselLayer(Layer, ABC):
     def get_segment_pixels(self, segment: Segment) -> List[Tuple[int, int]]:
         """Returns the binary mask pixels associated to the given segment."""
         pass
+
+
+class JointVesselsLayer(Layer, ABC):
+    @property
+    @abstractmethod
+    def binary(self):
+        pass
+
+    @property
+    @abstractmethod
+    def skeleton(self):
+        pass

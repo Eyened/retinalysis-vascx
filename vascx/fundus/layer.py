@@ -3,10 +3,8 @@ from __future__ import annotations
 from functools import cached_property
 from typing import TYPE_CHECKING, Dict, List, Tuple, Union
 
-import cv2
 import matplotlib.pyplot as plt
 import numpy as np
-from matplotlib.colors import LinearSegmentedColormap
 from networkx import DiGraph, Graph, connected_components, get_node_attributes
 from scipy.ndimage import distance_transform_edt
 from skimage.morphology import skeletonize as skimage_skeletonize
@@ -21,6 +19,7 @@ from vascx.shared.nodes import Bifurcation, Endpoint, Node
 from vascx.shared.segment import Segment
 from vascx.shared.vessels import Vessels
 from vascx.utils.eval import dice_score
+from vascx.utils.plotting import plot_digraph, plot_graph, plot_mask
 
 if TYPE_CHECKING:
     from vascx.fundus.retina import Retina
@@ -58,6 +57,10 @@ class VesselTreeLayer(VesselLayer):
     @cached_property
     def binary(self) -> np.ndarray:
         return binarize_and_fill(self.mask)
+
+    @cached_property
+    def binary_nodisc(self) -> np.ndarray:
+        return self.binary & ~self.disc.mask
 
     # STAGE 1 of processing, calc the skeleton
     @cached_property
@@ -128,13 +131,13 @@ class VesselTreeLayer(VesselLayer):
             ~img, return_distances=False, return_indices=True
         )
 
-        binary = self.binary
+        binary = self.binary_nodisc
 
         segment_to_pixels = {s: [] for s in self.segments}
         for x, y in zip(*np.where(binary)):
             closest_point = (x_closest[x, y], y_closest[x, y])
             if closest_point in skeleton_pixel_to_segment:
-                s = skeleton_pixel_to_segment[closest_point]
+                s = skeleton_pixel_to_segment[closest_point]  # get closest segment
                 segment_to_pixels[s].append((x, y))
         return segment_to_pixels
 
@@ -208,109 +211,72 @@ class VesselTreeLayer(VesselLayer):
     def plot(
         self,
         ax=None,
-        fig=None,
         mask=True,
         color=None,
-        xlim=None,
-        ylim=None,
         skeleton=True,
-        skeleton_color=None,
-        skeleton_dilate=None,
+        segments=False,
         nodes=False,
         digraph=False,
     ):
-        if ax is None:
-            fig, ax = plt.subplots(1, 1, figsize=(8, 8), dpi=300)
-            ax.imshow(np.zeros(self.binary.shape))
-            ax.set_axis_off()
-
-            if self.retina.fundus_image is not None:
-                ax.imshow(self.retina.fundus_image)
+        ax = self._get_base_axes(ax)
         if color is None:
             color = self.color
 
         if mask:
-            colors = [(0, 0, 0, 0), color]
-            cmap = LinearSegmentedColormap.from_list("binary", colors, N=2)
-            im = self.binary
-            ax.imshow(im, cmap=cmap)
+            self.plot_mask(ax, color=color)
 
         if skeleton:
-            self.plot_skeleton(
-                ax,
-                fig,
-                color=skeleton_color if skeleton_color is not None else (1, 1, 1, 0.5),
-                dilate=skeleton_dilate,
-            )
+            self.plot_skeleton(ax, color=(1, 1, 1))
+
+        if segments:
+            self.plot_segments(ax)
 
         if nodes:
-            self.plot_nodes(ax, fig)
+            self.plot_nodes(ax)
 
         if digraph:
-            self._plot_digraph(self.digraph, ax, fig)
+            self.plot_digraph(self.digraph, ax)
 
-        if xlim is not None:
-            ax.set_xlim(*xlim)
-        if ylim is not None:
-            ax.set_ylim(*ylim)
-        return fig, ax
+        return ax
 
-    def _get_base_fig(self, fig, ax):
+    def _get_base_axes(self, ax):
         if ax is None:
             fig, ax = plt.subplots(1, 1, figsize=(8, 8), dpi=300)
             ax.imshow(np.zeros(self.binary.shape))
             ax.set_axis_off()
 
-            if self.retina.fundus_image is not None:
-                ax.imshow(self.retina.fundus_image)
-        return fig, ax
+            if self.retina.image is not None:
+                ax.imshow(self.retina.image)
+        return ax
 
-    def plot_skeleton(self, ax=None, fig=None, color=(1, 1, 1, 1), dilate=None):
-        fig, ax = self._get_base_fig(fig, ax)
-        mask = self.skeleton
+    def plot_mask(self, ax=None, **kwargs):
+        ax = self._get_base_axes(ax)
+        plot_mask(ax, self.binary, **kwargs)
 
-        if dilate is not None:
-            mask = cv2.dilate(mask, np.ones((3, 3)), iterations=dilate)
-        colors = [(0, 0, 0, 0), color]
-        cmap = LinearSegmentedColormap.from_list("binary", colors, N=2)
-        ax.imshow(mask, cmap=cmap, interpolation="nearest")
-        return fig, ax
+    def plot_skeleton(self, ax=None, **kwargs):
+        ax = self._get_base_axes(ax)
+        plot_mask(ax, self.skeleton, **kwargs)
 
-    def _plot_graph(self, g: Graph, ax=None, fig=None):
-        fig, ax = self._get_base_fig(fig, ax)
-        for s, e in g.edges():
-            start = self.graph.nodes[s]["o"]
-            end = self.graph.nodes[e]["o"]
+    def plot_graph(self, ax=None, **kwargs):
+        ax = self._get_base_axes(ax)
+        plot_graph(ax, self.graph, **kwargs)
 
-            ax.plot([start[1], end[1]], [start[0], end[0]], color="white", markersize=2)
+    def plot_digraph(self, ax=None, **kwargs):
+        ax = self._get_base_axes(ax)
+        plot_digraph(ax, self.digraph, **kwargs)
 
-        return fig, ax
-
-    def _plot_digraph(self, g: Graph, ax=None, fig=None):
-        for s, e in g.edges():
-            start = self.graph.nodes[s]["o"].astype(np.int32)
-            end = self.graph.nodes[e]["o"].astype(np.int32)
-
-            dx = end[1] - start[1]
-            dy = end[0] - start[0]
-            ax.arrow(
-                start[1], start[0], dx, dy, color="white", head_width=5, linewidth=0.4
-            )
-
-        return fig, ax
-
-    def plot_tree_roots(self):
+    def plot_tree_roots(self, ax=None, **kwargs):
         g = Graph(self.trees)
-        return self._plot_graph(g)
+        return self.plot_graph(ax, g, **kwargs)
 
-    def plot_digraph(self, ax=None, fig=None):
-        if ax is None:
-            fig, ax = self._get_base_fig(fig, ax)
-        return self._plot_digraph(self.digraph, ax, fig)
+    def plot_segments(self, ax=None, **kwargs):
+        ax = self._get_base_axes(ax)
+        vessels = Vessels(self, self.segments)
+        return vessels.plot(ax=ax, **kwargs)
 
     def plot_nodes(self, ax=None, fig=None):
         if ax is None:
-            fig, ax = self._get_base_fig(None, None)
+            fig, ax = self._get_base_axes(None, None)
             self.plot_skeleton(ax, fig)
         for node in self.nodes:
             if isinstance(node, Bifurcation):
@@ -321,49 +287,6 @@ class VesselTreeLayer(VesselLayer):
                 ax.scatter(*node.position.tuple_xy, s=5, marker="s", color="b")
 
         return fig, ax
-
-    def plot_voronoi(self, ax=None, fig=None):
-        if ax is None:
-            fig, ax = plt.subplots(1, 1, figsize=(40, 40))
-            ax.set_axis_off()
-
-        return fig, ax
-
-    def plot_graph(
-        self, ax=None, fig=None, show_mask=True, plot_nodes=True, xlim=None, ylim=None
-    ):
-        if ax is None:
-            fig, ax = plt.subplots(1, 1, figsize=(4, 4), dpi=300)
-            ax.set_axis_off()
-
-        if show_mask:
-            ax.imshow(self.binary, cmap="gray")
-        else:
-            ax.imshow(np.zeros_like(self.binary), cmap="gray")
-
-        for s, e in self.graph.edges():
-            ps = self.graph[s][e]["pts"]
-            ax.plot(
-                ps[:, 1], ps[:, 0], "green" if show_mask else "white", linewidth=0.5
-            )
-
-        if plot_nodes:
-            nodes = self.graph.nodes()
-            ps = np.array([nodes[i]["o"] for i in nodes])
-            ax.plot(ps[:, 1], ps[:, 0], "r.", markersize=0.5)
-
-        if xlim is not None:
-            ax.set_xlim(*xlim)
-        if ylim is not None:
-            ax.set_ylim(*ylim)
-
-        return fig, ax
-
-    def plot_segments(self, **kwargs):
-        self.calc_digraph()
-        fig, ax = self._get_base_fig(None, None)
-        vessels = Vessels(self, self.segments)
-        return vessels.plot(fig=fig, ax=ax, **kwargs)
 
     def get_binary(self, remove_disk=False):
         if remove_disk:

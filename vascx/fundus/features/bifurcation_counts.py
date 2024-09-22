@@ -6,27 +6,36 @@ from typing import TYPE_CHECKING
 from .base import LayerFeature
 
 if TYPE_CHECKING:
+    from rtnls_enface.grids.base import GridField
     from vascx.fundus.layer import VesselTreeLayer
 
 
 @dataclass
 class BifurcationCount(LayerFeature):
-    def get_bifurcation_points(self, layer: VesselTreeLayer):
-        bifurcations = [
-            n.position
-            for n in layer.bifurcations  # if layer.graph.degree(n) > 1
-        ]
-        return bifurcations
+    def __init__(self, grid_field: GridField = None):
+        """
+        Calculation of the number of bifurcation points.
+
+        """
+        self.grid_field = grid_field
+
+    def _get_bifurcation_points(self, layer: VesselTreeLayer):
+        return layer.filter_bifurcations(self.grid_field)
 
     def compute(self, layer: VesselTreeLayer):
-        bifurcations = self.get_bifurcation_points(layer)
+        bifurcations = self._get_bifurcation_points(layer)
         return len(bifurcations)
 
     def plot(self, layer: VesselTreeLayer, **kwargs):
-        fig, ax = layer.plot(
+        ax = layer.plot(
             segments=True,
         )
 
-        bifurcations = self.get_bifurcation_points(layer)
-        for p in bifurcations:
-            ax.scatter(*p.tuple_xy, s=1, color="g")
+        # plot ETDRS region
+        if self.grid_field is not None:
+            layer.retina.grids[self.grid_field.grid()].plot(ax, self.grid_field)
+
+        bifurcations = self._get_bifurcation_points(layer)
+        for bif in bifurcations:
+            ax.scatter(*bif.position.tuple_xy, s=1, color="g")
+        return ax

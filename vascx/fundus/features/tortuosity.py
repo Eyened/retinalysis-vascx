@@ -12,6 +12,7 @@ from vascx.shared.segment import Segment, SplineInterpolation
 from .base import LayerFeature
 
 if TYPE_CHECKING:
+    from rtnls_enface.grids.base import GridField
     from vascx.fundus.layer import VesselTreeLayer
 
 
@@ -23,13 +24,6 @@ class TortuosityMode(str, Enum):
 class LengthMeasure(str, Enum):
     Splines = "splines"
     Skeleton = "skeleton"
-
-
-class Zone(tuple, Enum):
-    All = None
-    A = (0.0, 0.5)
-    B = (0.5, 1.0)
-    C = (1.0, 2.0)
 
 
 class TortuosityMeasure(str, Enum):
@@ -51,7 +45,7 @@ class Tortuosity(LayerFeature):
         measure: TortuosityMeasure = TortuosityMeasure.Distance,
         length_measure: LengthMeasure = LengthMeasure.Splines,
         min_numpoints: int = 25,
-        zone: Zone = Zone.All,
+        grid_field: GridField = None,
         aggregator=mean_median_std,
         **kwargs,
     ):
@@ -59,7 +53,7 @@ class Tortuosity(LayerFeature):
         self.measure = measure
         self.length_measure = length_measure
         self.min_numpoints = min_numpoints
-        self.zone = zone
+        self.grid_field = grid_field
         self.aggregator = aggregator
 
     def _compute_for_segment(self, segment: Segment):
@@ -81,7 +75,7 @@ class Tortuosity(LayerFeature):
 
     def get_segments(self, layer: VesselTreeLayer):
         if self.mode == TortuosityMode.Segments:
-            segments = layer.segments
+            segments = layer.filter_segments(field=self.grid_field)
             segments = [
                 segment
                 for segment in segments
@@ -95,7 +89,6 @@ class Tortuosity(LayerFeature):
 
     def raw(self, layer: VesselTreeLayer):
         segments = self.get_segments(layer)
-        lengths = np.array([vessel.length for vessel in segments])
         tortuosities = np.array(
             [self._compute_for_segment(vessel) for vessel in segments]
         )

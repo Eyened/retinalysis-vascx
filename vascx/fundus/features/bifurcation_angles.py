@@ -10,12 +10,13 @@ from rtnls_enface.base import Line, Point
 from .base import LayerFeature
 
 if TYPE_CHECKING:
+    from rtnls_enface.grids.base import GridField
     from vascx.fundus.layer import VesselTreeLayer
 
 
 @dataclass
 class BifurcationAngles(LayerFeature):
-    def __init__(self, delta: int = 20):
+    def __init__(self, delta: int = 20, grid_field: GridField = None):
         """
         Calculation of bifurcation angles.
 
@@ -26,9 +27,13 @@ class BifurcationAngles(LayerFeature):
         """
         self.delta = delta
         self.max_angle = 160
+        self.grid_field = grid_field
+
+    def _get_bifurcation_points(self, layer: VesselTreeLayer):
+        return layer.filter_bifurcations(self.grid_field)
 
     def compute(self, layer: VesselTreeLayer):
-        bifurcations = self.get_bifurcation_points(layer)
+        bifurcations = self._get_bifurcation_points(layer)
         return len(bifurcations)
 
     def plot(self, ax, layer: VesselTreeLayer, **kwargs):
@@ -37,7 +42,11 @@ class BifurcationAngles(LayerFeature):
             segments=True,
         )
 
-        bifurcations = layer.bifurcations
+        bifurcations = self._get_bifurcation_points(layer)
+
+        # plot ETDRS region
+        if self.grid_field is not None:
+            layer.retina.grids[self.grid_field.grid()].plot(ax, self.grid_field)
 
         for bif in bifurcations:
             if bif.outgoing[0].length < self.delta:

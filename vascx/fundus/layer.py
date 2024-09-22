@@ -11,6 +11,7 @@ from skimage.morphology import skeletonize as skimage_skeletonize
 
 from rtnls_enface.base import LayerType
 from rtnls_enface.disc import OpticDisc
+from rtnls_enface.grids.base import GridField
 from vascx.fundus.vessel_resolve import RecursiveWeightedAverageResolver
 from vascx.shared.base import VesselLayer
 from vascx.shared.graph import calc_digraph, correct_digraph, make_graph, make_nodes
@@ -119,6 +120,19 @@ class VesselTreeLayer(VesselLayer):
     def segments(self) -> List[Segment]:
         return [self.digraph.edges[e]["segment"] for e in self.digraph.edges()]
 
+    def filter_segments(self, field: GridField, field_threshold=0.75) -> List[Segment]:
+        """Filters the segments of the graph based on some criteria."""
+        if field is None:
+            return self.segments
+        grid = self.retina.grids[field.grid()]
+        if not grid.field_visible(field):
+            raise ValueError(f"Field {field} not completely visible in this retina.")
+        return [
+            s
+            for s in self.segments
+            if grid.fraction_in_field(s.skeleton, field) > field_threshold
+        ]
+
     @cached_property
     def segment_pixels(self) -> Dict[Segment, List[Tuple[int, int]]]:
         # assign pixels from segmentation to segments
@@ -151,12 +165,34 @@ class VesselTreeLayer(VesselLayer):
         """
         return make_nodes(self.digraph)
 
+    def filter_nodes(self, field: GridField = None) -> List[Node]:
+        """Filters the nodes of the graph based on some criteria."""
+        if field is None:
+            return self.nodes
+        grid = self.retina.grids[field.grid()]
+        if not grid.field_visible(field):
+            raise ValueError(f"Field {field} not completely visible in this retina.")
+        return [n for n in self.nodes if grid.point_in_field(n.position, field)]
+
     @cached_property
     def bifurcations(self) -> List[Bifurcation]:
         """
         Bifurcations of a networkx graph
         """
         return [n for n in self.nodes if isinstance(n, Bifurcation)]
+
+    def filter_bifurcations(self, field: GridField = None) -> List[Bifurcation]:
+        """Filters the bifurcations of the graph based on some criteria."""
+        if field is None:
+            return self.bifurcations
+        grid = self.retina.grids[field.grid()]
+        if not grid.field_visible(field):
+            raise ValueError(f"Field {field} not completely visible in this retina.")
+        return [
+            n
+            for n in self.bifurcations
+            if self.retina.grids[field.grid()].point_in_field(n.position, field)
+        ]
 
     # STAGE 4: vessels
     @property

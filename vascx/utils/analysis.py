@@ -28,7 +28,7 @@ def extract_one(ex, feature_set_name, retina_cls: EnfaceImage = Retina):
 
             # Modify the warning message with additional information
             warning_messages = [
-                str(warning.message) + f" Warning at example {Path(ex['av_path']).stem}"
+                str(warning.message) + f" Warning at example {ex['id']}"
                 for warning in caught_warnings
             ]
 

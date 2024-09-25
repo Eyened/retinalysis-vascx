@@ -24,7 +24,8 @@ class Caliber(LayerFeature):
 
     def _get_segments(self, layer: VesselTreeLayer):
         segments = layer.filter_segments(field=self.grid_field)
-        return [seg for seg in segments if len(seg.skeleton) > self.min_numpoints]
+        segments = [seg for seg in segments if len(seg.skeleton) > self.min_numpoints]
+        return segments
 
     def compute(self, layer: VesselTreeLayer):
         segments = self._get_segments(layer)
@@ -34,9 +35,10 @@ class Caliber(LayerFeature):
             raise ValueError("Some median diameters are nan")
         return self.aggregator(calibers)
 
-    def plot(self, layer: VesselTreeLayer, **kwargs):
+    def plot(self, ax, layer: VesselTreeLayer, **kwargs):
         vessels = Vessels(layer, self._get_segments(layer))
         ax = vessels.plot(
+            ax=ax,
             text=lambda x: f"{x.median_diameter:.2f}",
             cmap="tab20",
             min_numpoints=0,

@@ -30,11 +30,13 @@ class BifurcationAngles(LayerFeature):
         self.grid_field = grid_field
 
     def _get_bifurcation_points(self, layer: VesselTreeLayer):
-        return layer.filter_bifurcations(self.grid_field)
+        bifurcations = layer.filter_bifurcations(self.grid_field)
+        bifurcations = [bif for bif in bifurcations if bif.outgoing_min_length > self.delta]
+        return bifurcations
 
     def compute(self, layer: VesselTreeLayer):
         bifurcations = self._get_bifurcation_points(layer)
-        return len(bifurcations)
+        return [bif.angle(self.delta) for bif in bifurcations]
 
     def plot(self, ax, layer: VesselTreeLayer, **kwargs):
         ax = layer.plot(
@@ -43,28 +45,15 @@ class BifurcationAngles(LayerFeature):
         )
 
         bifurcations = self._get_bifurcation_points(layer)
-
+        
         # plot ETDRS region
         if self.grid_field is not None:
             layer.retina.grids[self.grid_field.grid()].plot(ax, self.grid_field)
 
         for bif in bifurcations:
-            if bif.outgoing[0].length < self.delta:
-                continue
-            if bif.outgoing[1].length < self.delta:
-                continue
+            line1, line2 = bif.lines(self.delta)
+            angle = bif.angle(self.delta)
 
-            to1 = Point(*bif.outgoing[0].spline.get_point_pixels(self.delta))
-            to2 = Point(*bif.outgoing[1].spline.get_point_pixels(self.delta))
-
-            line1 = Line(bif.position, to1)
-            line2 = Line(bif.position, to2)
-
-            angle = line1.counterclockwise_angle_to(line2)
-            if angle > 180:
-                line1, line2 = line2, line1
-
-            angle = line1.angle_to(line2)
             if angle > self.max_angle:
                 continue
 

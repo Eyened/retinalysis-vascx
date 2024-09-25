@@ -8,6 +8,7 @@ import matplotlib as mpl
 import numpy as np
 
 from rtnls_enface.base import Circle, Line
+from vascx.fundus.layer import RegionOutOfBoundsError
 
 from .base import LayerFeature
 
@@ -18,8 +19,13 @@ if TYPE_CHECKING:
 
 @dataclass
 class VascularDensity(LayerFeature):
-    def __init__(self, grid_field: GridField = None):
+    def __init__(self, grid_field: GridField = None, cut_mask: bool = False):
+        '''
+        reduce_mask: If true, trim the mask when parts of it are out of bounds of the CFI.
+            Otherwise, an exception is generated.
+        '''
         self.grid_field = grid_field
+        self.cut_mask = cut_mask
 
     def get_circle(self, layer: VesselTreeLayer):
         disc = layer.retina.disc
@@ -63,11 +69,17 @@ class VascularDensity(LayerFeature):
         )
 
         return mask
+    
+    def get_mask(self, layer: VesselTreeLayer):
+        if self.grid_field is None:
+            return self.get_ellipse_mask(layer)
+        else:
+            return layer.retina.grids[self.grid_field.grid()].field(self.grid_field).astype(np.uint8) * 255
 
-    def plot(self, layer: VesselTreeLayer, ax=None, **kwargs):
+    def plot(self, ax, layer: VesselTreeLayer, **kwargs):
         ax = layer.retina.plot(ax=ax)
-        mask = self.get_ellipse_mask(layer)
-        density = self.compute_for_mask(layer, mask)
+        mask = self.get_mask(layer)
+        density = self.compute(layer)
 
         # Plot the ellipse outline
         contours, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
@@ -91,6 +103,14 @@ class VascularDensity(LayerFeature):
         return np.sum(selected_pixels[mask == 255]) / np.sum(mask == 255)
 
     def compute(self, layer: VesselTreeLayer):
-        mask = self.get_ellipse_mask(layer)
+        mask = self.get_mask(layer)
+
+        if self.cut_mask:
+            # zero-out everything outside the fundus mask
+            mask[~layer.retina.mask] = 0
+        else:
+            # check that mask is within fundus bounds
+            if not np.all(mask.astype(bool) <= layer.retina.mask):
+                raise RegionOutOfBoundsError('Region for vascular density computation is out of bounds')
 
         return self.compute_for_mask(layer, mask)

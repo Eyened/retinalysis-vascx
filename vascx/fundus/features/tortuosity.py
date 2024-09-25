@@ -8,6 +8,7 @@ import numpy as np
 
 from vascx.shared.aggregators import mean_median_std
 from vascx.shared.segment import Segment, SplineInterpolation
+from vascx.shared.vessels import Vessels
 
 from .base import LayerFeature
 
@@ -75,7 +76,7 @@ class Tortuosity(LayerFeature):
 
     def get_segments(self, layer: VesselTreeLayer):
         if self.mode == TortuosityMode.Segments:
-            segments = layer.filter_segments(field=self.grid_field)
+            segments = layer.filter_segments(field=self.grid_field, field_threshold=0.5)
             segments = [
                 segment
                 for segment in segments
@@ -104,19 +105,27 @@ class Tortuosity(LayerFeature):
     def calc_auxiliary(self):
         pass
 
-    def plot(self, layer, **kwargs):
+    def plot(self, ax, layer, **kwargs):
+        segments = self.get_segments(layer)
+
+        vessels = Vessels(layer, segments)
         if self.measure == TortuosityMeasure.Inflections:
             format = "{:d}"
         else:
             format = "{:.4f}"
 
-        return layer.vessels.plot(
+        ax = vessels.plot(
+            ax=ax,
             text=lambda x: format.format(self._compute_for_segment(x)),
-            **{
-                "show_index": True,
-                "plot_endpoints": True,
-                "plot_chord": True,
-                "cmap": "tab20",
-                **kwargs,
-            },
+            cmap="tab20",
+            min_numpoints=0,
+            min_numpoints_caliber=self.min_numpoints,
+            plot_endpoints=True,
+            plot_chord=True,
+            **kwargs,
         )
+
+        # plot ETDRS region
+        if self.grid_field is not None:
+            layer.retina.grids[self.grid_field.grid()].plot(ax, self.grid_field)
+        return ax

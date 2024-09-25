@@ -31,7 +31,10 @@ def median_std(X):
 
 
 def mean_median_std(X):
-    return {"mean": mean(X), "median": median(X), "std": std(X)}
+    if len(X) == 0:
+        return {"mean": None, "median": None, "std": None}
+    else:
+        return {"mean": mean(X), "median": median(X), "std": std(X)}
 
 
 class SegmentAggregator:

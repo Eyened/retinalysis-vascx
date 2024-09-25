@@ -32,6 +32,8 @@ def default_seg_color(seg):
 
 default_vessels_resolver = RecursiveWeightedAverageResolver("median_diameter")
 
+class RegionOutOfBoundsError(RuntimeError):
+    pass
 
 class VesselTreeLayer(VesselLayer):
     """Represents an artery or vein layer with a (probably imperfect) tree structure for the vessel graph."""
@@ -126,7 +128,7 @@ class VesselTreeLayer(VesselLayer):
             return self.segments
         grid = self.retina.grids[field.grid()]
         if not grid.field_visible(field):
-            raise ValueError(f"Field {field} not completely visible in this retina.")
+            raise RegionOutOfBoundsError(f"Field {field} not completely visible in this retina.")
         return [
             s
             for s in self.segments
@@ -171,7 +173,7 @@ class VesselTreeLayer(VesselLayer):
             return self.nodes
         grid = self.retina.grids[field.grid()]
         if not grid.field_visible(field):
-            raise ValueError(f"Field {field} not completely visible in this retina.")
+            raise RegionOutOfBoundsError(f"Field {field} not completely visible in this retina.")
         return [n for n in self.nodes if grid.point_in_field(n.position, field)]
 
     @cached_property
@@ -187,7 +189,7 @@ class VesselTreeLayer(VesselLayer):
             return self.bifurcations
         grid = self.retina.grids[field.grid()]
         if not grid.field_visible(field):
-            raise ValueError(f"Field {field} not completely visible in this retina.")
+            raise RegionOutOfBoundsError(f"Field {field} not completely visible in this retina.")
         return [
             n
             for n in self.bifurcations

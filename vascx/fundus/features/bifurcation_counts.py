@@ -26,16 +26,18 @@ class BifurcationCount(LayerFeature):
         bifurcations = self._get_bifurcation_points(layer)
         return len(bifurcations)
 
-    def plot(self, layer: VesselTreeLayer, **kwargs):
+    def plot(self, ax, layer: VesselTreeLayer, **kwargs):
         ax = layer.plot(
+            ax=ax,
             segments=True,
         )
+
+        bifurcations = self._get_bifurcation_points(layer)
 
         # plot ETDRS region
         if self.grid_field is not None:
             layer.retina.grids[self.grid_field.grid()].plot(ax, self.grid_field)
-
-        bifurcations = self._get_bifurcation_points(layer)
+        
         for bif in bifurcations:
             ax.scatter(*bif.position.tuple_xy, s=1, color="g")
         return ax

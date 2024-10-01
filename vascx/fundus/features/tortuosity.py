@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from enum import Enum
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, List, Optional
 
 import numpy as np
 
@@ -93,16 +93,44 @@ class Tortuosity(LayerFeature):
             raise ValueError(f"Unknown mode {self.mode}")
         return segments
 
-    def raw(self, layer: VesselTreeLayer):
-        segments = self.get_segments(layer)
-        lengths = np.array([vessel.length for vessel in segments])
-        tortuosities = np.array(
-            [self._compute_for_segment(vessel) for vessel in segments]
-        )
+    # def raw(self, layer: VesselTreeLayer):
+    #     segments = self.get_segments(layer)
+    #     lengths = np.array([vessel.length for vessel in segments])
+    #     tortuosities = np.array(
+    #         [self._compute_for_segment(vessel) for vessel in segments]
+    #     )
+    #     return tortuosities
+    
+    def raw(self, layer: Optional[VesselTreeLayer] = None, segments_list: Optional[List[Segment]] = None):
+        if segments_list is not None and self.mode == TortuosityMode.Segments:
+            segments = segments_list
+            segments = [
+                segment
+                for segment in segments
+                if len(segment.skeleton) >= self.min_numpoints
+            ]
+        elif layer is not None:
+            segments = self.get_segments(layer)
+        else:
+            raise ValueError("Either layer or a list of segments must be provided, and for list of segments, mode must be 'segments'")
+        
+        tortuosities = np.array([self._compute_for_segment(vessel) for vessel in segments])
         return tortuosities
 
-    def compute(self, layer: VesselTreeLayer):
-        tortuosities = self.raw(layer)
+    # def compute(self, layer: VesselTreeLayer):
+    #     tortuosities = self.raw(layer)
+    #     return self.aggregator(tortuosities)
+    
+    def compute(self, layer: Optional[VesselTreeLayer] = None, segments_list: Optional[List[Segment]] = None):
+        if segments_list is not None:
+            if not all(isinstance(segment, Segment) for segment in segments_list):
+                raise TypeError("segments_list must be a list of Segment objects")
+            tortuosities = self.raw(segments_list=segments_list)
+        elif layer is not None:
+            tortuosities = self.raw(layer=layer)
+        else:
+            raise ValueError("Either layer or segments_list must be provided")
+
         return self.aggregator(tortuosities)
 
     def explain(self):

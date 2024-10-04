@@ -1,0 +1,1 @@
+{"dataset ": "cco", "optimizer": "adam", "taille_deco_max": "8", "type_data": "reconnect_denoise", "batch_size": 32, "learning_rate": 0.001, "epochs": 1000, "loss": "PDdice", "norm": "batch", "patch_size": [96, 96], "best_epoch": 910, "best_diceloss": 0.09378264471888542}

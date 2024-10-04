@@ -1,0 +1,16 @@
+name: inference_env
+channels:
+  - conda-forge
+  - defaults
+dependencies:
+  - python=3.10
+  - numpy
+  - pillow
+  - pytorch
+  - monai
+  - typing-extensions
+  - pip:
+    - cffi
+    - markupsafe
+    - torch
+prefix: /home/carneiro/anaconda3/envs/inference_env

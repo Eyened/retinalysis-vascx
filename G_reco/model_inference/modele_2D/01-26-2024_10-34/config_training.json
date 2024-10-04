@@ -1,0 +1,1 @@
+{"dataset ": "stare", "optimizer": "adam", "taille_deco_max": "8", "type_data": "reconnect_denoise", "batch_size": 32, "learning_rate": 0.001, "epochs": 1000, "loss": "PDdice", "norm": "batch", "patch_size": [96, 96], "best_epoch": 914, "best_diceloss": 0.087989941239357}

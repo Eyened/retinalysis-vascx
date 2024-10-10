@@ -15,7 +15,7 @@ if TYPE_CHECKING:
 
 @dataclass
 class BifurcationAngles(LayerFeature):
-    def __init__(self, delta: int = 20):
+    def __init__(self, delta: int = 20, all_three_angles: bool = False):
         """
         Calculation of bifurcation angles.
 
@@ -26,10 +26,62 @@ class BifurcationAngles(LayerFeature):
         """
         self.delta = delta
         self.max_angle = 160
+        self.all_three_angles = all_three_angles # If True, compute angles with the incoming vessel as well
+
+
+    def compute_for_bifurcation(self, bif):
+
+        # Skip bifurcations with short outgoing segments
+        if bif.outgoing[0].length < self.delta or bif.outgoing[1].length < self.delta:
+            return None
+
+        # Calculate points and lines for outgoing segments
+        to1 = Point(*bif.outgoing[0].spline.get_point_pixels(self.delta))
+        to2 = Point(*bif.outgoing[1].spline.get_point_pixels(self.delta))
+
+        line1 = Line(bif.position, to1)
+        line2 = Line(bif.position, to2)
+
+        # Calculate and adjust the angle between outgoing segments
+        outgoing_angle = line1.counterclockwise_angle_to(line2)
+        if outgoing_angle > 180:
+            line1, line2 = line2, line1
+
+        outgoing_angle = line1.angle_to(line2)
+        if outgoing_angle > self.max_angle:
+            outgoing_angle = None
+
+        # If all_three_angles is True, compute angles with the incoming vessel
+        if self.all_three_angles:
+            if bif.incoming.length < self.delta:
+                incoming_angle1 = None
+                incoming_angle2 = None
+            else:
+                from_incoming_segment = Point(*bif.incoming.spline.get_point_pixels(bif.incoming.spline.total_distance-self.delta))
+                incoming_line = Line(bif.position, from_incoming_segment)
+
+                incoming_angle1 = incoming_line.angle_to(line1)
+                incoming_angle2 = incoming_line.angle_to(line2)
+            return (outgoing_angle, incoming_angle1, incoming_angle2)
+        return outgoing_angle
+
+    # def compute(self, layer: VesselTreeLayer):
+    #     bifurcations = self.get_bifurcation_points(layer)
+    #     return len(bifurcations)
 
     def compute(self, layer: VesselTreeLayer):
-        bifurcations = self.get_bifurcation_points(layer)
-        return len(bifurcations)
+        list_of_angles = []
+
+        # Retrieve bifurcations from the layer
+        bifurcations = layer.bifurcations
+
+        for bif in bifurcations:
+            angles = self.compute_for_bifurcation(bif)
+            if angles is not None:
+                list_of_angles.append(angles)
+
+        return list_of_angles
+    
 
     # def plot(self, ax, layer: VesselTreeLayer, **kwargs):
     #     ax = layer.plot(
@@ -88,7 +140,7 @@ class BifurcationAngles(LayerFeature):
 
 
 
-    def plot(self, ax, layer: VesselTreeLayer, all_three_angles=False, **kwargs):
+    def plot(self, ax, layer: VesselTreeLayer, **kwargs):
         # Plot the vessel tree layer
         ax = layer.plot(
             ax=ax,
@@ -113,12 +165,12 @@ class BifurcationAngles(LayerFeature):
             line2 = Line(bif.position, to2)
 
             # Calculate and adjust the angle between outgoing segments
-            angle = line1.counterclockwise_angle_to(line2)
-            if angle > 180:
+            outgoing_angle = line1.counterclockwise_angle_to(line2)
+            if outgoing_angle > 180:
                 line1, line2 = line2, line1
 
-            angle = line1.angle_to(line2)
-            if angle > self.max_angle:
+            outgoing_angle = line1.angle_to(line2)
+            if outgoing_angle > self.max_angle:
                 continue
 
             # Draw the arc and lines for outgoing segments
@@ -142,19 +194,19 @@ class BifurcationAngles(LayerFeature):
             ax.text(
                 bif.position.x + 5,
                 bif.position.y,
-                f"{angle:.1f}",
+                f"{outgoing_angle:.1f}",
                 fontsize=3.6,
                 color="white",
             )
 
             # If all_angles is True, compute and display angles with the incoming vessel
-            if all_three_angles:
+            if self.all_three_angles:
                 from_incoming = Point(*bif.incoming.spline.get_point_pixels(bif.incoming.spline.total_distance-self.delta))
                 incoming_line = Line(bif.position, from_incoming)
 
                 # Calculate angles between incoming and outgoing segments
-                angle_incoming_to1 = incoming_line.angle_to(line1)
-                angle_incoming_to2 = incoming_line.angle_to(line2)
+                incoming_angle_to1 = incoming_line.angle_to(line1)
+                incoming_angle_to2 = incoming_line.angle_to(line2)
 
                 # Draw lines for incoming segment
                 incoming_line.plot(ax, color="yellow", linewidth=0.5)
@@ -163,14 +215,14 @@ class BifurcationAngles(LayerFeature):
                 ax.text(
                     bif.position.x - 5,
                     bif.position.y - 5,
-                    f"{angle_incoming_to1:.1f}",
+                    f"{incoming_angle_to1:.1f}",
                     fontsize=3.6,
                     color="yellow",
                 )
                 ax.text(
                     bif.position.x - 5,
                     bif.position.y + 5,
-                    f"{angle_incoming_to2:.1f}",
+                    f"{incoming_angle_to2:.1f}",
                     fontsize=3.6,
                     color="yellow",
                 )

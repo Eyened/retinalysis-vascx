@@ -28,7 +28,7 @@ class Segment:
 
         self.skeleton = skeleton
         self.edge = edge
-
+        self._pixels = None
         self.layer: VesselTreeLayer = None
 
         self._spline = None
@@ -41,8 +41,6 @@ class Segment:
         self._mean_xy: Tuple[float, float] = None
         self._thickest_diam: float = 0
 
-        self.rank: int = None
-        self.visited = False
         self.original_segments = None
 
     @property
@@ -55,6 +53,8 @@ class Segment:
 
     @property
     def pixels(self) -> List[Tuple[int, int]]:
+        if self._pixels is not None:
+            return self._pixels
         return self.layer.get_segment_pixels(self)
 
     @property

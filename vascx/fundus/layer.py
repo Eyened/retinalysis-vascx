@@ -1,9 +1,11 @@
 from __future__ import annotations
 
+import copy
 from functools import cached_property
 from typing import TYPE_CHECKING, Dict, List, Tuple, Union
 
 import matplotlib.pyplot as plt
+import networkx as nx
 import numpy as np
 from networkx import DiGraph, Graph, connected_components, get_node_attributes
 from scipy.ndimage import distance_transform_edt
@@ -197,10 +199,96 @@ class VesselTreeLayer(VesselLayer):
         ]
 
     # STAGE 4: vessels
-    @property
+    @cached_property
     def vessels(self):
         """Resolved vessels (segments) of the vasculature, after running a vessel resolving algorithm on the trees."""
-        return self.get_vessels()
+        G = copy.deepcopy(self.digraph)
+
+        def recursive_set_prop_values(edge):
+            u, v  = edge
+            length, median_diameter = G[u][v]['segment'].length, G[u][v]['segment'].median_diameter
+
+            outgoing_edges = G.out_edges(v)
+            if len(outgoing_edges) == 0:
+                nx.set_edge_attributes(G, {edge: median_diameter}, 'agg_value')
+                nx.set_edge_attributes(G, {edge: length}, 'agg_length')
+                return length, median_diameter
+            else:
+                tmp = [
+                    recursive_set_prop_values(e)
+                    for e in outgoing_edges
+                ]
+
+                tmp = sorted(tmp, key=lambda x: x[0], reverse=True)  # sort by mean diam
+                max_agg_diameter, agg_length = tmp[0]
+                agg_value = (
+                    max_agg_diameter * agg_length + median_diameter * length
+                ) / (agg_length + length)
+                nx.set_edge_attributes(G, {edge: agg_value}, 'agg_value')
+                nx.set_edge_attributes(G, {edge: agg_length + length}, 'agg_length')
+                return agg_value, agg_length + length
+            
+        def merge_edges(edges):
+            # Ensure edge_list has consecutive edges
+            for i in range(len(edges) - 1):
+                if edges[i][1] != edges[i+1][0]:
+                    raise ValueError("The edges are not consecutive!")
+
+            # Identify the start and end nodes of the merged edge
+            edge = (edges[0][0], edges[-1][1])
+
+            segments = [G[u][v]['segment'] for u,v in edges]
+            skeleton = np.concatenate([s.skeleton for s in segments], axis=0)
+            seg = Segment(skeleton, edge=edge)
+            seg.layer = self
+            pixels = [self.get_segment_pixels(s) for s in segments]
+            seg._pixels = [item for sublist in pixels for item in sublist]
+
+            # Remove intermediate nodes and edges
+            for u, v in edges:
+                G.remove_edge(u, v)
+            
+            # Add a new edge with combined properties
+            G.add_edge(*edge, segment=seg)
+
+        def recursive_merge(edge):
+            u, v  = edge
+            outgoing_edges = G.out_edges(v)
+
+            if len(outgoing_edges) == 0:
+                return [edge]
+
+            # get the edge with the max agg_value
+            # print(outgoing_edges)
+            outgoing_edges = sorted(
+                outgoing_edges,
+                key=lambda e: G[e[0]][e[1]]['agg_value'],
+                reverse=True,
+            )
+            # get open and completed edges for the edge with max agg_value
+            os = recursive_merge(outgoing_edges[0])
+
+            # the rest are all completed segments
+            for e in outgoing_edges[1:]:
+                merge_edges(recursive_merge(e))
+
+            return [edge] + os
+                
+    
+        root_edges = [list(G.out_edges(n))[0] for n in self.trees]
+        for edge in root_edges:
+            recursive_set_prop_values(edge)
+            open_edge = recursive_merge(edge)
+            merge_edges(open_edge)
+
+        for i, (u,v) in enumerate(G.edges()):
+            G[u][v]['segment'].index = i
+
+        return G
+    
+    @cached_property
+    def resolved_segments(self) -> List[Segment]:
+        return [self.vessels.edges[e]["segment"] for e in self.vessels.edges()]
 
     def make_trees(self):
         # _trees is a list of segments, each is the root of a separate tree
@@ -255,6 +343,7 @@ class VesselTreeLayer(VesselLayer):
         segments=False,
         nodes=False,
         digraph=False,
+        vessels=False
     ):
         ax = self._get_base_axes(ax)
         if color is None:
@@ -273,7 +362,10 @@ class VesselTreeLayer(VesselLayer):
             self.plot_nodes(ax)
 
         if digraph:
-            self.plot_digraph(self.digraph, ax)
+            self.plot_digraph(ax)
+
+        if vessels:
+            self.plot_vessels(ax)
 
         return ax
 
@@ -302,6 +394,10 @@ class VesselTreeLayer(VesselLayer):
     def plot_digraph(self, ax=None, **kwargs):
         ax = self._get_base_axes(ax)
         plot_digraph(ax, self.digraph, **kwargs)
+
+    def plot_vessels(self, ax=None, **kwargs):
+        ax = self._get_base_axes(ax)
+        plot_digraph(ax, self.vessels, **kwargs)
 
     def plot_tree_roots(self, ax=None, **kwargs):
         g = Graph(self.trees)

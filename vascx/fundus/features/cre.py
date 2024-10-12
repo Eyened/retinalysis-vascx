@@ -99,7 +99,6 @@ class CRE(LayerFeature):
                 "show_index": True,
                 "cmap": "tab20",
                 "ax": ax,
-                "fig": fig,
                 **kwargs,
             },
         )
@@ -154,7 +153,6 @@ class CRE(LayerFeature):
                 "show_index": True,
                 "cmap": "tab20",
                 "ax": ax,
-                "fig": fig,
                 "text": lambda s: f"{s.orientation():.2f}",
                 "plot_endpoints": True,
                 **kwargs,

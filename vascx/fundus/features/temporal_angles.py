@@ -39,7 +39,7 @@ class TemporalAngle(LayerFeature):
         # to speed it up only at the segments with one endpoint inside and one outside of the circle
         filtered_segments = [
             seg
-            for seg in layer.vessels.segments
+            for seg in layer.resolved_segments
             if (circle.contains(seg.start) and not circle.contains(seg.end))
             or (not circle.contains(seg.start) and circle.contains(seg.end))
         ]
@@ -91,7 +91,6 @@ class TemporalAngle(LayerFeature):
                 "show_index": True,
                 "cmap": "tab20",
                 "ax": ax,
-                "fig": fig,
                 **kwargs,
             },
         )
@@ -120,7 +119,6 @@ class TemporalAngle(LayerFeature):
             **{
                 "show_index": True,
                 "ax": ax,
-                "fig": fig,
                 **kwargs,
             },
         )
@@ -164,7 +162,6 @@ class TemporalAngle(LayerFeature):
                 "show_index": True,
                 "cmap": "tab20",
                 "ax": ax,
-                "fig": fig,
                 **kwargs,
             },
         )

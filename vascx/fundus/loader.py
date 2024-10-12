@@ -57,22 +57,22 @@ class RetinaLoader(FundusLoader):
         meta_csv: str = "meta.csv",
     ):
         base = Path(base)
-        if not os.path.exists(base / av_subfolder):
+        if av_subfolder is not None and not os.path.exists(base / av_subfolder):
             warnings.warn(f"folder {base/av_subfolder} not found")
             av_subfolder = None
-        if not os.path.exists(base / vessels_subfolder):
+        if vessels_subfolder is not None and not os.path.exists(base / vessels_subfolder):
             warnings.warn(f"folder {base/vessels_subfolder} not found")
             vessels_subfolder = None
-        if not os.path.exists(base / discs_subfolder):
+        if discs_subfolder is not None and not os.path.exists(base / discs_subfolder):
             warnings.warn(f"folder {base/discs_subfolder} not found")
             discs_subfolder = None
-        if not os.path.exists(base / fundus_subfolder):
+        if fundus_subfolder is not None and not os.path.exists(base / fundus_subfolder):
             warnings.warn(f"folder {base/fundus_subfolder} not found")
             fundus_subfolder = None
-        if not os.path.exists(base / meta_csv):
+        if meta_csv is not None and not os.path.exists(base / meta_csv):
             warnings.warn(f"file {base/meta_csv} not found")
             meta_csv = None
-        if not os.path.exists(base / fovea_locations_csv):
+        if fovea_locations_csv is not None and not os.path.exists(base / fovea_locations_csv):
             warnings.warn(f"file {base/fovea_locations_csv} not found")
             fovea_locations_csv = None
         return cls.from_folders(

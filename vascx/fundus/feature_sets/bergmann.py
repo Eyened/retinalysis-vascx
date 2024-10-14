@@ -7,6 +7,7 @@ from vascx.shared.features import FeatureSet
 from vascx.fundus.features.temporal_angles import TemporalAngle
 from vascx.fundus.features.vascular_densities import VascularDensity
 from vascx.fundus.features.bifurcation_angles import BifurcationAngles
+from vascx.fundus.features.bifurcation_calibers import BifurcationCalibers
 
 bergmann_features = FeatureSet(
     "bergmann",
@@ -17,6 +18,7 @@ bergmann_features = FeatureSet(
         # "diam": Caliber(aggregator=median_std),
         # "tort": Tortuosity(length_measure=LengthMeasure.Splines, aggregator=median),
         # "bif": BifurcationCount(),
-        "bif_angles": BifurcationAngles(all_three_angles=True),
+        # "bif_angles": BifurcationAngles(all_three_angles=True),
+        "bif_diam": BifurcationCalibers(),
     },
 )

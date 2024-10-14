@@ -26,7 +26,7 @@ class BifurcationAngles(LayerFeature):
         """
         self.delta = delta
         self.max_angle = 160
-        self.all_three_angles = all_three_angles # If True, compute angles with the incoming vessel as well
+        self.all_three_angles = all_three_angles # If True, computes angles with the incoming vessel as well
 
 
     def compute_for_bifurcation(self, bif):
@@ -72,10 +72,7 @@ class BifurcationAngles(LayerFeature):
     def compute(self, layer: VesselTreeLayer):
         list_of_angles = []
 
-        # Retrieve bifurcations from the layer
-        bifurcations = layer.bifurcations
-
-        for bif in bifurcations:
+        for bif in layer.bifurcations:
             angles = self.compute_for_bifurcation(bif)
             if angles is not None:
                 list_of_angles.append(angles)

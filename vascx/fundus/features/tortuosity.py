@@ -60,7 +60,7 @@ class Tortuosity(LayerFeature):
     def _compute_for_segment(self, segment: Segment):
         if self.measure == TortuosityMeasure.Distance:
             if self.length_measure == LengthMeasure.Splines:
-                return segment.spline.length() / segment.chord_length
+                return segment.spline.length() / segment.chord_length if segment.spline is not None else np.nan
             elif self.length_measure == LengthMeasure.Skeleton:
                 return np.mean(segment.length / segment.chord_length)
             else:

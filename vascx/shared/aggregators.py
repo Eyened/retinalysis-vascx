@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import warnings
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Callable, List, Tuple, Union
 
@@ -11,26 +12,32 @@ if TYPE_CHECKING:
 
 
 def mean(X):
-    return np.mean(X)
+    return np.nanmean(X)
 
 
 def median(X):
-    return np.median(X)
+    return np.nanmedian(X)
 
 
 def std(X):
-    return np.std(X)
+    return np.nanstd(X)
 
+def check_and_warn(X):
+    if np.sum(np.isnan(X)) > len(X) * 0.2:
+        warnings.warn(f'More than 20% nans received by aggregator')
 
 def mean_std(X):
+    check_and_warn(X)
     return {"mean": mean(X), "std": std(X)}
 
 
 def median_std(X):
+    check_and_warn(X)
     return {"median": median(X), "std": std(X)}
 
 
 def mean_median_std(X):
+    check_and_warn(X)
     if len(X) == 0:
         return {"mean": None, "median": None, "std": None}
     else:

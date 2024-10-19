@@ -3,6 +3,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
+import warnings
 import cv2
 import matplotlib as mpl
 import numpy as np
@@ -111,6 +112,7 @@ class VascularDensity(LayerFeature):
         else:
             # check that mask is within fundus bounds
             if not np.all(mask.astype(bool) <= layer.retina.mask):
-                raise RegionOutOfBoundsError('Region for vascular density computation is out of bounds')
+                warnings.warn('Region for vascular density computation is out of bounds')
+                return np.nan
 
         return self.compute_for_mask(layer, mask)

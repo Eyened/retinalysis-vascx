@@ -5,6 +5,7 @@ from typing import Dict, List
 
 import pandas as pd
 from joblib import Parallel, delayed
+from rtnls_fundusprep.mask_extraction import Bounds
 from tqdm import tqdm
 
 from rtnls_enface.base import EnfaceImage
@@ -21,6 +22,11 @@ def extract_one(ex, feature_set_name, retina_cls: EnfaceImage = Retina):
         raise ValueError(f"Feature set '{feature_set_name}' not found.")
     try:
         with warnings.catch_warnings(record=True) as caught_warnings:
+            # add bounds to item
+            if "metadata" in ex:
+                bounds = Bounds(**ex["metadata"])
+                M = bounds.get_cropping_matrix(1024)
+                ex["bounds"] = bounds.warp(M, (1024, 1024))
             retina = retina_cls.from_file(**ex)
             features = retina.calc_features(feature_set)
 
@@ -28,14 +34,18 @@ def extract_one(ex, feature_set_name, retina_cls: EnfaceImage = Retina):
 
             # Modify the warning message with additional information
             warning_messages = [
-                str(warning.message) + f" Warning at example {ex['id']}"
+                 f" Example {ex['id']}:: " + str(warning.message)
                 for warning in caught_warnings
             ]
+            for w in warning_messages:
+                print(w)
 
         return features, warning_messages
     except Exception:
         traceback.print_exc()
         return {}, [f"Error computing features for example {str(ex)}"]
+    
+    
 
 
 def extract_in_parallel(

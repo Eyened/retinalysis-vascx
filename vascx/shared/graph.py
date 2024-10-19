@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import warnings
 import networkx as nx
 import numpy as np
 import sknw
@@ -143,8 +144,8 @@ def correct_digraph(digraph: nx.DiGraph, threshold=10):
         if digraph.out_degree(e[1]) == 0
     ]
     if len(segments) == 0:
-        print("Nothing to be done")
-        return
+        warnings.warn(f'No segments for digraph')
+        return digraph
 
     def get_value(obj: Segment):
         return obj.length

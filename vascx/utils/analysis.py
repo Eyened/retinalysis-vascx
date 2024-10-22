@@ -12,6 +12,8 @@ from rtnls_enface.base import EnfaceImage
 from vascx.faz.feature_sets.basic import *  # noqa: F401
 from vascx.fundus.feature_sets.bergmann import *  # noqa: F401
 from vascx.fundus.feature_sets.tortuosity import *  # noqa: F401
+from vascx.fundus.feature_sets.full import *  # noqa: F401
+
 from vascx.fundus.retina import Retina
 from vascx.shared.features import FeatureSet
 

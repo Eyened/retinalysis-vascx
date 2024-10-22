@@ -47,6 +47,7 @@ class Tortuosity(LayerFeature):
         length_measure: LengthMeasure = LengthMeasure.Splines,
         min_numpoints: int = 25,
         grid_field: GridField = None,
+        norm_measure: LengthMeasure = None,
         aggregator=mean_median_std,
         **kwargs,
     ):
@@ -55,9 +56,10 @@ class Tortuosity(LayerFeature):
         self.length_measure = length_measure
         self.min_numpoints = min_numpoints
         self.grid_field = grid_field
+        self.norm_measure = norm_measure
         self.aggregator = aggregator
 
-    def _compute_for_segment(self, segment: Segment):
+    def _compute_for_segment(self, segment: Segment, scale: float):
         if self.measure == TortuosityMeasure.Distance:
             if self.length_measure == LengthMeasure.Splines:
                 return segment.spline.length() / segment.chord_length if segment.spline is not None else np.nan
@@ -67,43 +69,53 @@ class Tortuosity(LayerFeature):
                 raise NotImplementedError()
         elif self.measure == TortuosityMeasure.Curvature:
             spline = SplineInterpolation(segment, 0.25)
-            return np.mean(spline.curvatures())
+            return np.mean(spline.curvatures()) * scale
         elif self.measure == TortuosityMeasure.Inflections:
             spline = SplineInterpolation(segment, 0.25)
             return len(spline.inflection_points(every=10))
         else:
             raise NotImplementedError()
+        
+    def _compute_norm_measure_for_segment(self, segment: Segment):
+        if self.norm_measure == LengthMeasure.Splines:
+            return segment.spline.length() if segment.spline is not None else np.nan
+        elif self.norm_measure == LengthMeasure.Skeleton:
+            return segment.length
+        else:
+            raise NotImplementedError()
+
 
     def get_segments(self, layer: VesselTreeLayer):
         if self.mode == TortuosityMode.Segments:
             segments = layer.filter_segments(field=self.grid_field, field_threshold=0.5)
-            segments = [
-                segment
-                for segment in segments
-                if len(segment.skeleton) >= self.min_numpoints
-            ]
+            
         elif self.mode == TortuosityMode.Vessels:
-            segments = layer.vessels.filter_segments_by_numpoints(self.min_numpoints)
+            segments = layer.resolved_segments
         else:
             raise ValueError(f"Unknown mode {self.mode}")
+        
+        segments = [
+            segment
+            for segment in segments
+            if len(segment.skeleton) >= self.min_numpoints
+        ]
         return segments
 
     def raw(self, layer: VesselTreeLayer):
         segments = self.get_segments(layer)
-        tortuosities = np.array(
-            [self._compute_for_segment(vessel) for vessel in segments]
+
+        vals = np.array(
+            [self._compute_for_segment(vessel, scale=layer.retina.disc_fovea_distance) for vessel in segments]
         )
-        return tortuosities
+
+        if self.norm_measure is not None:
+            norm_vals = np.array([self._compute_norm_measure_for_segment(seg) for seg in segments])
+            vals = vals * norm_vals / np.nansum(norm_vals)
+        return vals
 
     def compute(self, layer: VesselTreeLayer):
         tortuosities = self.raw(layer)
         return self.aggregator(tortuosities)
-
-    def explain(self):
-        pass
-
-    def calc_auxiliary(self):
-        pass
 
     def plot(self, ax, layer, **kwargs):
         segments = self.get_segments(layer)

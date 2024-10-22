@@ -6,6 +6,7 @@ from typing import TYPE_CHECKING
 from matplotlib import patches
 
 from rtnls_enface.base import Line, Point
+from vascx.shared.aggregators import mean_median
 
 from .base import LayerFeature
 
@@ -16,7 +17,7 @@ if TYPE_CHECKING:
 
 @dataclass
 class BifurcationAngles(LayerFeature):
-    def __init__(self, delta: int = 20, grid_field: GridField = None):
+    def __init__(self, delta: int = 20, grid_field: GridField = None, aggregator=mean_median,):
         """
         Calculation of bifurcation angles.
 
@@ -28,6 +29,7 @@ class BifurcationAngles(LayerFeature):
         self.delta = delta
         self.max_angle = 160
         self.grid_field = grid_field
+        self.aggregator = aggregator
 
     def _get_bifurcation_points(self, layer: VesselTreeLayer):
         bifurcations = layer.filter_bifurcations(self.grid_field)
@@ -36,7 +38,7 @@ class BifurcationAngles(LayerFeature):
 
     def compute(self, layer: VesselTreeLayer):
         bifurcations = self._get_bifurcation_points(layer)
-        return [bif.angle(self.delta) for bif in bifurcations]
+        return self.aggregator([bif.angle(self.delta) for bif in bifurcations])
 
     def plot(self, ax, layer: VesselTreeLayer, **kwargs):
         ax = layer.plot(

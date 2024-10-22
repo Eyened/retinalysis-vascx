@@ -14,6 +14,8 @@ if TYPE_CHECKING:
 def mean(X):
     return np.nanmean(X)
 
+def sum(X):
+    return np.nansum(X)
 
 def median(X):
     return np.nanmedian(X)
@@ -34,6 +36,13 @@ def mean_std(X):
 def median_std(X):
     check_and_warn(X)
     return {"median": median(X), "std": std(X)}
+
+def mean_median(X):
+    check_and_warn(X)
+    if len(X) == 0:
+        return {"mean": None, "median": None}
+    else:
+        return {"mean": mean(X), "median": median(X)}
 
 
 def mean_median_std(X):

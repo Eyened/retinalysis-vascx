@@ -108,9 +108,9 @@ class CRE(LayerFeature):
         return recursive_cre(sc, cte)
 
     def compute_cre_for_circle(self, layer: VesselTreeLayer, circle: Circle):
-        if layer.type == LayerType.ARTERIES:
+        if layer.name == 'arteries':
             cte = 0.88
-        elif layer.type == LayerType.VEINS:
+        elif layer.name == 'veins':
             cte = 0.95
         else:
             raise ValueError("Unrecognized layer type for CRE computation")

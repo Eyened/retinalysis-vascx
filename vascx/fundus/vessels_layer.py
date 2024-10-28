@@ -7,6 +7,7 @@ import numpy as np
 from matplotlib import pyplot as plt
 from scipy.ndimage import distance_transform_edt
 from skimage.morphology import skeletonize as skimage_skeletonize
+from scipy.ndimage import gaussian_filter
 
 from rtnls_enface.base import LayerType
 from rtnls_enface.disc import OpticDisc
@@ -23,17 +24,14 @@ class FundusVesselsLayer(JointVesselsLayer):
 
     def __init__(
         self,
+        name: str,
         mask: np.ndarray,
         retina: Retina = None,
-        name: Union[str, LayerType] = "vessels",
         color: Tuple = (1, 1, 1),
     ):
+        self.name = name
         self.mask: np.ndarray = mask
         self.retina: Retina = retina
-        if not isinstance(type, LayerType):
-            self.type = LayerType[name.upper()]
-        else:
-            self.type = type
         self.color = color
 
     @property
@@ -66,11 +64,19 @@ class FundusVesselsLayer(JointVesselsLayer):
         dt_bounds = distance_transform_edt(bounds_mask)
 
         dt_skeleton[dt_bounds < dt_skeleton] = np.nan
+
+        dt_skeleton[self.retina.disc.mask.astype(bool)] = np.nan
+        
         return dt_skeleton / self.retina.disc_fovea_distance
 
     @cached_property
     def mean_distance_to_vessel(self) -> float:
         return np.nanmean(self.distance_transform)
+    
+    @cached_property
+    def invisibility_map(self) -> float:
+        mask = np.nan_to_num(self.distance_transform, nan=0.0)
+        return gaussian_filter(mask, sigma=50)
 
     def plot(
         self,

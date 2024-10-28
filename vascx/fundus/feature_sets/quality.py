@@ -13,11 +13,11 @@ from vascx.shared import aggregators
 from vascx.shared.aggregators import mean_median, median, median_std, sum
 from vascx.shared.features import FeatureSet
 
+# Created for evaluation of image quality and its effect on some features
+
 bergmann_features = FeatureSet(
     "full",
     {
-        "ta": TemporalAngle(),
-        "cre": CRE(),
         "vd": VascularDensity(),
         "vd_total": VascularDensity(MiscField.Total, cut_mask=True),
         "diam": Caliber(aggregator=median_std),
@@ -32,12 +32,6 @@ bergmann_features = FeatureSet(
         "norm_tort_segments_curv": Tortuosity(measure=TortuosityMeasure.Curvature, norm_measure=LengthMeasure.Skeleton, aggregator=sum),
         "norm_tort_segments_infl": Tortuosity(measure=TortuosityMeasure.Inflections, norm_measure=LengthMeasure.Skeleton, aggregator=sum),
         
-        "tort_vessels_skl": Tortuosity(mode=TortuosityMode.Vessels, length_measure=LengthMeasure.Skeleton, aggregator=median),
-        "tort_vessels_spl": Tortuosity(mode=TortuosityMode.Vessels, length_measure=LengthMeasure.Splines, aggregator=median),
-        "tort_vessels_curv": Tortuosity(mode=TortuosityMode.Vessels, measure=TortuosityMeasure.Curvature, aggregator=median),
-        "tort_vessels_infl": Tortuosity(mode=TortuosityMode.Vessels, measure=TortuosityMeasure.Inflections, aggregator=median),
-        
-        "temp_angle": TemporalAngle(),
         "bif_angles": BifurcationAngles(aggregator=mean_median),
         "bif": BifurcationCount(),
 

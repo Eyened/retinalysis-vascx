@@ -1,7 +1,7 @@
 import os
 import warnings
 from pathlib import Path
-from typing import Union
+from typing import List, Union
 
 from rtnls_enface.loader import FundusLoader
 from vascx.fundus.retina import Retina
@@ -13,13 +13,19 @@ class RetinaLoader(FundusLoader):
 
     @classmethod
     def from_paths(
-        cls, av_paths, disc_paths, fundus_paths, fovea_locations_path, meta_path
+        cls, 
+        av_paths: List[str] = None, 
+        vessels_paths: List[str] = None, 
+        disc_paths: List[str] = None, 
+        fundus_paths: List[str] = None, 
+        fovea_locations_path: str = None, 
+        meta_path: str = None
     ):
-        if av_paths is None and disc_paths is None and fundus_paths is None:
+        if av_paths is None and vessels_paths is None and disc_paths is None and fundus_paths is None:
             raise ValueError(
                 "One of av_paths, disc_paths or fundus_paths must be provided"
             )
-        items = cls._get_items_from_files(av_paths, disc_paths, fundus_paths)
+        items = cls._get_items_from_files(av_path=av_paths, vessels_path=vessels_paths, disc_path=disc_paths, fundus_path=fundus_paths)
         cls._add_fovea_locations(items, fovea_locations_path)
         cls._add_meta(items, meta_path)
         return cls(items)

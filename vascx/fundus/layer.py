@@ -42,17 +42,14 @@ class VesselTreeLayer(VesselLayer):
 
     def __init__(
         self,
+        name: str,
         mask: np.ndarray,
         retina: Retina = None,
-        name: Union[str, LayerType] = "vessels",
         color: Tuple = (1, 1, 1),
     ):
         self.mask: np.ndarray = mask
         self.retina: Retina = retina
-        if not isinstance(type, LayerType):
-            self.type = LayerType[name.upper()]
-        else:
-            self.type = type
+        self.name = name
         self.color = color
 
     @property

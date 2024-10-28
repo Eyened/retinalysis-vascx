@@ -8,7 +8,7 @@ from typing_extensions import TypeAlias
 from rtnls_enface import Fundus
 from rtnls_enface.utils.data_loading import open_binary_mask
 from rtnls_enface.utils.image import match_resolution
-from vascx.fundus.features.base import LayerFeature
+from vascx.fundus.features.base import LayerFeature, RetinaFeature, VesselsLayerFeature
 from vascx.fundus.layer import VesselTreeLayer
 from vascx.fundus.vessels_layer import FundusVesselsLayer
 from vascx.shared.features import FeatureSet
@@ -60,19 +60,27 @@ class Retina(Fundus):
         return res
 
     def calc_features(self, feature_set: FeatureSet):
-        layer_features = {
-            p: fn for p, fn in feature_set.items() if isinstance(fn, LayerFeature)
-        }
-
         all_features = {}
-        for feature_name, feature in layer_features.items():
-            for layer_name, layer in self.layers.items():
-                res = feature.compute(layer)
+        for feature_name, feature in feature_set.items():
+            if isinstance(feature, RetinaFeature):
+                targets = [self]
+            elif isinstance(feature, LayerFeature):
+                targets = self.get_layers(VesselTreeLayer)
+            elif isinstance(feature, VesselsLayerFeature):
+                targets = self.get_layers(FundusVesselsLayer)
+            else:
+                raise TypeError(f'Unknown type for feature {type(feature)}')
+            
+            if len(targets) == 0:
+                print(f'No targets found on which to compute feature {feature_name}.')
+            
+            for target in targets:
+                res = feature.compute(target)
                 if isinstance(res, dict):
                     for k, v in res.items():
-                        all_features[f"{feature_name}_{layer_name}_{k}"] = v
+                        all_features[f"{feature_name}_{target.name}_{k}"] = v
                 else:
-                    all_features[f"{feature_name}_{layer_name}"] = res
+                    all_features[f"{feature_name}_{target.name}"] = res
 
         return all_features
 
@@ -107,10 +115,10 @@ class Retina(Fundus):
                     return (1, 1, 1)
 
             for key, val in av_layers.items():
-                layers[key] = VesselTreeLayer(val, name=key, color=get_layer_color(key))
+                layers[key] = VesselTreeLayer(key, val, color=get_layer_color(key))
 
         if vessels_path is not None:
-            layers["vessels"] = FundusVesselsLayer(open_binary_mask(vessels_path))
+            layers["vessels"] = FundusVesselsLayer(name='vessels', mask=open_binary_mask(vessels_path))
 
         retina = cls(
             disc_path_or_mask=disc_path,

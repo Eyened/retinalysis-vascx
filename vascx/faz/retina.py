@@ -2,8 +2,8 @@ from pathlib import Path
 from typing import Any
 
 import numpy as np
-from vascx.faz.features.base import FazLayerFeature
-from vascx.faz.layer import FazLayer
+from vascx.faz.features.base import FAZLayerFeature
+from vascx.faz.layer import FAZLayer
 from vascx.shared.features import FeatureSet
 from vascx.utils import load_av_segmentation, load_image
 
@@ -11,17 +11,17 @@ from rtnls_enface.faz_enface import FAZEnface
 from rtnls_enface.utils.data_loading import open_binary_mask, open_mask
 
 
-class Retina(FAZEnface):
+class FAZRetina(FAZEnface):
     @property
-    def arteries(self) -> FazLayer:
+    def arteries(self) -> FAZLayer:
         return self.layers["arteries"]
 
     @property
-    def veins(self) -> FazLayer:
+    def veins(self) -> FAZLayer:
         return self.layers["veins"]
     
     @property
-    def vessels(self) -> FazLayer:
+    def vessels(self) -> FAZLayer:
         return self.layers["vessels"]
 
     def set_retina(self, retina):
@@ -29,7 +29,7 @@ class Retina(FAZEnface):
 
     def calc_features(self, feature_set: FeatureSet):
         layer_features = {
-            p: fn for p, fn in feature_set.items() if isinstance(fn, FazLayerFeature)
+            p: fn for p, fn in feature_set.items() if isinstance(fn, FAZLayerFeature)
         }
 
         all_features = {}
@@ -82,10 +82,10 @@ class Retina(FAZEnface):
                     return (1, 1, 1)
 
             for key, val in av_layers.items():
-                layers[key] = FazLayer(val, name=key, color=get_layer_color(key))
+                layers[key] = FAZLayer(val, name=key, color=get_layer_color(key))
 
         if vessels_path is not None:
-            layers["vessels"] = FazLayer(open_binary_mask(vessels_path))
+            layers["vessels"] = FAZLayer(open_binary_mask(vessels_path))
 
         image = load_image(image_path) if image_path is not None else None
 

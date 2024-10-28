@@ -3,11 +3,10 @@ from __future__ import annotations
 from abc import abstractmethod
 from typing import TYPE_CHECKING
 
-from vascx.faz.features.base import Feature
-from vascx.fundus.retina import Retina
-
+from vascx.shared.features import Feature
 
 if TYPE_CHECKING:
+    from vascx.fundus.retina import Retina
     from vascx.fundus.layer import VesselTreeLayer
     from vascx.fundus.vessels_layer import FundusVesselsLayer
 

@@ -20,7 +20,7 @@ class VarianceOfLaplacian(RetinaFeature):
         pass
 
     def compute(self, retina: Retina):
-        return np.var(retina.laplacian)
+        return np.nanvar(retina.laplacian)
 
     def plot(self, retina: Retina, ax=None, **kwargs):
         if ax is None:

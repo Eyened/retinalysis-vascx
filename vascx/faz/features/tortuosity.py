@@ -9,7 +9,7 @@ from vascx.shared.aggregators import mean_median_std
 from vascx.shared.segment import Segment, SplineInterpolation
 from vascx.shared.vessels import Vessels
 
-from .base import FazLayerFeature
+from .base import FAZLayerFeature
 
 if TYPE_CHECKING:
     from vascx.fundus.layer import VesselTreeLayer
@@ -27,7 +27,7 @@ class TortuosityMeasure(str, Enum):
 
 
 @dataclass
-class Tortuosity(FazLayerFeature):
+class Tortuosity(FAZLayerFeature):
     def __init__(
         self,
         measure: TortuosityMeasure = TortuosityMeasure.Distance,
@@ -77,7 +77,7 @@ class Tortuosity(FazLayerFeature):
         tortuosities = self.raw(layer)
         return self.aggregator(tortuosities)
 
-    def plot(self, layer, **kwargs):
+    def plot(self, ax, layer, **kwargs):
         if self.measure == TortuosityMeasure.Inflections:
             format = "{:d}"
         else:
@@ -86,6 +86,7 @@ class Tortuosity(FazLayerFeature):
         vessels = Vessels(layer, self.get_segments(layer))
 
         return vessels.plot(
+            ax=ax,
             text=lambda x: format.format(self._compute_for_segment(x)),
             **{
                 "show_index": True,

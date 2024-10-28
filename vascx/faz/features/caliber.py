@@ -3,23 +3,23 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 import numpy as np
-from vascx.faz.features.base import FazLayerFeature
+from vascx.faz.features.base import FAZLayerFeature
 from vascx.shared.aggregators import mean_median_std
 from vascx.shared.vessels import Vessels
 
 if TYPE_CHECKING:
-    from vascx.faz.layer import FazLayer
+    from vascx.faz.layer import FAZLayer
 
 
-class Caliber(FazLayerFeature):
+class Caliber(FAZLayerFeature):
     def __init__(self, min_numpoints=10, aggregator=mean_median_std):
         self.min_numpoints = min_numpoints
         self.aggregator = aggregator
 
-    def _get_segments(self, layer: FazLayer):
+    def _get_segments(self, layer: FAZLayer):
         return layer.segments
 
-    def compute(self, layer: FazLayer):
+    def compute(self, layer: FAZLayer):
         segments = self._get_segments(layer)
         calibers = [s.median_diameter for s in segments]
         # median diameters should never be nan
@@ -27,9 +27,10 @@ class Caliber(FazLayerFeature):
             raise ValueError("Some median diameters are nan")
         return self.aggregator(calibers)
 
-    def plot(self, layer: FazLayer, **kwargs):
+    def plot(self, ax, layer: FAZLayer, **kwargs):
         vessels = Vessels(layer, self._get_segments(layer))
         return vessels.plot(
+            ax=ax,
             text=lambda x: f"{x.median_diameter:.2f}",
             cmap="tab20",
             min_numpoints=0,

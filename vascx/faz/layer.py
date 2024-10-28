@@ -19,10 +19,10 @@ from vascx.shared.segment import Segment
 from rtnls_enface.base import Point
 
 if TYPE_CHECKING:
-    from vascx.faz.retina import Retina
+    from vascx.faz.retina import FAZRetina
 
 
-class FazLayer(VesselLayer):
+class FAZLayer(VesselLayer):
     """Represents an artery or vein layer around the faz
     which contains many trees starting at the edges and with leaves near the FAZ
     """
@@ -30,7 +30,7 @@ class FazLayer(VesselLayer):
     def __init__(
         self,
         mask: np.ndarray,
-        retina: Retina = None,
+        retina: FAZRetina = None,
         color: Tuple = (1, 1, 1),
         name: str = None,
     ):
@@ -175,7 +175,7 @@ class FazLayer(VesselLayer):
         digraph=False,
     ):
         if ax is None:
-            fig, ax = plt.subplots(1, 1, figsize=(8, 8), dpi=300)
+            _, ax = plt.subplots(1, 1, figsize=(8, 8), dpi=300)
             ax.imshow(np.zeros(self.binary.shape))
             ax.set_axis_off()
 
@@ -208,7 +208,7 @@ class FazLayer(VesselLayer):
             ax.set_xlim(*xlim)
         if ylim is not None:
             ax.set_ylim(*ylim)
-        return fig, ax
+        return ax
 
     def _get_base_fig(self, fig, ax):
         if ax is None:

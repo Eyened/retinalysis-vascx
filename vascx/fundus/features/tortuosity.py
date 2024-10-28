@@ -117,7 +117,7 @@ class Tortuosity(LayerFeature):
         tortuosities = self.raw(layer)
         return self.aggregator(tortuosities)
 
-    def plot(self, ax, layer, **kwargs):
+    def plot(self, ax, layer: VesselTreeLayer, **kwargs):
         segments = self.get_segments(layer)
 
         vessels = Vessels(layer, segments)
@@ -128,7 +128,7 @@ class Tortuosity(LayerFeature):
 
         ax = vessels.plot(
             ax=ax,
-            text=lambda x: format.format(self._compute_for_segment(x)),
+            text=lambda x: format.format(self._compute_for_segment(x, scale=layer.retina.disc_fovea_distance)),
             cmap="tab20",
             min_numpoints=0,
             min_numpoints_caliber=self.min_numpoints,

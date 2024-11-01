@@ -13,7 +13,7 @@ from vascx.shared import aggregators
 from vascx.shared.aggregators import mean_median, median, median_std, sum
 from vascx.shared.features import FeatureSet
 
-bergmann_features = FeatureSet(
+full_features = FeatureSet(
     "full",
     {
         "ta": TemporalAngle(),

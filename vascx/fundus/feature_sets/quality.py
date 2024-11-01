@@ -15,26 +15,9 @@ from vascx.shared.features import FeatureSet
 
 # Created for evaluation of image quality and its effect on some features
 
-bergmann_features = FeatureSet(
-    "full",
+quality_features = FeatureSet(
+    "quality",
     {
-        "vd": VascularDensity(),
-        "vd_total": VascularDensity(MiscField.Total, cut_mask=True),
-        "diam": Caliber(aggregator=median_std),
-
-        "tort_segments_skl": Tortuosity(length_measure=LengthMeasure.Skeleton, aggregator=median),
-        "tort_segments_spl": Tortuosity(length_measure=LengthMeasure.Splines, aggregator=median),
-        "tort_segments_curv": Tortuosity(measure=TortuosityMeasure.Curvature, aggregator=median),
-        "tort_segments_infl": Tortuosity(measure=TortuosityMeasure.Inflections, aggregator=median),
-
-        "norm_tort_segments_skl": Tortuosity(length_measure=LengthMeasure.Skeleton, norm_measure=LengthMeasure.Skeleton, aggregator=sum),
-        "norm_tort_segments_spl": Tortuosity(length_measure=LengthMeasure.Splines, norm_measure=LengthMeasure.Splines, aggregator=sum),
-        "norm_tort_segments_curv": Tortuosity(measure=TortuosityMeasure.Curvature, norm_measure=LengthMeasure.Skeleton, aggregator=sum),
-        "norm_tort_segments_infl": Tortuosity(measure=TortuosityMeasure.Inflections, norm_measure=LengthMeasure.Skeleton, aggregator=sum),
-        
-        "bif_angles": BifurcationAngles(aggregator=mean_median),
-        "bif": BifurcationCount(),
-
         "coverage": Coverage(),
         "lapl": VarianceOfLaplacian()
     },

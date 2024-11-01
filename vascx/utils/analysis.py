@@ -5,7 +5,7 @@ from typing import Dict, List
 
 import pandas as pd
 from joblib import Parallel, delayed
-from rtnls_fundusprep.mask_extraction import CFIBounds as Bounds
+from rtnls_fundusprep.mask_extraction import Bounds
 from tqdm import tqdm
 
 from rtnls_enface.base import EnfaceImage

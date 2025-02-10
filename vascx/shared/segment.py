@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import warnings
+from functools import cached_property
 from typing import TYPE_CHECKING, List, Tuple, Union
 
 import matplotlib.pyplot as plt
@@ -9,11 +10,7 @@ from scipy.spatial.distance import euclidean as distance_2p
 from sklearn.linear_model import TheilSenRegressor
 
 from rtnls_enface.base import Line, Point, TuplePoint
-from vascx.shared.diameters import (
-    DiameterMeasurement,
-    retipy_vessel_diameters,
-    segment_interpolate,
-)
+from vascx.shared.diameters import DiameterMeasurement, retipy_vessel_diameters
 from vascx.shared.splines import SplineInterpolation
 from vascx.utils.plotting import find_bounding_box
 
@@ -43,27 +40,25 @@ class Segment:
 
         self.original_segments = None
 
-    @property
+    @cached_property
     def start(self) -> Point:
         return Point(*self.skeleton[0])
 
-    @property
+    @cached_property
     def end(self) -> Point:
         return Point(*self.skeleton[-1])
 
-    @property
+    @cached_property
     def pixels(self) -> List[Tuple[int, int]]:
-        if self._pixels is not None:
-            return self._pixels
         return self.layer.get_segment_pixels(self)
 
-    @property
+    @cached_property
     def spline(self) -> SplineInterpolation:
-        if self._spline is None:
-            self.set_diameters()
-        return self._spline
+        if len(self.skeleton) <= 4:
+            return None
+        return SplineInterpolation(self)
 
-    @property
+    @cached_property
     def length(self) -> float:
         distance = 0
         x, y = zip(*self.skeleton)
@@ -71,33 +66,53 @@ class Segment:
             distance += distance_2p([x[i], y[i]], [x[i + 1], y[i + 1]])
         return distance
 
-    @property
+    @cached_property
     def chord_length(self) -> float:
         return distance_2p(self.skeleton[0], self.skeleton[-1])
 
-    @property
+    @cached_property
+    def diameter_measurements(self) -> float:
+        assert self.layer is not None
+        if len(self.skeleton) <= 4:
+            # segment is too short for cubic spline, use retipy method.
+            measurements = self.calc_diameters_retipy()
+        else:
+            try:
+                measurements = self.calc_diameters_using_splines()
+            except Exception:
+                warnings.warn(
+                    "Exception when using splines for diameter calculation, "
+                    "falling back to retipy."
+                )
+                # default to using retipy if there are exceptions when using splines
+                measurements = self.calc_diameters_retipy()
+
+            if len(measurements) == 0:
+                measurements = self.calc_diameters_retipy()
+
+        return measurements
+
+    @cached_property
+    def diameters(self) -> List[float]:
+        return [m.diameter for m in self.diameter_measurements]
+
+    @cached_property
     def mean_diameter(self) -> float:
-        if self._mean_diameter is None:
-            self.set_diameters()
-        return self._mean_diameter
+        return np.mean(self.diameters)
 
-    @property
+    @cached_property
     def median_diameter(self) -> float:
-        if self._median_diameter is None:
-            self.set_diameters()
-        return self._median_diameter
+        return np.median(self.diameters)
 
-    @property
-    def diameters(self) -> float:
-        if self._diameter_measurements is None:
-            self.set_diameters()
-        return self._diameter_measurements
-
-    @property
+    @cached_property
     def mean_xy(self) -> float:
-        if self._mean_xy is None:
-            self._mean_xy = self.get_mean_xy()
-        return self._mean_xy
+        return self.get_mean_xy()
+
+    @cached_property
+    def profile(self) -> np.ndarray:
+        """Return the intensity profile of the segment"""
+        if self.layer.retina.image is None:
+            raise ValueError("Image not set in retina")
 
     def reverse(self):
         self.skeleton = np.flip(self.skeleton, axis=0)
@@ -115,12 +130,11 @@ class Segment:
         inliers = np.where(residuals < threshold)[0].tolist()
         return [measurements[i] for i in inliers]
 
-    def calc_diameters_using_splines(self, n_points):
+    def calc_diameters_using_splines(self, n_points=None):
         if n_points is None:
             n_points = max(10, round(100 * self.length / 1024))
-        self._spline, measurements = segment_interpolate(
-            self.layer.binary, self, n_points
-        )
+
+        measurements = self.spline.diameters(n_points)
 
         # 30 pixels is a safe maximum
         measurements = [d for d in measurements if d.diameter < 30]
@@ -135,30 +149,6 @@ class Segment:
         measurements = retipy_vessel_diameters(self, self.layer.mask)
         measurements = [d for d in measurements if d.diameter < 30]
         return measurements
-
-    def set_diameters(self, n_points=None):
-        assert self.layer is not None
-        if len(self.skeleton) <= 4:
-            # segment is too short for cubic spline, use retipy method.
-            measurements = self.calc_diameters_retipy()
-        else:
-            try:
-                measurements = self.calc_diameters_using_splines(n_points)
-            except Exception:
-                warnings.warn(
-                    "Exception when using splines for diameter calculation, "
-                    "falling back to retipy."
-                )
-                # default to using retipy if there are exceptions when using splines
-                measurements = self.calc_diameters_retipy()
-
-            if len(measurements) == 0:
-                measurements = self.calc_diameters_retipy()
-
-        segment_diameters = [r.diameter for r in measurements]
-        self._diameter_measurements = measurements
-        self._median_diameter = np.median(segment_diameters)
-        self._mean_diameter = np.mean(segment_diameters)
 
     def get_mean_xy(self):
         return np.mean(self.skeleton, axis=0)

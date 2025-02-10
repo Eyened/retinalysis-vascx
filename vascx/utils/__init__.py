@@ -79,3 +79,42 @@ def load_image(path: Union[Path, str], dtype: Union[np.uint8, np.float32] = np.u
     if im.dtype == np.float32 and dtype == np.uint8:
         im = np.round(im * 255).astype(np.uint8)
     return im
+
+
+def linear_interpolate(image, x, y):
+    """
+    Perform linear interpolation for a single-channel (grayscale) image at a given point (x, y).
+
+    Parameters:
+        image (np.ndarray): Grayscale image as a 2D NumPy array.
+        x (float): X-coordinate (horizontal) of the point.
+        y (float): Y-coordinate (vertical) of the point.
+
+    Returns:
+        float: Interpolated intensity value at (x, y).
+    """
+    height, width = image.shape
+
+    # Ensure the coordinates are within bounds
+    if x < 0 or x >= width - 1 or y < 0 or y >= height - 1:
+        raise ValueError("Point is out of bounds for linear interpolation.")
+
+    # Find the integer coordinates around (x, y)
+    x0, y0 = int(x), int(y)
+    x1, y1 = x0 + 1, y0 + 1
+
+    # Get the intensity values at the four surrounding pixels
+    I00 = image[y0, x0]
+    I10 = image[y0, x1]
+    I01 = image[y1, x0]
+    I11 = image[y1, x1]
+
+    # Compute weights for linear interpolation
+    wx, wy = x - x0, y - y0
+
+    # Interpolate in the x-direction first, then in the y-direction
+    I0 = (1 - wx) * I00 + wx * I10  # Interpolate between (x0, y0) and (x1, y0)
+    I1 = (1 - wx) * I01 + wx * I11  # Interpolate between (x0, y1) and (x1, y1)
+    I = (1 - wy) * I0 + wy * I1  # Interpolate between I0 and I1 in the y-direction
+
+    return I

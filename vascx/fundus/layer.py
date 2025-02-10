@@ -1,8 +1,9 @@
 from __future__ import annotations
 
 import copy
+import warnings
 from functools import cached_property
-from typing import TYPE_CHECKING, Dict, List, Tuple, Union
+from typing import TYPE_CHECKING, Dict, List, Tuple
 
 import matplotlib.pyplot as plt
 import networkx as nx
@@ -11,7 +12,6 @@ from networkx import DiGraph, Graph, connected_components, get_node_attributes
 from scipy.ndimage import distance_transform_edt
 from skimage.morphology import skeletonize as skimage_skeletonize
 
-from rtnls_enface.base import LayerType
 from rtnls_enface.disc import OpticDisc
 from rtnls_enface.grids.base import GridField
 from vascx.fundus.vessel_resolve import RecursiveWeightedAverageResolver
@@ -34,8 +34,10 @@ def default_seg_color(seg):
 
 default_vessels_resolver = RecursiveWeightedAverageResolver("median_diameter")
 
+
 class RegionOutOfBoundsError(RuntimeError):
     pass
+
 
 class VesselTreeLayer(VesselLayer):
     """Represents an artery or vein layer with a (probably imperfect) tree structure for the vessel graph."""
@@ -58,7 +60,9 @@ class VesselTreeLayer(VesselLayer):
 
     @cached_property
     def binary(self) -> np.ndarray:
-        return binarize_and_fill(self.mask)
+        bin = binarize_and_fill(self.mask)
+        # bin = remove_small_objects(bin, 30, connectivity=5)
+        return bin
 
     @cached_property
     def binary_nodisc(self) -> np.ndarray:
@@ -127,7 +131,9 @@ class VesselTreeLayer(VesselLayer):
             return self.segments
         grid = self.retina.grids[field.grid()]
         if not grid.field_visible(field):
-            raise RegionOutOfBoundsError(f"Field {field} not completely visible in this retina.")
+            raise RegionOutOfBoundsError(
+                f"Field {field} not completely visible in this retina."
+            )
         return [
             s
             for s in self.segments
@@ -172,7 +178,9 @@ class VesselTreeLayer(VesselLayer):
             return self.nodes
         grid = self.retina.grids[field.grid()]
         if not grid.field_visible(field):
-            raise RegionOutOfBoundsError(f"Field {field} not completely visible in this retina.")
+            raise RegionOutOfBoundsError(
+                f"Field {field} not completely visible in this retina."
+            )
         return [n for n in self.nodes if grid.point_in_field(n.position, field)]
 
     @cached_property
@@ -188,7 +196,9 @@ class VesselTreeLayer(VesselLayer):
             return self.bifurcations
         grid = self.retina.grids[field.grid()]
         if not grid.field_visible(field):
-            raise RegionOutOfBoundsError(f"Field {field} not completely visible in this retina.")
+            raise RegionOutOfBoundsError(
+                f"Field {field} not completely visible in this retina."
+            )
         return [
             n
             for n in self.bifurcations
@@ -202,39 +212,39 @@ class VesselTreeLayer(VesselLayer):
         G = copy.deepcopy(self.digraph)
 
         def recursive_set_prop_values(edge):
-            u, v  = edge
-            length, median_diameter = G[u][v]['segment'].length, G[u][v]['segment'].median_diameter
+            u, v = edge
+            length, median_diameter = (
+                G[u][v]["segment"].length,
+                G[u][v]["segment"].median_diameter,
+            )
 
             outgoing_edges = G.out_edges(v)
             if len(outgoing_edges) == 0:
-                nx.set_edge_attributes(G, {edge: median_diameter}, 'agg_value')
-                nx.set_edge_attributes(G, {edge: length}, 'agg_length')
+                nx.set_edge_attributes(G, {edge: median_diameter}, "agg_value")
+                nx.set_edge_attributes(G, {edge: length}, "agg_length")
                 return length, median_diameter
             else:
-                tmp = [
-                    recursive_set_prop_values(e)
-                    for e in outgoing_edges
-                ]
+                tmp = [recursive_set_prop_values(e) for e in outgoing_edges]
 
                 tmp = sorted(tmp, key=lambda x: x[0], reverse=True)  # sort by mean diam
                 max_agg_diameter, agg_length = tmp[0]
                 agg_value = (
                     max_agg_diameter * agg_length + median_diameter * length
                 ) / (agg_length + length)
-                nx.set_edge_attributes(G, {edge: agg_value}, 'agg_value')
-                nx.set_edge_attributes(G, {edge: agg_length + length}, 'agg_length')
+                nx.set_edge_attributes(G, {edge: agg_value}, "agg_value")
+                nx.set_edge_attributes(G, {edge: agg_length + length}, "agg_length")
                 return agg_value, agg_length + length
-            
+
         def merge_edges(edges):
             # Ensure edge_list has consecutive edges
             for i in range(len(edges) - 1):
-                if edges[i][1] != edges[i+1][0]:
+                if edges[i][1] != edges[i + 1][0]:
                     raise ValueError("The edges are not consecutive!")
 
             # Identify the start and end nodes of the merged edge
             edge = (edges[0][0], edges[-1][1])
 
-            segments = [G[u][v]['segment'] for u,v in edges]
+            segments = [G[u][v]["segment"] for u, v in edges]
             skeleton = np.concatenate([s.skeleton for s in segments], axis=0)
             seg = Segment(skeleton, edge=edge)
             seg.layer = self
@@ -244,12 +254,12 @@ class VesselTreeLayer(VesselLayer):
             # Remove intermediate nodes and edges
             for u, v in edges:
                 G.remove_edge(u, v)
-            
+
             # Add a new edge with combined properties
             G.add_edge(*edge, segment=seg)
 
         def recursive_merge(edge):
-            u, v  = edge
+            u, v = edge
             outgoing_edges = G.out_edges(v)
 
             if len(outgoing_edges) == 0:
@@ -259,7 +269,7 @@ class VesselTreeLayer(VesselLayer):
             # print(outgoing_edges)
             outgoing_edges = sorted(
                 outgoing_edges,
-                key=lambda e: G[e[0]][e[1]]['agg_value'],
+                key=lambda e: G[e[0]][e[1]]["agg_value"],
                 reverse=True,
             )
             # get open and completed edges for the edge with max agg_value
@@ -270,19 +280,18 @@ class VesselTreeLayer(VesselLayer):
                 merge_edges(recursive_merge(e))
 
             return [edge] + os
-                
-    
+
         root_edges = [list(G.out_edges(n))[0] for n in self.trees]
         for edge in root_edges:
             recursive_set_prop_values(edge)
             open_edge = recursive_merge(edge)
             merge_edges(open_edge)
 
-        for i, (u,v) in enumerate(G.edges()):
-            G[u][v]['segment'].index = i
+        for i, (u, v) in enumerate(G.edges()):
+            G[u][v]["segment"].index = i
 
         return G
-    
+
     @cached_property
     def resolved_segments(self) -> List[Segment]:
         return [self.vessels.edges[e]["segment"] for e in self.vessels.edges()]
@@ -336,11 +345,11 @@ class VesselTreeLayer(VesselLayer):
         ax=None,
         mask=True,
         color=None,
-        skeleton=True,
+        skeleton=False,
         segments=False,
         nodes=False,
         digraph=False,
-        vessels=False
+        vessels=False,
     ):
         ax = self._get_base_axes(ax)
         if color is None:
@@ -429,7 +438,16 @@ class VesselTreeLayer(VesselLayer):
             return self.binary
 
     def dice(self, layer: VesselTreeLayer, remove_disk=True):
+        if remove_disk and self.retina.disc is None:
+            warnings.warn(
+                "called with remove_disk but disc not present. Proceeding with remove_disk = False"
+            )
+            remove_disk = False
+
         mask1 = self.get_binary(remove_disk)
         mask2 = layer.get_binary(remove_disk)
 
         return dice_score(mask1.flatten(), mask2.flatten())
+
+    def connected_component_count(self):
+        return nx.number_connected_components(self.graph)

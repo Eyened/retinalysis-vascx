@@ -1,12 +1,11 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, List, Tuple
+from typing import TYPE_CHECKING, List
 
 import numpy as np
 
 from rtnls_enface.base import TuplePoint
-from vascx.shared.splines import SplineInterpolation
 
 if TYPE_CHECKING:
     from .segment import Segment
@@ -82,35 +81,6 @@ def find_vessel_edge(
         fx = (np.ceil(cx) - ox) / rx
 
     return ray_origin + max(fy, fx) * ray_direction
-
-
-def segment_interpolate(
-    vessels: np.ndarray, segment: Segment, n_points: int
-) -> Tuple[SplineInterpolation, List[DiameterMeasurement]]:
-    """
-    Interpolates a segment using a spline and evaluates segment properties at multiple points.
-
-    Args:
-        vessels: A numpy array representing the vessels.
-        segment: The segment object to interpolate.
-        n_points: The number of points to evaluate along the segment.
-
-    Returns:
-        A tuple containing the spline interpolation object and a list of interpolated segment properties.
-    """
-    spline = SplineInterpolation(segment)
-
-    vessels = vessels.copy()
-
-    def evaluate(t):
-        origin = spline.get_point(t)
-        direction = spline.get_perpendicular(t)
-        edge_0 = find_vessel_edge(vessels, origin, direction)
-        edge_1 = find_vessel_edge(vessels, origin, -direction)
-        diameter = np.sqrt(np.sum((edge_0 - edge_1) ** 2))
-        return DiameterMeasurement(origin, edge_0, edge_1, diameter)
-
-    return spline, [evaluate(t) for t in np.linspace(0, 1, n_points)]
 
 
 def retipy_vessel_diameters(

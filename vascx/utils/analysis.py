@@ -1,35 +1,36 @@
 import traceback
 import warnings
-from pathlib import Path
 from typing import Dict, List
 
 import pandas as pd
 from joblib import Parallel, delayed
-from rtnls_fundusprep.mask_extraction import Bounds
 from tqdm import tqdm
 
 from rtnls_enface.base import EnfaceImage
+from rtnls_fundusprep.cfi_bounds import CFIBounds as Bounds
 from vascx.faz.feature_sets.basic import *  # noqa: F401
 from vascx.fundus.feature_sets.bergmann import *  # noqa: F401
-from vascx.fundus.feature_sets.tortuosity import *  # noqa: F401
 from vascx.fundus.feature_sets.full import *  # noqa: F401
 from vascx.fundus.feature_sets.quality import *  # noqa: F401
-
+from vascx.fundus.feature_sets.tortuosity import *  # noqa: F401
 from vascx.fundus.retina import Retina
 from vascx.shared.features import FeatureSet
 
 
-def extract_one(ex, feature_set_name, retina_cls: EnfaceImage = Retina, print_stack_trace=False):
+def extract_one(
+    ex, feature_set_name, retina_cls: EnfaceImage = Retina, print_stack_trace=False
+):
     feature_set = FeatureSet.get_by_name(feature_set_name)
     if feature_set is None:
         raise ValueError(f"Feature set '{feature_set_name}' not found.")
     try:
         with warnings.catch_warnings(record=True) as caught_warnings:
             # add bounds to item
-            if "metadata" in ex:
-                bounds = Bounds(**ex["metadata"])
-                M = bounds.get_cropping_matrix(1024)
-                ex["bounds"] = bounds.warp(M, (1024, 1024))
+            if "bounds" in ex:
+                # print(type(ex["metadata"]), ex["metadata"])
+                bounds = Bounds(**ex["bounds"])
+                M = bounds.get_cropping_transform(1024)
+                ex["bounds"] = bounds.warp(M)
             retina = retina_cls.from_file(**ex)
             features = retina.calc_features(feature_set)
 
@@ -37,7 +38,7 @@ def extract_one(ex, feature_set_name, retina_cls: EnfaceImage = Retina, print_st
 
             # Modify the warning message with additional information
             warning_messages = [
-                 f" Example {ex['id']}:: " + str(warning.message)
+                f" Example {ex['id']}:: " + str(warning.message)
                 for warning in caught_warnings
             ]
             for w in warning_messages:
@@ -46,13 +47,12 @@ def extract_one(ex, feature_set_name, retina_cls: EnfaceImage = Retina, print_st
         return features, warning_messages
     except Exception as err:
         print(f"Exception when computing features for example {str(ex['id'])}")
+        traceback.print_exc()
         if print_stack_trace:
             traceback.print_exc()
         else:
             print(err)
         return {}, [f"Error computing features for example {str(ex)}"]
-    
-    
 
 
 def extract_in_parallel(
@@ -64,7 +64,8 @@ def extract_in_parallel(
     logger=None,
 ):
     res = Parallel(n_jobs=n_jobs, verbose=10)(
-        delayed(extract_one)(ex, feature_set_name, retina_cls, print_stack_trace) for ex in tqdm(examples)
+        delayed(extract_one)(ex, feature_set_name, retina_cls, print_stack_trace)
+        for ex in tqdm(examples)
     )
 
     features = [r[0] for r in res]

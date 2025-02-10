@@ -1,9 +1,11 @@
 import os
+import random
 import warnings
 from pathlib import Path
 from typing import List, Union
 
 from rtnls_enface.loader import FundusLoader
+from rtnls_enface.utils.plotting import plot_grid
 from vascx.fundus.retina import Retina
 
 
@@ -13,19 +15,29 @@ class RetinaLoader(FundusLoader):
 
     @classmethod
     def from_paths(
-        cls, 
-        av_paths: List[str] = None, 
-        vessels_paths: List[str] = None, 
-        disc_paths: List[str] = None, 
-        fundus_paths: List[str] = None, 
-        fovea_locations_path: str = None, 
-        meta_path: str = None
+        cls,
+        av_paths: List[str] = None,
+        vessels_paths: List[str] = None,
+        disc_paths: List[str] = None,
+        fundus_paths: List[str] = None,
+        fovea_locations_path: str = None,
+        meta_path: str = None,
     ):
-        if av_paths is None and vessels_paths is None and disc_paths is None and fundus_paths is None:
+        if (
+            av_paths is None
+            and vessels_paths is None
+            and disc_paths is None
+            and fundus_paths is None
+        ):
             raise ValueError(
                 "One of av_paths, disc_paths or fundus_paths must be provided"
             )
-        items = cls._get_items_from_files(av_path=av_paths, vessels_path=vessels_paths, disc_path=disc_paths, fundus_path=fundus_paths)
+        items = cls._get_items_from_files(
+            av_path=av_paths,
+            vessels_path=vessels_paths,
+            disc_path=disc_paths,
+            fundus_path=fundus_paths,
+        )
         cls._add_fovea_locations(items, fovea_locations_path)
         cls._add_meta(items, meta_path)
         return cls(items)
@@ -64,22 +76,26 @@ class RetinaLoader(FundusLoader):
     ):
         base = Path(base)
         if av_subfolder is not None and not os.path.exists(base / av_subfolder):
-            warnings.warn(f"folder {base/av_subfolder} not found")
+            warnings.warn(f"folder {base / av_subfolder} not found")
             av_subfolder = None
-        if vessels_subfolder is not None and not os.path.exists(base / vessels_subfolder):
-            warnings.warn(f"folder {base/vessels_subfolder} not found")
+        if vessels_subfolder is not None and not os.path.exists(
+            base / vessels_subfolder
+        ):
+            warnings.warn(f"folder {base / vessels_subfolder} not found")
             vessels_subfolder = None
         if discs_subfolder is not None and not os.path.exists(base / discs_subfolder):
-            warnings.warn(f"folder {base/discs_subfolder} not found")
+            warnings.warn(f"folder {base / discs_subfolder} not found")
             discs_subfolder = None
         if fundus_subfolder is not None and not os.path.exists(base / fundus_subfolder):
-            warnings.warn(f"folder {base/fundus_subfolder} not found")
+            warnings.warn(f"folder {base / fundus_subfolder} not found")
             fundus_subfolder = None
         if meta_csv is not None and not os.path.exists(base / meta_csv):
-            warnings.warn(f"file {base/meta_csv} not found")
+            warnings.warn(f"file {base / meta_csv} not found")
             meta_csv = None
-        if fovea_locations_csv is not None and not os.path.exists(base / fovea_locations_csv):
-            warnings.warn(f"file {base/fovea_locations_csv} not found")
+        if fovea_locations_csv is not None and not os.path.exists(
+            base / fovea_locations_csv
+        ):
+            warnings.warn(f"file {base / fovea_locations_csv} not found")
             fovea_locations_csv = None
         return cls.from_folders(
             base / av_subfolder if av_subfolder is not None else None,
@@ -89,3 +105,11 @@ class RetinaLoader(FundusLoader):
             base / fovea_locations_csv if fovea_locations_csv is not None else None,
             base / meta_csv if meta_csv is not None else None,
         )
+
+    def plot_sample(self, N):
+        def plot_fn(ax, row, col, i):
+            i = random.sample(range(len(self.items)), 1)[0]
+            ret = self[i]
+            ret.plot(ax=ax)
+
+        plot_grid(plot_fn, N // 4, 4)

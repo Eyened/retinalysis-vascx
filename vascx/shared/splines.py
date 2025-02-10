@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import warnings
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, List, Tuple
 
 import numpy as np
 from scipy.interpolate import UnivariateSpline
@@ -9,6 +9,7 @@ from scipy.optimize import fsolve
 from scipy.spatial.distance import euclidean as distance_2p
 
 from rtnls_enface.base import Circle, Point
+from vascx.shared.diameters import DiameterMeasurement, find_vessel_edge
 
 if TYPE_CHECKING:
     from vascx.shared.segment import Segment
@@ -32,6 +33,7 @@ class SplineInterpolation:
 
         self.points = np.array(segment.skeleton, dtype=float)
         self.points += 0.5  # center of pixels
+        # print(len(self.points))
 
         # distance from start
         distance = np.cumsum(np.sqrt(np.sum(np.diff(self.points, axis=0) ** 2, axis=1)))
@@ -106,6 +108,32 @@ class SplineInterpolation:
         points = np.stack([x, y], axis=1)
         length = np.sum(np.sqrt(np.sum(np.diff(points, axis=0) ** 2, axis=1)))
         return length
+
+    def diameters(
+        self, n_points: int
+    ) -> Tuple[SplineInterpolation, List[DiameterMeasurement]]:
+        """
+        Interpolates a segment using a spline and evaluates segment properties at multiple points.
+
+        Args:
+            vessels: A numpy array representing the vessels.
+            segment: The segment object to interpolate.
+            n_points: The number of points to evaluate along the segment.
+
+        Returns:
+            A tuple containing the spline interpolation object and a list of interpolated segment properties.
+        """
+        mask = self.segment.layer.mask.copy()  # vessels.copy()
+
+        def evaluate(t):
+            origin = self.get_point(t)
+            direction = self.get_perpendicular(t)
+            edge_0 = find_vessel_edge(mask, origin, direction)
+            edge_1 = find_vessel_edge(mask, origin, -direction)
+            diameter = np.sqrt(np.sum((edge_0 - edge_1) ** 2))
+            return DiameterMeasurement(origin, edge_0, edge_1, diameter)
+
+        return [evaluate(t) for t in np.linspace(0, 1, n_points)]
 
     def curvatures(self, every=5, min_values=10):
         n_points = max(round(self.total_distance / every), min_values)

@@ -1,3 +1,4 @@
+from functools import cached_property
 from pathlib import Path
 from typing import Any, Callable, Tuple, Union
 
@@ -31,6 +32,10 @@ class Retina(Fundus):
     @property
     def vessels(self) -> FundusVesselsLayer:
         return self.layers["vessels"]
+
+    @cached_property
+    def grayscale(self) -> np.ndarray:
+        return np.dot(self.image[..., :3], [0.299, 0.587, 0.114]).astype(np.uint8)
 
     def set_retina(self, retina):
         self.retina = retina
@@ -69,11 +74,11 @@ class Retina(Fundus):
             elif isinstance(feature, VesselsLayerFeature):
                 targets = self.get_layers(FundusVesselsLayer)
             else:
-                raise TypeError(f'Unknown type for feature {type(feature)}')
-            
+                raise TypeError(f"Unknown type for feature {type(feature)}")
+
             if len(targets) == 0:
-                print(f'No targets found on which to compute feature {feature_name}.')
-            
+                print(f"No targets found on which to compute feature {feature_name}.")
+
             for target in targets:
                 res = feature.compute(target)
                 if isinstance(res, dict):
@@ -98,9 +103,9 @@ class Retina(Fundus):
         id: Any = None,
         **kwargs,
     ):
-        assert (
-            av_path is not None or vessels_path is not None
-        ), "Either av_path or vessels_path must be provided"
+        assert av_path is not None or vessels_path is not None, (
+            "Either av_path or vessels_path must be provided"
+        )
 
         layers = {}
         if av_path is not None:
@@ -118,7 +123,9 @@ class Retina(Fundus):
                 layers[key] = VesselTreeLayer(key, val, color=get_layer_color(key))
 
         if vessels_path is not None:
-            layers["vessels"] = FundusVesselsLayer(name='vessels', mask=open_binary_mask(vessels_path))
+            layers["vessels"] = FundusVesselsLayer(
+                name="vessels", mask=open_binary_mask(vessels_path)
+            )
 
         retina = cls(
             disc_path_or_mask=disc_path,

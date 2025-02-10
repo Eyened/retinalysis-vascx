@@ -47,7 +47,6 @@ def extract_one(
         return features, warning_messages
     except Exception as err:
         print(f"Exception when computing features for example {str(ex['id'])}")
-        traceback.print_exc()
         if print_stack_trace:
             traceback.print_exc()
         else:

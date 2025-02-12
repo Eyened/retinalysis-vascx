@@ -1,4 +1,3 @@
-from functools import cached_property
 from pathlib import Path
 from typing import Any, Callable, Tuple, Union
 
@@ -32,10 +31,6 @@ class Retina(Fundus):
     @property
     def vessels(self) -> FundusVesselsLayer:
         return self.layers["vessels"]
-
-    @cached_property
-    def grayscale(self) -> np.ndarray:
-        return np.dot(self.image[..., :3], [0.299, 0.587, 0.114]).astype(np.uint8)
 
     def set_retina(self, retina):
         self.retina = retina

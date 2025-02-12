@@ -80,7 +80,7 @@ class Vessels:
         mask: np.ndarray = None,
     ):
         if ax is None:
-            fig, ax = plt.subplots(1, 1, figsize=(4, 4), dpi=300)
+            fig, ax = plt.subplots(1, 1, figsize=(4, 4), dpi=150)
             ax.set_axis_off()
             ax.imshow(np.zeros_like(self.layer.binary), cmap="binary")
 

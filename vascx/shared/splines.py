@@ -10,6 +10,7 @@ from scipy.spatial.distance import euclidean as distance_2p
 
 from rtnls_enface.base import Circle, Point
 from vascx.shared.diameters import DiameterMeasurement, find_vessel_edge
+from vascx.utils import linear_interpolate
 
 if TYPE_CHECKING:
     from vascx.shared.segment import Segment
@@ -99,7 +100,7 @@ class SplineInterpolation:
         dy_dt = self.dy(t)
         p = np.array([-dx_dt, dy_dt])
         length = np.sqrt(p.dot(p))
-        return p / length
+        return p / length  # yx
 
     def length(self, every=1, min_values=10):
         n_points = max(round(self.total_distance / every), min_values)
@@ -134,6 +135,26 @@ class SplineInterpolation:
             return DiameterMeasurement(origin, edge_0, edge_1, diameter)
 
         return [evaluate(t) for t in np.linspace(0, 1, n_points)]
+
+    def profile(self, image: np.ndarray, N=50, L=15):
+        def evaluate(t):
+            origin = self.get_point(t)
+            u = self.get_perpendicular(t)  # unit vector
+            # print(u)
+            profile = np.zeros(2 * L + 1)
+
+            for i in range(-L, L + 1):
+                sample_point = (
+                    origin + i * u
+                )  # Calculate the sample point along the direction
+                # print(sample_point)
+                profile[i + L] = linear_interpolate(
+                    image, sample_point[1], sample_point[0]
+                )  # Interpolate the value at the sample point
+
+            return profile
+
+        return np.stack([evaluate(t) for t in np.linspace(0, 1, N)])
 
     def curvatures(self, every=5, min_values=10):
         n_points = max(round(self.total_distance / every), min_values)

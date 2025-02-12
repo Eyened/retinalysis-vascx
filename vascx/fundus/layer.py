@@ -377,7 +377,7 @@ class VesselTreeLayer(VesselLayer):
 
     def _get_base_axes(self, ax):
         if ax is None:
-            fig, ax = plt.subplots(1, 1, figsize=(8, 8), dpi=300)
+            fig, ax = plt.subplots(1, 1, figsize=(8, 8), dpi=150)
             ax.imshow(np.zeros(self.binary.shape))
             ax.set_axis_off()
 
@@ -409,9 +409,11 @@ class VesselTreeLayer(VesselLayer):
         g = Graph(self.trees)
         return self.plot_graph(ax, g, **kwargs)
 
-    def plot_segments(self, ax=None, **kwargs):
+    def plot_segments(self, ax=None, segments: List[Segment] = None, **kwargs):
+        if segments is None:
+            segments = self.segments
         ax = self._get_base_axes(ax)
-        vessels = Vessels(self, self.segments)
+        vessels = Vessels(self, segments)
         return vessels.plot(ax=ax, **kwargs)
 
     def plot_nodes(self, ax=None, fig=None):

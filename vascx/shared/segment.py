@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import warnings
 from functools import cached_property
+from math import ceil
 from typing import TYPE_CHECKING, List, Tuple, Union
 
 import matplotlib.pyplot as plt
@@ -114,6 +115,14 @@ class Segment:
         if self.layer.retina.image is None:
             raise ValueError("Image not set in retina")
 
+        return (
+            self.spline.profile(
+                self.layer.retina.grayscale, L=2 * ceil(self.median_diameter)
+            )
+            if self.spline is not None
+            else None
+        )
+
     def reverse(self):
         self.skeleton = np.flip(self.skeleton, axis=0)
 
@@ -196,6 +205,12 @@ class Segment:
         if self.spline is None:
             return None, None
         return self.spline.intersections_with_circle(circle)
+
+    def plot(
+        self,
+        ax=None,
+    ):
+        self.layer.plot_segments(ax, segments=[self])
 
     def plot_skeleton(
         self,

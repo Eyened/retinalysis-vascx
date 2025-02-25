@@ -138,7 +138,7 @@ class Vessels:
                     segment.mean_xy[1],
                     segment.mean_xy[0],
                     seg_text,
-                    fontsize=2.4,
+                    fontsize=3.6,
                     color="white",
                 )
 

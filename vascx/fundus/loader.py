@@ -106,10 +106,12 @@ class RetinaLoader(FundusLoader):
             base / meta_csv if meta_csv is not None else None,
         )
 
-    def plot_sample(self, N):
+    def plot_sample(self, N, num_cols=4, ids=True):
         def plot_fn(ax, row, col, i):
             i = random.sample(range(len(self.items)), 1)[0]
             ret = self[i]
             ret.plot(ax=ax)
+            if ids:
+                ax.text(5, 5, i, color="green", fontsize=10)
 
-        plot_grid(plot_fn, N // 4, 4)
+        return plot_grid(plot_fn, N // num_cols, num_cols)

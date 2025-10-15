@@ -1,15 +1,14 @@
 from __future__ import annotations
 
+import warnings
 from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
-import warnings
 import cv2
 import matplotlib as mpl
 import numpy as np
 
 from rtnls_enface.base import Circle, Line
-from vascx.fundus.layer import RegionOutOfBoundsError
 
 from .base import LayerFeature
 
@@ -20,13 +19,42 @@ if TYPE_CHECKING:
 
 @dataclass
 class VascularDensity(LayerFeature):
+    """Fraction of vessel pixels within an OD–fovea-oriented ellipse (or ETDRS GridField) over its area.
+
+    Representation: Uses VesselTreeLayer.binary vessel mask for pixel counting within specified regions.
+
+    Computation: Calculates the ratio of vessel pixels to total pixels within an elliptical region centered 
+    between the optic disc and fovea, or within a specified ETDRS GridField. The ellipse extends from the 
+    optic disc with 1.5x aspect ratio along the OD-fovea axis.
+
+    Options: grid_field (region selection), cut_mask (handle out-of-bounds regions by masking vs. warning).
+    """
+    
     def __init__(self, grid_field: GridField = None, cut_mask: bool = False):
-        '''
+        """
         reduce_mask: If true, trim the mask when parts of it are out of bounds of the CFI.
             Otherwise, an exception is generated.
-        '''
+        """
         self.grid_field = grid_field
         self.cut_mask = cut_mask
+
+    def __repr__(self) -> str:
+        def fmt(v):
+            import inspect, numpy as np
+            from enum import Enum
+            if v is None:
+                return "None"
+            if isinstance(v, Enum):
+                return f"{v.__class__.__name__}.{v.name}"
+            if callable(v):
+                return getattr(v, "__name__", v.__class__.__name__)
+            if isinstance(v, np.generic):
+                return repr(v.item())
+            return repr(v)
+        return (
+            f"VascularDensity(grid_field={fmt(self.grid_field)}, "
+            f"cut_mask={fmt(self.cut_mask)})"
+        )
 
     def get_circle(self, layer: VesselTreeLayer):
         disc = layer.retina.disc
@@ -70,15 +98,21 @@ class VascularDensity(LayerFeature):
         )
 
         return mask
-    
+
     def get_mask(self, layer: VesselTreeLayer):
         if self.grid_field is None:
             return self.get_ellipse_mask(layer)
         else:
-            return layer.retina.grids[self.grid_field.grid()].field(self.grid_field).astype(np.uint8) * 255
+            return (
+                layer.retina.grids[self.grid_field.grid()]
+                .field(self.grid_field)
+                .astype(np.uint8)
+                * 255
+            )
 
     def plot(self, ax, layer: VesselTreeLayer, **kwargs):
-        ax = layer.retina.plot(ax=ax)
+        # ax = layer.retina.plot(ax=ax)
+        layer.plot(ax=ax, image=True)
         mask = self.get_mask(layer)
         density = self.compute(layer)
 
@@ -94,7 +128,7 @@ class VascularDensity(LayerFeature):
             )
         )
 
-        ax.text(10, 30, f"{density:.3f}", color="white", fontsize=6)
+        # ax.text(10, 30, f"{density:.3f}", color="white", fontsize=6)
 
     def compute_for_mask(self, layer: VesselTreeLayer, mask: np.ndarray):
         # Use the mask to select pixels within the region in the image
@@ -112,7 +146,9 @@ class VascularDensity(LayerFeature):
         else:
             # check that mask is within fundus bounds
             if not np.all(mask.astype(bool) <= layer.retina.mask):
-                warnings.warn('Region for vascular density computation is out of bounds')
+                warnings.warn(
+                    "Region for vascular density computation is out of bounds"
+                )
                 return np.nan
 
         return self.compute_for_mask(layer, mask)

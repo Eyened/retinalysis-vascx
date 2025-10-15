@@ -98,9 +98,9 @@ class Retina(Fundus):
         id: Any = None,
         **kwargs,
     ):
-        assert av_path is not None or vessels_path is not None, (
-            "Either av_path or vessels_path must be provided"
-        )
+        # assert av_path is not None or vessels_path is not None, (
+        #     "Either av_path or vessels_path must be provided"
+        # )
 
         layers = {}
         if av_path is not None:

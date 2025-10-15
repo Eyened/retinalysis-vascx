@@ -66,6 +66,8 @@ class VesselTreeLayer(VesselLayer):
 
     @cached_property
     def binary_nodisc(self) -> np.ndarray:
+        if self.disc is None:
+            return None
         return self.binary & ~self.disc.mask
 
     # STAGE 1 of processing, calc the skeleton
@@ -343,6 +345,7 @@ class VesselTreeLayer(VesselLayer):
     def plot(
         self,
         ax=None,
+        image=False,
         mask=True,
         color=None,
         skeleton=False,
@@ -354,6 +357,10 @@ class VesselTreeLayer(VesselLayer):
         ax = self._get_base_axes(ax)
         if color is None:
             color = self.color
+
+        if image:
+            if self.retina.image is not None:
+                ax.imshow(self.retina.image)
 
         if mask:
             self.plot_mask(ax, color=color)
@@ -387,7 +394,11 @@ class VesselTreeLayer(VesselLayer):
 
     def plot_mask(self, ax=None, **kwargs):
         ax = self._get_base_axes(ax)
-        plot_mask(ax, self.binary, **kwargs)
+        plot_mask(
+            ax,
+            self.binary_nodisc if self.binary_nodisc is not None else self.binary,
+            **kwargs,
+        )
 
     def plot_skeleton(self, ax=None, **kwargs):
         ax = self._get_base_axes(ax)

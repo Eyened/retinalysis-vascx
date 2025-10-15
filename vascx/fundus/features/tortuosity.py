@@ -35,6 +35,20 @@ class TortuosityMeasure(str, Enum):
 
 @dataclass
 class Tortuosity(LayerFeature):
+    """Segment- or vessel-level tortuosity by distance ratio, curvature, or inflection counts.
+
+    Representation: Uses segments or resolved_segments; for curvature uses Segment spline; 
+    optionally length-normalized. Operates on either individual segments or merged vessel trees.
+
+    Computation: Measures vessel tortuosity using three methods: distance ratio (arc length / chord length), 
+    curvature (mean curvature along spline), or inflection counts (number of direction changes). 
+    Can be computed per-segment or per-vessel (resolved segments), with optional length normalization.
+
+    Options: mode (segments vs vessels), measure (distance/curvature/inflections), length_measure 
+    (splines vs skeleton), norm_measure (length normalization), min_numpoints (length filter), 
+    grid_field (spatial filtering), aggregator (statistical aggregation function).
+    """
+    
     # Ideas
     # tortuosity for different levels of caliber
     #   what happens when small vessels not visible
@@ -58,6 +72,29 @@ class Tortuosity(LayerFeature):
         self.grid_field = grid_field
         self.norm_measure = norm_measure
         self.aggregator = aggregator
+
+    def __repr__(self) -> str:
+        def fmt(v):
+            import inspect, numpy as np
+            from enum import Enum
+            if v is None:
+                return "None"
+            if isinstance(v, Enum):
+                return f"{v.__class__.__name__}.{v.name}"
+            if callable(v):
+                return getattr(v, "__name__", v.__class__.__name__)
+            if isinstance(v, np.generic):
+                return repr(v.item())
+            return repr(v)
+        return (
+            f"Tortuosity(mode={fmt(self.mode)}, "
+            f"measure={fmt(self.measure)}, "
+            f"length_measure={fmt(self.length_measure)}, "
+            f"min_numpoints={fmt(self.min_numpoints)}, "
+            f"grid_field={fmt(self.grid_field)}, "
+            f"norm_measure={fmt(self.norm_measure)}, "
+            f"aggregator={fmt(self.aggregator)})"
+        )
 
     def _compute_for_segment(self, segment: Segment, scale: float):
         if self.measure == TortuosityMeasure.Distance:

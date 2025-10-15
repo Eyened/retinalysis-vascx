@@ -46,6 +46,22 @@ def recursive_cre(lst, cte):
 
 @dataclass
 class CRE(LayerFeature):
+    """Central retinal equivalents via recursive diameter combining of circle-intersecting segments around the disc across concentric radii; returns median across radii.
+
+    Representation: Uses segments with median_diameter and circle intersection geometry around optic disc. 
+    Operates on the directed graph segments to identify vessels crossing concentric circles.
+
+    Computation: For concentric circles around the optic disc, identifies segments intersecting each circle, 
+    recursively combines their diameters using the Hubbard formula (sqrt(d1² + d2²) with artery/vein constants), 
+    and returns the median equivalent diameter across all radii. Separates arteries and veins based on 
+    implicit classification.
+
+    Options: None exposed (uses implicit artery/vein classification constants and fixed circle radii).
+    """
+    
+    def __repr__(self) -> str:
+        return "CRE()"
+
     def get_circle(self, layer: VesselTreeLayer, od_multiple=0.5):
         disc = layer.retina.disc
         assert disc is not None

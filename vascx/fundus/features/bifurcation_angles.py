@@ -17,6 +17,19 @@ if TYPE_CHECKING:
 
 @dataclass
 class BifurcationAngles(LayerFeature):
+    """Aggregation of angles at bifurcations measured at distance delta along outgoing branches.
+
+    Representation: Uses Bifurcation geometry from digraph with outgoing branch directions computed 
+    from skeleton points at specified distances from bifurcation nodes.
+
+    Computation: For each bifurcation point, measures the angle between outgoing vessel branches by 
+    sampling points at distance 'delta' along each branch and computing the angle between the resulting 
+    direction vectors. Filters out angles larger than max_angle and aggregates results.
+
+    Options: delta (measurement distance from bifurcation), max_angle (angle filter), grid_field 
+    (spatial filtering), aggregator (statistical aggregation function).
+    """
+    
     def __init__(self, delta: int = 20, grid_field: GridField = None, aggregator=mean_median,):
         """
         Calculation of bifurcation angles.
@@ -30,6 +43,25 @@ class BifurcationAngles(LayerFeature):
         self.max_angle = 160
         self.grid_field = grid_field
         self.aggregator = aggregator
+
+    def __repr__(self) -> str:
+        def fmt(v):
+            import inspect, numpy as np
+            from enum import Enum
+            if v is None:
+                return "None"
+            if isinstance(v, Enum):
+                return f"{v.__class__.__name__}.{v.name}"
+            if callable(v):
+                return getattr(v, "__name__", v.__class__.__name__)
+            if isinstance(v, np.generic):
+                return repr(v.item())
+            return repr(v)
+        return (
+            f"BifurcationAngles(delta={fmt(self.delta)}, "
+            f"grid_field={fmt(self.grid_field)}, "
+            f"aggregator={fmt(self.aggregator)})"
+        )
 
     def _get_bifurcation_points(self, layer: VesselTreeLayer):
         bifurcations = layer.filter_bifurcations(self.grid_field)

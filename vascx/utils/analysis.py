@@ -27,8 +27,10 @@ def extract_one(
         with warnings.catch_warnings(record=True) as caught_warnings:
             # add bounds to item
             if "bounds" in ex:
-                # print(type(ex["metadata"]), ex["metadata"])
-                bounds = Bounds(**ex["bounds"])
+                bounds = ex["bounds"]
+                if isinstance(bounds, dict):
+                    bounds = Bounds(**bounds)
+                assert isinstance(bounds, Bounds)
                 M = bounds.get_cropping_transform(1024)
                 ex["bounds"] = bounds.warp(M)
             retina = retina_cls.from_file(**ex)
@@ -59,9 +61,17 @@ def extract_in_parallel(
     feature_set_name: str,
     retina_cls=Retina,
     n_jobs: int = 8,
-    print_stack_trace=False,
+    print_stack_trace: bool = False,
     logger=None,
 ):
+    from vascx.shared.features import FeatureSet
+
+    feature_set = FeatureSet.get_by_name(feature_set_name)
+    if feature_set is None:
+        raise ValueError(f"Feature set '{feature_set_name}' not found.")
+    
+    #
+    
     res = Parallel(n_jobs=n_jobs, verbose=10)(
         delayed(extract_one)(ex, feature_set_name, retina_cls, print_stack_trace)
         for ex in tqdm(examples)

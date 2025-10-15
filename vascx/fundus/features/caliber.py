@@ -15,12 +15,45 @@ if TYPE_CHECKING:
 
 
 class Caliber(LayerFeature):
+    """Aggregate vessel caliber within a region.
+
+    Representation: Uses per-segment median_diameter computed on the undirected/directed segments 
+    of a VesselTreeLayer; segments are filtered by length (min_numpoints) and optionally by 
+    GridField visibility.
+
+    Computation: Collects median_diameter over eligible segments and aggregates with the given 
+    aggregator (e.g., median/std). Segment diameters are computed from skeleton-derived measurements 
+    using spline interpolation and perpendicular distance sampling.
+
+    Options: min_numpoints (length filter), grid_field (spatial filtering), aggregator 
+    (statistical aggregation function).
+    """
+    
     def __init__(
         self, min_numpoints=10, grid_field: GridField = None, aggregator=mean_median_std
     ):
         self.min_numpoints = min_numpoints
         self.aggregator = aggregator
         self.grid_field = grid_field
+
+    def __repr__(self) -> str:
+        def fmt(v):
+            import inspect, numpy as np
+            from enum import Enum
+            if v is None:
+                return "None"
+            if isinstance(v, Enum):
+                return f"{v.__class__.__name__}.{v.name}"
+            if callable(v):
+                return getattr(v, "__name__", v.__class__.__name__)
+            if isinstance(v, np.generic):
+                return repr(v.item())
+            return repr(v)
+        return (
+            f"Caliber(min_numpoints={fmt(self.min_numpoints)}, "
+            f"grid_field={fmt(self.grid_field)}, "
+            f"aggregator={fmt(self.aggregator)})"
+        )
 
     def _get_segments(self, layer: VesselTreeLayer):
         segments = layer.filter_segments(field=self.grid_field)

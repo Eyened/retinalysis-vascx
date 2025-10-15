@@ -15,9 +15,24 @@ if TYPE_CHECKING:
 
 
 class VarianceOfLaplacian(RetinaFeature):
+    """Global image sharpness proxy; variance of Laplacian map.
+
+    Representation: Uses Retina.laplacian - global image Laplacian operator applied to the 
+    fundus image to detect edges and texture variations.
+
+    Computation: Applies the Laplacian operator (second derivative) to the retinal image to 
+    highlight regions of rapid intensity change, then computes the variance of the resulting 
+    Laplacian map. Higher variance indicates sharper, more detailed images with better focus.
+
+    Options: None.
+    """
+    
     def __init__(self
     ):
         pass
+
+    def __repr__(self) -> str:
+        return "VarianceOfLaplacian()"
 
     def compute(self, retina: Retina):
         return np.nanvar(retina.laplacian)

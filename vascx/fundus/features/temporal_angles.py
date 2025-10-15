@@ -20,8 +20,40 @@ if TYPE_CHECKING:
 
 @dataclass
 class TemporalAngle(LayerFeature):
+    """Median angle between the two dominant (largest caliber) temporal arcades at circles from 2/3 OD–fovea distance outward.
+
+    Representation: Uses resolved_segments with circle intersections and OD–fovea spatial geometry. 
+    Operates on the resolved vessel graph to identify major temporal vessel arcades.
+
+    Computation: At concentric circles starting from 2/3 of the OD-fovea distance, identifies the two 
+    largest-caliber temporal vessels (fovea-side, angle < 90°) crossing each circle, measures the angle 
+    between them, and returns the median angle across all sampled radii. Captures the characteristic 
+    temporal arcade geometry.
+
+    Options: od_to_fovea_fraction (starting distance as fraction of OD-fovea distance), 
+    increment (spacing between concentric sampling circles).
+    """
+    
     od_to_fovea_fraction: float = 2 / 3
     increment: float = 0.03
+
+    def __repr__(self) -> str:
+        def fmt(v):
+            import inspect, numpy as np
+            from enum import Enum
+            if v is None:
+                return "None"
+            if isinstance(v, Enum):
+                return f"{v.__class__.__name__}.{v.name}"
+            if callable(v):
+                return getattr(v, "__name__", v.__class__.__name__)
+            if isinstance(v, np.generic):
+                return repr(v.item())
+            return repr(v)
+        return (
+            f"TemporalAngle(od_to_fovea_fraction={fmt(self.od_to_fovea_fraction)}, "
+            f"increment={fmt(self.increment)})"
+        )
 
     def get_circle(self, layer: VesselTreeLayer, fractional_distance=0.5):
         disc = layer.retina.disc

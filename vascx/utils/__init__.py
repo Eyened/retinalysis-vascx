@@ -62,7 +62,7 @@ def load_image_pil(path: Union[Path, str]):
     if isinstance(path, str):
         path = Path(path)
     if path.suffix == ".dcm":
-        ds = pydicom.read_file(str(path))
+        ds = pydicom.dcmread(str(path))
         img = Image.fromarray(ds.pixel_array)
     else:
         img = Image.open(str(path))

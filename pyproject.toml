@@ -1,0 +1,40 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "vascx"
+version = "0.0.0"
+description = "Retinal analysis toolbox for Python"
+readme = { file = "README.md", content-type = "text/markdown" }
+authors = [{ name = "Jose Vargas", email = "j.vargasquiros@erasmusmc.nl" }]
+requires-python = ">=3.10, <3.13"
+dependencies = [
+  "numpy == 2.*",
+  "pandas == 2.*",
+  "scikit-learn==1.*",
+  "scipy == 1.*",
+  "opencv-python == 4.*",
+  "matplotlib==3.*",
+  "joblib==1.*",
+  "tqdm == 4.*",
+  "Pillow == 11.*",
+  "click==8.*",
+  "sknw==0.14",
+  "sortedcontainers==2.4.0",
+  "scikit-image == 0.24.0",
+  "retinalysis-enface",
+  "retinalysis-fundusprep"
+]
+
+[project.scripts]
+vascx = "vascx.cli:cli"
+
+[tool.setuptools]
+include-package-data = true
+zip-safe = false
+
+[tool.setuptools.packages.find]
+include = ["vascx*"]
+
+

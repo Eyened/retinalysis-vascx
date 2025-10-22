@@ -131,11 +131,11 @@ class VesselTreeLayer(VesselLayer):
         """Filters the segments of the graph based on some criteria."""
         if field is None:
             return self.segments
-        grid = self.retina.grids[field.grid()]
-        if not grid.field_visible(field):
-            raise RegionOutOfBoundsError(
-                f"Field {field} not completely visible in this retina."
-            )
+        grid = field.grid
+        # if not grid.field_visible(field):
+        #     raise RegionOutOfBoundsError(
+        #         f"Field {field} not completely visible in this retina."
+        #     )
         return [
             s
             for s in self.segments
@@ -178,11 +178,11 @@ class VesselTreeLayer(VesselLayer):
         """Filters the nodes of the graph based on some criteria."""
         if field is None:
             return self.nodes
-        grid = self.retina.grids[field.grid()]
-        if not grid.field_visible(field):
-            raise RegionOutOfBoundsError(
-                f"Field {field} not completely visible in this retina."
-            )
+        grid = field.grid
+        # if not grid.field_visible(field):
+        #     raise RegionOutOfBoundsError(
+        #         f"Field {field} not completely visible in this retina."
+        #     )
         return [n for n in self.nodes if grid.point_in_field(n.position, field)]
 
     @cached_property
@@ -196,15 +196,11 @@ class VesselTreeLayer(VesselLayer):
         """Filters the bifurcations of the graph based on some criteria."""
         if field is None:
             return self.bifurcations
-        grid = self.retina.grids[field.grid()]
-        if not grid.field_visible(field):
-            raise RegionOutOfBoundsError(
-                f"Field {field} not completely visible in this retina."
-            )
+        grid = field.grid
         return [
             n
             for n in self.bifurcations
-            if self.retina.grids[field.grid()].point_in_field(n.position, field)
+            if grid.point_in_field(n.position, field)
         ]
 
     # STAGE 4: vessels
@@ -353,6 +349,7 @@ class VesselTreeLayer(VesselLayer):
         nodes=False,
         digraph=False,
         vessels=False,
+        grid_field: GridField = None,
     ):
         ax = self._get_base_axes(ax)
         if color is None:
@@ -363,22 +360,22 @@ class VesselTreeLayer(VesselLayer):
                 ax.imshow(self.retina.image)
 
         if mask:
-            self.plot_mask(ax, color=color)
+            self.plot_mask(ax, color=color, grid_field=grid_field)
 
         if skeleton:
-            self.plot_skeleton(ax, color=(1, 1, 1))
+            self.plot_skeleton(ax, color=(1, 1, 1), grid_field=grid_field)
 
         if segments:
-            self.plot_segments(ax)
+            self.plot_segments(ax, grid_field=grid_field)
 
         if nodes:
-            self.plot_nodes(ax)
+            self.plot_nodes(ax, grid_field=grid_field)
 
         if digraph:
-            self.plot_digraph(ax)
+            self.plot_digraph(ax, grid_field=grid_field)
 
         if vessels:
-            self.plot_vessels(ax)
+            self.plot_vessels(ax, grid_field=grid_field)
 
         return ax
 
@@ -392,46 +389,71 @@ class VesselTreeLayer(VesselLayer):
                 ax.imshow(self.retina.image)
         return ax
 
-    def plot_mask(self, ax=None, **kwargs):
+    def plot_mask(self, ax=None, grid_field: GridField = None, **kwargs):
         ax = self._get_base_axes(ax)
-        plot_mask(
-            ax,
-            self.binary_nodisc if self.binary_nodisc is not None else self.binary,
-            **kwargs,
+        base_mask = (
+            self.binary_nodisc if self.binary_nodisc is not None else self.binary
         )
+        if grid_field is not None:
+            mask_to_show = base_mask & grid_field.mask
+        else:
+            mask_to_show = base_mask
+        plot_mask(ax, mask_to_show, **kwargs)
 
-    def plot_skeleton(self, ax=None, **kwargs):
+    def plot_skeleton(self, ax=None, grid_field: GridField = None, **kwargs):
         ax = self._get_base_axes(ax)
-        plot_mask(ax, self.skeleton, **kwargs)
+        skeleton = self.skeleton
+        if grid_field is not None:
+            skeleton = skeleton & grid_field.mask
+        plot_mask(ax, skeleton, **kwargs)
 
     def plot_graph(self, ax=None, **kwargs):
         ax = self._get_base_axes(ax)
         plot_graph(ax, self.graph, **kwargs)
 
-    def plot_digraph(self, ax=None, **kwargs):
+    def plot_digraph(self, ax=None, grid_field: GridField = None, **kwargs):
         ax = self._get_base_axes(ax)
-        plot_digraph(ax, self.digraph, **kwargs)
+        if grid_field is None:
+            g = self.digraph
+        else:
+            segs = self.filter_segments(grid_field)
+            g = self._edge_subgraph_from_segments(self.digraph, segs)
+        plot_digraph(ax, g, **kwargs)
 
-    def plot_vessels(self, ax=None, **kwargs):
+    def plot_vessels(self, ax=None, grid_field: GridField = None, **kwargs):
         ax = self._get_base_axes(ax)
-        plot_digraph(ax, self.vessels, **kwargs)
+        if grid_field is None:
+            g = self.vessels
+        else:
+            segs = self._filter_resolved_segments(grid_field)
+            g = self._edge_subgraph_from_segments(self.vessels, segs)
+        plot_digraph(ax, g, **kwargs)
 
     def plot_tree_roots(self, ax=None, **kwargs):
         g = Graph(self.trees)
         return self.plot_graph(ax, g, **kwargs)
 
-    def plot_segments(self, ax=None, segments: List[Segment] = None, **kwargs):
+    def plot_segments(
+        self,
+        ax=None,
+        segments: List[Segment] = None,
+        grid_field: GridField = None,
+        **kwargs,
+    ):
         if segments is None:
-            segments = self.segments
+            segments = (
+                self.filter_segments(grid_field) if grid_field is not None else self.segments
+            )
         ax = self._get_base_axes(ax)
         vessels = Vessels(self, segments)
         return vessels.plot(ax=ax, **kwargs)
 
-    def plot_nodes(self, ax=None, fig=None):
+    def plot_nodes(self, ax=None, fig=None, grid_field: GridField = None):
         if ax is None:
             fig, ax = self._get_base_axes(None, None)
             self.plot_skeleton(ax, fig)
-        for node in self.nodes:
+        nodes = self.filter_nodes(grid_field) if grid_field is not None else self.nodes
+        for node in nodes:
             if isinstance(node, Bifurcation):
                 ax.scatter(*node.position.tuple_xy, s=5, marker="^", color="g")
             elif isinstance(node, Endpoint):
@@ -440,6 +462,33 @@ class VesselTreeLayer(VesselLayer):
                 ax.scatter(*node.position.tuple_xy, s=5, marker="s", color="b")
 
         return fig, ax
+
+    def _edge_subgraph_from_segments(
+        self, base: DiGraph, segments: List[Segment]
+    ):
+        seg_set = set(segments)
+        kept_edges = [
+            (u, v)
+            for u, v, data in base.edges(data=True)
+            if data.get("segment") in seg_set
+        ]
+        return base.edge_subgraph(kept_edges).copy()
+
+    def _filter_resolved_segments(
+        self, field: GridField, field_threshold: float = 0.75
+    ) -> List[Segment]:
+        if field is None:
+            return self.resolved_segments
+        grid = field.grid
+        # if not grid.field_visible(field):
+        #     raise RegionOutOfBoundsError(
+        #         f"Field {field} not completely visible in this retina."
+        #     )
+        return [
+            s
+            for s in self.resolved_segments
+            if grid.fraction_in_field(s.skeleton, field) > field_threshold
+        ]
 
     def get_binary(self, remove_disk=False):
         if remove_disk:

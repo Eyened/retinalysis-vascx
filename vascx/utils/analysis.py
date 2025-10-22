@@ -1,6 +1,6 @@
 import traceback
 import warnings
-from typing import Dict, List
+from typing import Dict, List, Optional
 
 import pandas as pd
 from joblib import Parallel, delayed
@@ -18,7 +18,11 @@ from vascx.shared.features import FeatureSet
 
 
 def extract_one(
-    ex, feature_set_name, retina_cls: EnfaceImage = Retina, print_stack_trace=False
+    ex,
+    feature_set_name,
+    retina_cls: EnfaceImage = Retina,
+    print_stack_trace: bool = False,
+    plots_folder: Optional[str] = None,
 ):
     feature_set = FeatureSet.get_by_name(feature_set_name)
     if feature_set is None:
@@ -34,7 +38,7 @@ def extract_one(
                 M = bounds.get_cropping_transform(1024)
                 ex["bounds"] = bounds.warp(M)
             retina = retina_cls.from_file(**ex)
-            features = retina.calc_features(feature_set)
+            features = retina.calc_features(feature_set, plots_folder)
 
             warnings.simplefilter("always")
 
@@ -63,6 +67,7 @@ def extract_in_parallel(
     n_jobs: int = 8,
     print_stack_trace: bool = False,
     logger=None,
+    plots_folder: Optional[str] = None,
 ):
     from vascx.shared.features import FeatureSet
 
@@ -73,7 +78,7 @@ def extract_in_parallel(
     #
     
     res = Parallel(n_jobs=n_jobs, verbose=10)(
-        delayed(extract_one)(ex, feature_set_name, retina_cls, print_stack_trace)
+        delayed(extract_one)(ex, feature_set_name, retina_cls, print_stack_trace, plots_folder)
         for ex in tqdm(examples)
     )
 

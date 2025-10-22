@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from enum import Enum
 import warnings
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, List, Tuple
@@ -8,6 +9,7 @@ import numpy as np
 from matplotlib import pyplot as plt
 
 from rtnls_enface.base import Circle, LayerType
+from rtnls_enface.grids.hemifields import HemifieldGrid, HemifieldField
 from vascx.shared.segment import Segment
 from vascx.shared.vessels import Vessels
 
@@ -44,21 +46,32 @@ def recursive_cre(lst, cte):
     return recursive_cre(new_list, cte)
 
 
-@dataclass
+class CREMode(str, Enum):
+    Nasal = "nasal"
+    Temporal = "temporal"
+    Full = "full"
+
 class CRE(LayerFeature):
-    """Central retinal equivalents via recursive diameter combining of circle-intersecting segments around the disc across concentric radii; returns median across radii.
+    """Central retinal equivalents with temporal/nasal/full modes and optional hemifield filtering.
 
-    Representation: Uses segments with median_diameter and circle intersection geometry around optic disc. 
-    Operates on the directed graph segments to identify vessels crossing concentric circles.
+    Representation: Uses circle–segment intersections around the optic disc and each segment's `median_diameter`.
 
-    Computation: For concentric circles around the optic disc, identifies segments intersecting each circle, 
-    recursively combines their diameters using the Hubbard formula (sqrt(d1² + d2²) with artery/vein constants), 
-    and returns the median equivalent diameter across all radii. Separates arteries and veins based on 
-    implicit classification.
-
-    Options: None exposed (uses implicit artery/vein classification constants and fixed circle radii).
+    Computation: Across concentric radii around the disc, identifies intersecting segments, optionally filters by
+    a superior/inferior hemifield, retains up to the largest `max_vessels` by `median_diameter`, and recursively
+    combines diameters using the Hubbard formula (sqrt(d1² + d2²) scaled by artery/vein constants). Returns the
+    median equivalent diameter across radii.
     """
-    
+
+    def __init__(
+        self,
+        CREMode: CREMode = CREMode.Temporal,
+        max_vessels: int = 6,
+        hemifield: HemifieldField | None = None,
+    ):
+        self.CREMode = CREMode
+        self.max_vessels = max_vessels
+        self.hemifield: HemifieldField | None = hemifield
+        
     def __repr__(self) -> str:
         return "CRE()"
 
@@ -81,14 +94,41 @@ class CRE(LayerFeature):
             or (not circle.contains(seg.start) and circle.contains(seg.end))
         ]
 
-        filtered_segments = [
-            seg
-            for seg in filtered_segments
-            if seg.fod_angle() is not None
-            and seg.fod_angle() < 100
-            and seg.orientation() is not None
-            and seg.orientation() < 90
-        ]
+        if self.CREMode == CREMode.Temporal:
+            filtered_segments = [
+                seg
+                for seg in filtered_segments
+                if seg.fod_angle() is not None
+                and seg.fod_angle() < 100
+                and seg.orientation() is not None
+                and seg.orientation() < 90
+            ]
+        elif self.CREMode == CREMode.Nasal:
+            filtered_segments = [
+                seg
+                for seg in filtered_segments
+                if seg.fod_angle() is not None
+                and seg.fod_angle() > 80
+                and seg.orientation() is not None
+                and seg.orientation() > 90
+            ]
+        else:
+            pass
+
+        # Optional hemifield filtering: keep segments whose skeleton majority lies in the selected half
+        if self.hemifield is not None:
+            retina = layer.retina
+            try:
+                mask = retina.mask  # may raise if bounds not set
+            except Exception:
+                mask = None
+            grid = HemifieldGrid(retina, resolution=retina.resolution, mask=mask)
+            keep = []
+            for seg in filtered_segments:
+                frac = grid.fraction_in_field(seg.skeleton, self.hemifield)
+                if frac >= 0.5:
+                    keep.append(seg)
+            filtered_segments = keep
 
         return filtered_segments
 
@@ -132,25 +172,49 @@ class CRE(LayerFeature):
             raise ValueError("Unrecognized layer type for CRE computation")
 
         intersections = self.get_intersections(layer, circle)
-        segments = [p[0] for p in intersections]
+        # Deduplicate segments that may intersect circle multiple times
+        segments = list(set([p[0] for p in intersections]))
         if len(segments) == 0:
             warnings.warn("Could not find intersecting segmentes for CRE circle.")
             return None, []
 
-        # select the max four largest segments
+        # Keep up to the largest N segments by median diameter
+        segments.sort(key=lambda s: s.median_diameter, reverse=True)
+        segments = segments[: self.max_vessels]
+
         calibers = [s.median_diameter for s in segments]
         return self.recursive_cre(calibers, cte), intersections
 
-    def plot(self, layer: VesselTreeLayer, fig=None, ax=None, **kwargs):
+    
+
+    def compute(self, layer: VesselTreeLayer):
+        cres = []
+        for i in range(0, 6):
+            circle = self.get_circle(layer, 0.5 + 0.1 * i)
+
+            cre, _ = self.compute_cre_for_circle(layer, circle)
+            if cre is not None:
+                cres.append(cre)
+
+        if len(cres) == 0:
+            return None
+        else:
+            return np.median(cres).item()
+
+    def plot(self, ax, layer: VesselTreeLayer, **kwargs):
         """This plot shows the circles used to compute CRE,
         the segments used in the CRE computation and the CRE next to each circle
         """
-        if ax is None:
-            fig, ax = plt.subplots(1, 1, figsize=(4, 4), dpi=300)
-            ax.set_axis_off()
-            ax.imshow(np.zeros_like(layer.binary))
-
         segments, circles, cres, points = [], [], [], []
+        # Optionally overlay hemifield axis
+        if self.hemifield is not None:
+            retina = layer.retina
+            try:
+                mask = retina.mask
+            except Exception:
+                mask = None
+            grid = HemifieldGrid(retina, resolution=retina.resolution, mask=mask)
+            grid.plot(ax)
         for i in range(0, 6):
             circle = self.get_circle(layer, 0.5 + 0.1 * i)
 
@@ -163,7 +227,7 @@ class CRE(LayerFeature):
             cres.append(cre)
 
         segments = list(set(segments))
-        layer.retina.plot_fundus(ax=ax)
+        layer.retina.plot_image(ax=ax)
         Vessels(layer, segments).plot(
             **{
                 "show_index": True,
@@ -188,18 +252,4 @@ class CRE(LayerFeature):
         for p in points:
             ax.scatter(x=p[1], y=p[0], c="green", s=1)
 
-        return fig, ax
-
-    def compute(self, layer: VesselTreeLayer, fig=None, ax=None, **kwargs):
-        cres = []
-        for i in range(0, 6):
-            circle = self.get_circle(layer, 0.5 + 0.1 * i)
-
-            cre, _ = self.compute_cre_for_circle(layer, circle)
-            if cre is not None:
-                cres.append(cre)
-
-        if len(cres) == 0:
-            return None
-        else:
-            return np.median(cres).item()
+        return ax

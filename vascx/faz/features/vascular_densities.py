@@ -7,7 +7,7 @@ import cv2
 import matplotlib as mpl
 from matplotlib.colors import LinearSegmentedColormap
 import numpy as np
-from rtnls_enface.grids.base import GridField
+from rtnls_enface.grids.base import GridFieldEnum
 from vascx.faz.layer import FAZLayer
 
 from .base import FAZLayerFeature
@@ -18,7 +18,7 @@ if TYPE_CHECKING:
 
 @dataclass
 class VascularDensity(FAZLayerFeature):
-    def __init__(self, grid_field: GridField = None, cut_mask: bool = False):
+    def __init__(self, grid_field: GridFieldEnum = None, cut_mask: bool = False):
         self.grid_field = grid_field
         self.cut_mask = cut_mask
 

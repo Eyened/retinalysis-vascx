@@ -184,7 +184,7 @@ class Vessels:
 
         if plot_spline_points:
             for segment in self.filter_segments_by_numpoints(min_numpoints_caliber):
-                for diam in segment.diameters:
+                for diam in segment.diameter_measurements:
                     edge1, edge2 = diam.edge_0, diam.edge_1
                     ax.plot(
                         [edge1[1], edge2[1]],

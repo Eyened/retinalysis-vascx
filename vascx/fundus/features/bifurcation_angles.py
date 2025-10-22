@@ -11,7 +11,7 @@ from vascx.shared.aggregators import mean_median
 from .base import LayerFeature
 
 if TYPE_CHECKING:
-    from rtnls_enface.grids.base import GridField
+    from rtnls_enface.grids.base import GridFieldEnum
     from vascx.fundus.layer import VesselTreeLayer
 
 
@@ -30,7 +30,7 @@ class BifurcationAngles(LayerFeature):
     (spatial filtering), aggregator (statistical aggregation function).
     """
     
-    def __init__(self, delta: int = 20, grid_field: GridField = None, aggregator=mean_median,):
+    def __init__(self, delta: int = 20, grid_field: GridFieldEnum = None, aggregator=mean_median,):
         """
         Calculation of bifurcation angles.
 
@@ -64,7 +64,11 @@ class BifurcationAngles(LayerFeature):
         )
 
     def _get_bifurcation_points(self, layer: VesselTreeLayer):
-        bifurcations = layer.filter_bifurcations(self.grid_field)
+        grid = layer.retina.grids[self.grid_field.grid()]
+        field = grid.field(self.grid_field)
+        if grid.field_within_bounds(field) < 0.75:
+            raise RuntimeError(f"Field {self.grid_field} is not within the bounds of the retina.")
+        bifurcations = layer.filter_bifurcations(field)
         bifurcations = [bif for bif in bifurcations if bif.outgoing_min_length > self.delta]
         return bifurcations
 
@@ -73,16 +77,23 @@ class BifurcationAngles(LayerFeature):
         return self.aggregator([bif.angle(self.delta) for bif in bifurcations])
 
     def plot(self, ax, layer: VesselTreeLayer, **kwargs):
+        field = None
+        if self.grid_field is not None:
+            grid = layer.retina.grids[self.grid_field.grid()]
+            field = grid.field(self.grid_field)
         ax = layer.plot(
             ax=ax,
             segments=True,
+            grid_field=field,
         )
 
         bifurcations = self._get_bifurcation_points(layer)
         
         # plot ETDRS region
         if self.grid_field is not None:
-            layer.retina.grids[self.grid_field.grid()].plot(ax, self.grid_field)
+            grid = layer.retina.grids[self.grid_field.grid()]
+            field = grid.field(self.grid_field)
+            grid.plot(ax, field)
 
         for bif in bifurcations:
             line1, line2 = bif.lines(self.delta)

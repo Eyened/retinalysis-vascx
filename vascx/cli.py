@@ -209,7 +209,8 @@ def run_models(
 @click.option("--feature_set", required=True, help="Name of the feature set to run")
 @click.option("--n_jobs", type=int, default=8, help="Number of extraction workers")
 @click.option("--logfile", type=click.Path(), default=None, help="Optional log file for warnings")
-def calc_biomarkers(input_path, output_csv, feature_set, n_jobs, logfile):
+@click.option("--plots_folder", type=click.Path(), default=None, help="Optional folder to save per-feature plots")
+def calc_biomarkers(input_path, output_csv, feature_set, n_jobs, logfile, plots_folder):
     """Extract vascular biomarkers from a run_models output folder and save to CSV.
 
     INPUT_PATH is the output directory from 'vascx run-models' containing folders
@@ -309,6 +310,8 @@ def calc_biomarkers(input_path, output_csv, feature_set, n_jobs, logfile):
         feature_set_name=feature_set,
         n_jobs=n_jobs,
         logger=logger,
+        plots_folder=plots_folder,
+        print_stack_trace=True,
     )
 
     # Write feature descriptions to file

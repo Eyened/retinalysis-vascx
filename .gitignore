@@ -4,3 +4,4 @@ __pycache__
 *.zip
 /samples/*
 !/samples/fundus/original
+/paper/

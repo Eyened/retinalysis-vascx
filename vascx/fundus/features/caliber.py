@@ -10,7 +10,7 @@ from vascx.shared.vessels import Vessels
 from .base import LayerFeature
 
 if TYPE_CHECKING:
-    from rtnls_enface.grids.base import GridField
+    from rtnls_enface.grids.base import GridFieldEnum
     from vascx.fundus.layer import VesselTreeLayer
 
 
@@ -30,7 +30,7 @@ class Caliber(LayerFeature):
     """
     
     def __init__(
-        self, min_numpoints=10, grid_field: GridField = None, aggregator=mean_median_std
+        self, min_numpoints=10, grid_field: GridFieldEnum = None, aggregator=mean_median_std
     ):
         self.min_numpoints = min_numpoints
         self.aggregator = aggregator
@@ -56,7 +56,11 @@ class Caliber(LayerFeature):
         )
 
     def _get_segments(self, layer: VesselTreeLayer):
-        segments = layer.filter_segments(field=self.grid_field)
+        field = None
+        if self.grid_field is not None:
+            grid = layer.retina.grids[self.grid_field.grid()]
+            field = grid.field(self.grid_field)
+        segments = layer.filter_segments(field=field)
         segments = [seg for seg in segments if len(seg.skeleton) > self.min_numpoints]
         return segments
 
@@ -82,5 +86,7 @@ class Caliber(LayerFeature):
 
         # plot ETDRS region
         if self.grid_field is not None:
-            layer.retina.grids[self.grid_field.grid()].plot(ax, self.grid_field)
+            grid = layer.retina.grids[self.grid_field.grid()]
+            field = grid.field(self.grid_field)
+            grid.plot(ax, field)
         return ax

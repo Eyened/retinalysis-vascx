@@ -1,10 +1,10 @@
 from pathlib import Path
-from typing import Any, Callable, Tuple, Union
+from typing import Any, Callable, Optional, Tuple, Union
 
 import cv2
 import numpy as np
 from typing_extensions import TypeAlias
-
+from matplotlib import pyplot as plt
 from rtnls_enface import Fundus
 from rtnls_enface.utils.data_loading import open_binary_mask
 from rtnls_enface.utils.image import match_resolution
@@ -59,30 +59,39 @@ class Retina(Fundus):
 
         return res
 
-    def calc_features(self, feature_set: FeatureSet):
+    def calc_features(self, feature_set: FeatureSet, plots_folder: Optional[str] = None):
         all_features = {}
         for feature_name, feature in feature_set.items():
             if isinstance(feature, RetinaFeature):
-                targets = [self]
+                targets = [("retina", self)]
             elif isinstance(feature, LayerFeature):
-                targets = self.get_layers(VesselTreeLayer)
+                targets = [(layer.name, layer) for layer in self.get_layers(VesselTreeLayer)]
             elif isinstance(feature, VesselsLayerFeature):
-                targets = self.get_layers(FundusVesselsLayer)
+                targets = [(layer.name, layer) for layer in self.get_layers(FundusVesselsLayer)]
             else:
-                raise TypeError(f"Unknown type for feature {type(feature)}")
+                continue
 
             if len(targets) == 0:
                 print(f"No targets found on which to compute feature {feature_name}.")
 
-            for target in targets:
+            for target_name, target in targets:
                 res = feature.compute(target)
                 if isinstance(res, dict):
                     for k, v in res.items():
                         all_features[f"{feature_name}_{target.name}_{k}"] = v
                 else:
                     all_features[f"{feature_name}_{target.name}"] = res
+                
+                if plots_folder is not None and res is not None: # only save plots if the feature was computed successfully
+                    fig, ax = plt.subplots(1, 1, figsize=(8, 8), dpi=300)
+                    feature.plot(ax, target)
+                    fname_prefix = (str(self.id) if self.id is not None else "sample")
+                    fname = f"{fname_prefix}_{feature_name}_{target_name}.png"
+                    fig.savefig(Path(plots_folder) / fname, dpi=200, bbox_inches="tight")
+                    plt.close(fig)
 
         return all_features
+
 
     @classmethod
     def from_file(

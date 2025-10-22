@@ -51,6 +51,10 @@ class Segment:
 
     @cached_property
     def pixels(self) -> List[Tuple[int, int]]:
+        if self._pixels is not None:
+            return self._pixels
+        if self.layer is None:
+            raise ValueError("Segment.layer is not set")
         return self.layer.get_segment_pixels(self)
 
     @cached_property
@@ -72,7 +76,7 @@ class Segment:
         return distance_2p(self.skeleton[0], self.skeleton[-1])
 
     @cached_property
-    def diameter_measurements(self) -> float:
+    def diameter_measurements(self) -> List[DiameterMeasurement]:
         assert self.layer is not None
         if len(self.skeleton) <= 4:
             # segment is too short for cubic spline, use retipy method.

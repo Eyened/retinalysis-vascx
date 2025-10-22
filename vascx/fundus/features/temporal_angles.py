@@ -37,6 +37,11 @@ class TemporalAngle(LayerFeature):
     od_to_fovea_fraction: float = 2 / 3
     increment: float = 0.03
 
+    def __init__(self, od_to_fovea_fraction: float = 2 / 3, increment: float = 0.03):
+        """Configure starting fraction of OD–fovea distance and concentric circle spacing."""
+        self.od_to_fovea_fraction = float(od_to_fovea_fraction)
+        self.increment = float(increment)
+
     def __repr__(self) -> str:
         def fmt(v):
             import inspect, numpy as np
@@ -127,12 +132,26 @@ class TemporalAngle(LayerFeature):
             },
         )
 
-    def plot(self, layer, fig=None, ax=None, **kwargs):
-        if ax is None:
-            fig, ax = plt.subplots(1, 1, figsize=(4, 4), dpi=300)
-            ax.set_axis_off()
-            ax.imshow(np.zeros_like(layer.binary))
+    
 
+    def compute(self, layer: VesselTreeLayer, **kwargs):
+        angles = []
+        for i in range(0, 5):
+            circle = self.get_circle(
+                layer, self.od_to_fovea_fraction + i * self.increment
+            )
+            intersections = self.get_intersections(layer, circle)
+            pair = self.get_pair(layer, intersections)
+            if pair is not None:
+                angles.append(pair[2])
+
+        if len(angles) > 0:
+            return np.median(angles)
+        else:
+            warnings.warn("Couldn't find valid angles for any circle.")
+            return None
+
+    def plot(self, ax, layer, **kwargs):
         pairs, segments, circles = [], [], []
 
         for i in range(0, 5):
@@ -179,7 +198,7 @@ class TemporalAngle(LayerFeature):
                 linewidth=0.2,
                 color="green",
             )
-        return fig, ax
+        return ax
 
     def plot_intersections(self, layer: VesselTreeLayer, **kwargs):
         circle = self.get_circle(layer, 0.5)
@@ -204,20 +223,3 @@ class TemporalAngle(LayerFeature):
 
         for p in points:
             ax.scatter(x=p[1], y=p[0], c="blue", s=1)
-
-    def compute(self, layer: VesselTreeLayer, **kwargs):
-        angles = []
-        for i in range(0, 5):
-            circle = self.get_circle(
-                layer, self.od_to_fovea_fraction + i * self.increment
-            )
-            intersections = self.get_intersections(layer, circle)
-            pair = self.get_pair(layer, intersections)
-            if pair is not None:
-                angles.append(pair[2])
-
-        if len(angles) > 0:
-            return np.median(angles)
-        else:
-            warnings.warn("Couldn't find valid angles for any circle.")
-            return None

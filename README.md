@@ -30,7 +30,7 @@ To run on the provided samples folder (in the git):
 git clone git@github.com:Eyened/retinalysis-vascx.git rtnls_vascx
 cd rtnls_vascx
 vascx run-models ./samples/fundus/original/ /path/to/segmentations
-vascx run-biomarker-extraction /path/to/segmentations /path/to/features.csv --feature_set full --n-jobs 8 --logfile /path/to/logfile.txt
+vascx calc-biomarkers /path/to/segmentations /path/to/features.csv --feature_set full --n-jobs 8 --logfile /path/to/logfile.txt
 ```
 
 

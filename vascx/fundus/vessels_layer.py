@@ -70,7 +70,7 @@ class FundusVesselsLayer(JointVesselsLayer):
         return dt_skeleton / self.retina.disc_fovea_distance
 
     @cached_property
-    def mean_distance_to_vessel(self) -> float:
+    def   mean_distance_to_vessel(self) -> float:
         return np.nanmean(self.distance_transform)
     
     @cached_property

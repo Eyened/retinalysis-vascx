@@ -6,7 +6,7 @@ from typing import TYPE_CHECKING
 from .base import LayerFeature
 
 if TYPE_CHECKING:
-    from rtnls_enface.grids.base import GridField
+    from rtnls_enface.grids.base import GridFieldEnum
     from vascx.fundus.layer import VesselTreeLayer
 
 
@@ -22,7 +22,7 @@ class BifurcationCount(LayerFeature):
     Options: grid_field (spatial filtering to specific retinal regions).
     """
     
-    def __init__(self, grid_field: GridField = None):
+    def __init__(self, grid_field: GridFieldEnum = None):
         """
         Calculation of the number of bifurcation points.
 
@@ -45,23 +45,34 @@ class BifurcationCount(LayerFeature):
         return f"BifurcationCount(grid_field={fmt(self.grid_field)})"
 
     def _get_bifurcation_points(self, layer: VesselTreeLayer):
-        return layer.filter_bifurcations(self.grid_field)
+        if self.grid_field is None:
+            return layer.filter_bifurcations(None)
+        grid = layer.retina.grids[self.grid_field.grid()]
+        field = grid.field(self.grid_field)
+        return layer.filter_bifurcations(field)
 
     def compute(self, layer: VesselTreeLayer):
         bifurcations = self._get_bifurcation_points(layer)
         return len(bifurcations)
 
     def plot(self, ax, layer: VesselTreeLayer, **kwargs):
+        field = None
+        if self.grid_field is not None:
+            grid = layer.retina.grids[self.grid_field.grid()]
+            field = grid.field(self.grid_field)
         ax = layer.plot(
             ax=ax,
             image=True,
+            grid_field=field,
         )
 
         bifurcations = self._get_bifurcation_points(layer)
 
         # plot ETDRS region
         if self.grid_field is not None:
-            layer.retina.grids[self.grid_field.grid()].plot(ax, self.grid_field)
+            grid = layer.retina.grids[self.grid_field.grid()]
+            field = grid.field(self.grid_field)
+            grid.plot(ax, field)
 
         for bif in bifurcations:
             ax.scatter(*bif.position.tuple_xy, s=6, color="w", marker="x")

@@ -13,7 +13,7 @@ from vascx.shared.vessels import Vessels
 from .base import LayerFeature
 
 if TYPE_CHECKING:
-    from rtnls_enface.grids.base import GridField
+    from rtnls_enface.grids.base import GridFieldEnum
     from vascx.fundus.layer import VesselTreeLayer
 
 
@@ -60,7 +60,7 @@ class Tortuosity(LayerFeature):
         measure: TortuosityMeasure = TortuosityMeasure.Distance,
         length_measure: LengthMeasure = LengthMeasure.Splines,
         min_numpoints: int = 25,
-        grid_field: GridField = None,
+        grid_field: GridFieldEnum = None,
         norm_measure: LengthMeasure = None,
         aggregator=mean_median_std,
         **kwargs,
@@ -124,7 +124,11 @@ class Tortuosity(LayerFeature):
 
     def get_segments(self, layer: VesselTreeLayer):
         if self.mode == TortuosityMode.Segments:
-            segments = layer.filter_segments(field=self.grid_field, field_threshold=0.5)
+            field = None
+            if self.grid_field is not None:
+                grid = layer.retina.grids[self.grid_field.grid()]
+                field = grid.field(self.grid_field)
+            segments = layer.filter_segments(field=field, field_threshold=0.5)
             
         elif self.mode == TortuosityMode.Vessels:
             segments = layer.resolved_segments
@@ -176,5 +180,7 @@ class Tortuosity(LayerFeature):
 
         # plot ETDRS region
         if self.grid_field is not None:
-            layer.retina.grids[self.grid_field.grid()].plot(ax, self.grid_field)
+            grid = layer.retina.grids[self.grid_field.grid()]
+            field = grid.field(self.grid_field)
+            grid.plot(ax, field)
         return ax

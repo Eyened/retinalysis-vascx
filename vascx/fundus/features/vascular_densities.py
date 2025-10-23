@@ -11,7 +11,7 @@ import numpy as np
 from rtnls_enface.base import Circle, Line
 from rtnls_enface.grids.ellipse import EllipseGrid
 
-from .base import LayerFeature
+from .base import LayerFeature, grid_field_masks_and_fraction
 
 if TYPE_CHECKING:
     from rtnls_enface.grids.base import GridFieldEnum
@@ -91,6 +91,11 @@ class VascularDensity(LayerFeature):
         return np.sum(selected_pixels[mask == 255]) / np.sum(mask == 255)
 
     def compute(self, layer: VesselTreeLayer):
+        # If using a grid_field, ensure at least 50% is within bounds
+        if self.grid_field is not None:
+            _, in_bounds_mask, frac = grid_field_masks_and_fraction(layer.retina, self.grid_field)
+            if frac < 0.5:
+                return None
         mask = self.get_mask(layer)
 
         if self.cut_mask:
@@ -102,49 +107,18 @@ class VascularDensity(LayerFeature):
                 warnings.warn(
                     "Region for vascular density computation is out of bounds"
                 )
-                return np.nan
+                return None
 
         return self.compute_for_mask(layer, mask)
 
     def plot(self, ax, layer: VesselTreeLayer, **kwargs):
-        # ax = layer.retina.plot(ax=ax)
-        layer.plot(ax=ax, image=True)
-        mask = self.get_mask(layer)
-        density = self.compute(layer)
-
-        # Intersect with the underlying grid for visualization
-        if self.grid_field is None:
-            grid_mask = layer.retina.grids[EllipseGrid].grid
-            # also draw the ellipse grid
-            layer.retina.grids[EllipseGrid].plot(ax)
-        else:
+        field = None
+        if self.grid_field is not None:
             grid = layer.retina.grids[self.grid_field.grid()]
             field = grid.field(self.grid_field)
-            grid_mask = field.mask
-            # overlay the corresponding grid region
-            if self.grid_field.grid() is EllipseGrid:
-                layer.retina.grids[EllipseGrid].plot(ax, field)
-            else:
-                grid.plot(ax, field)
-
-        mask = (mask.astype(bool) & grid_mask).astype(np.uint8) * 255
-
-        # Plot outline of the masked region
-        contours, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-        if contours:
-            ax.add_patch(
-                mpl.patches.Polygon(
-                    contours[0][:, 0, :],
-                    closed=True,
-                    fill=False,
-                    edgecolor="w",
-                    linewidth=0.5,
-                )
-            )
-
-        # annotate computed value for explainability
-        try:
-            if density is not None and not np.isnan(density):
-                ax.text(10, 30, f"{density:.3f}", color="white", fontsize=6)
-        except Exception:
-            pass
+        ax = layer.plot(
+            ax=ax,
+            image=True,
+            mask=True,
+            grid_field=field,
+        )

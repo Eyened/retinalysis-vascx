@@ -4,7 +4,7 @@ from typing import TYPE_CHECKING
 
 import numpy as np
 
-from .base import LayerFeature
+from .base import LayerFeature, grid_field_fraction_in_bounds
 
 if TYPE_CHECKING:
     from rtnls_enface.grids.base import GridFieldEnum
@@ -63,6 +63,9 @@ class Length(LayerFeature):
     def compute_with_spline(self, layer: VesselTreeLayer):
         field = None
         if self.grid_field is not None:
+            frac = grid_field_fraction_in_bounds(layer.retina, self.grid_field)
+            if frac < 0.5:
+                return None
             grid = layer.retina.grids[self.grid_field.grid()]
             field = grid.field(self.grid_field)
         segments = [
@@ -75,6 +78,9 @@ class Length(LayerFeature):
     def compute(self, layer: VesselTreeLayer):
         field = None
         if self.grid_field is not None:
+            frac = grid_field_fraction_in_bounds(layer.retina, self.grid_field)
+            if frac < 0.5:
+                return None
             grid = layer.retina.grids[self.grid_field.grid()]
             field = grid.field(self.grid_field)
         segments = [

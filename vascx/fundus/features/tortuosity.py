@@ -10,7 +10,7 @@ from vascx.shared.aggregators import mean_median_std
 from vascx.shared.segment import Segment, SplineInterpolation
 from vascx.shared.vessels import Vessels
 
-from .base import LayerFeature
+from .base import LayerFeature, grid_field_fraction_in_bounds
 
 if TYPE_CHECKING:
     from rtnls_enface.grids.base import GridFieldEnum
@@ -155,6 +155,10 @@ class Tortuosity(LayerFeature):
         return vals
 
     def compute(self, layer: VesselTreeLayer):
+        if self.grid_field is not None:
+            frac = grid_field_fraction_in_bounds(layer.retina, self.grid_field)
+            if frac < 0.5:
+                return None
         tortuosities = self.raw(layer)
         return self.aggregator(tortuosities)
 

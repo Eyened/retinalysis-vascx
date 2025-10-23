@@ -342,18 +342,18 @@ class VesselTreeLayer(VesselLayer):
         self,
         ax=None,
         image=False,
-        mask=True,
+        mask=False,
         color=None,
         skeleton=False,
         segments=False,
         nodes=False,
         digraph=False,
         vessels=False,
-        grid_field: GridField = None,
+        grid_field: GridField = None
     ):
         ax = self._get_base_axes(ax)
         if color is None:
-            color = self.color
+            color = (1,1,1)
 
         if image:
             if self.retina.image is not None:
@@ -376,6 +376,10 @@ class VesselTreeLayer(VesselLayer):
 
         if vessels:
             self.plot_vessels(ax, grid_field=grid_field)
+
+        # plot ETDRS region
+        if grid_field is not None:
+            grid_field.plot(ax)
 
         return ax
 

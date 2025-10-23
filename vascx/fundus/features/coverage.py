@@ -5,10 +5,11 @@ from typing import TYPE_CHECKING
 from matplotlib import pyplot as plt
 import warnings
 import numpy as np
+from enum import Enum
 
 
 
-from .base import VesselsLayerFeature
+from .base import VesselsLayerFeature, grid_field_fraction_in_bounds
 
 if TYPE_CHECKING:
     from rtnls_enface.grids.base import GridFieldEnum
@@ -16,31 +17,38 @@ if TYPE_CHECKING:
     from vascx.fundus.vessels_layer import FundusVesselsLayer
 
 
-class Coverage(VesselsLayerFeature):
-    """Mean of distance transform to nearest vessel pixel normalized by OD–fovea distance.
+class CoverageMode(Enum):
+    MEAN = "mean"
+    MAX = "max"
 
-    Representation: Uses FundusVesselsLayer.distance_transform which computes the distance from each 
+
+class Coverage(VesselsLayerFeature):
+    """Coverage over distance transform to nearest vessel pixel normalized by OD–fovea distance.
+
+    Representation: Uses FundusVesselsLayer.distance_transform which computes the distance from each
     retinal pixel to the nearest vessel pixel, normalized by the OD-fovea distance.
 
-    Computation: Calculates a distance transform that measures, for each pixel in the retina, the 
-    distance to its nearest vessel pixel. The distances are normalized by the OD-fovea distance to 
-    provide scale-invariant measurements. Returns the mean distance across all retinal pixels, 
-    providing a measure of vessel coverage density.
+    Computation:
+    - mode == "mean": mean of the distance transform across selected pixels.
+    - mode == "max": mean of regional maxima of the distance transform across selected pixels.
 
-    Options: ignore_fovea (reserved for future use to exclude foveal region from computation).
+    Options: ignore_fovea (reserved); grid_field to restrict to ETDRS field; mode selects behavior.
     """
     
     def __init__(
-        self, ignore_fovea: bool = False, grid_field: 'GridFieldEnum' = None
+        self, ignore_fovea: bool = False, grid_field: 'GridFieldEnum' = None, mode: 'CoverageMode' = CoverageMode.MEAN
     ):
-        """Mean distance to nearest vessel, optionally restricted to an ETDRS grid field.
+        """Coverage of distance transform, optionally restricted to an ETDRS grid field.
 
         When grid_field is provided, the computation is performed over pixels within the
-        ETDRS field that are also inside the retina mask. If less than 80% of the field
-        lies within the retina, a warning is issued and NaN is returned.
+        ETDRS field that are also inside the retina mask. If less than 50% of the field
+        lies within the retina, a warning is issued and None is returned. Mode controls
+        whether the mean is taken over all selected pixels ("mean") or only over local
+        maxima of the distance transform ("max").
         """
         self.ignore_fovea = ignore_fovea
         self.grid_field = grid_field
+        self.mode = mode
 
     def __repr__(self) -> str:
         def fmt(v):
@@ -57,34 +65,87 @@ class Coverage(VesselsLayerFeature):
             return repr(v)
         return (
             f"Coverage(ignore_fovea={fmt(self.ignore_fovea)}, "
-            f"grid_field={fmt(self.grid_field)})"
+            f"grid_field={fmt(self.grid_field)}, "
+            f"mode={fmt(self.mode)})"
         )
 
-    def compute(self, layer: FundusVesselsLayer):
-        if self.grid_field is None:
-            return layer.mean_distance_to_vessel
+    @staticmethod
+    def _disk_footprint(radius: int = 2) -> np.ndarray:
+        """Return a boolean disk footprint with given radius (5x5 when radius=2)."""
+        y, x = np.ogrid[-radius: radius + 1, -radius: radius + 1]
+        return (x * x + y * y) <= radius * radius
 
+    @staticmethod
+    def _local_maxima(dt: np.ndarray, radius: int = 2) -> np.ndarray:
+        """Boolean mask of regional maxima using a disk footprint; NaN-safe."""
+        # Import here to avoid hard dependency unless max mode is used
+        import scipy.ndimage as ndi  # type: ignore
+
+        dt_filled = np.where(np.isfinite(dt), dt, -np.inf)
+        fp = Coverage._disk_footprint(radius)
+        max_img = ndi.maximum_filter(dt_filled, footprint=fp, mode="nearest")
+        maxima = (dt_filled == max_img) & np.isfinite(dt)
+        return maxima
+
+    def compute(self, layer: FundusVesselsLayer):
+        if self.grid_field is not None:
+            frac = grid_field_fraction_in_bounds(layer.retina, self.grid_field)
+            if frac < 0.5:
+                return None
+                
+        dt = layer.distance_transform
+        # Mean mode preserves existing behavior
+        if self.mode == CoverageMode.MEAN:
+            if self.grid_field is None:
+                return layer.mean_distance_to_vessel
+
+            retina = layer.retina
+            grid = retina.grids[self.grid_field.grid()]
+            field = grid.field(self.grid_field)
+            field_mask = field.mask.astype(bool)
+            # fraction of ETDRS field inside retina
+            total = np.sum(field_mask)
+            if total == 0:
+                return np.nan
+            in_retina = np.sum(field_mask & retina.mask)
+            frac = in_retina / total
+            if frac > 0.5:
+                vals = dt[field_mask & retina.mask]
+                return float(np.nanmean(vals))
+            else:
+                warnings.warn(
+                    "ETDRS field largely outside retina for Coverage; returning None"
+                )
+                return None
+
+        # Max mode: compute mean of regional maxima within selection
+        maxima_mask = Coverage._local_maxima(dt, radius=2)
         retina = layer.retina
+        if self.grid_field is None:
+            sel = maxima_mask & retina.mask
+            vals = dt[sel]
+            return float(np.nanmean(vals)) if vals.size > 0 else np.nan
+
         grid = retina.grids[self.grid_field.grid()]
         field = grid.field(self.grid_field)
         field_mask = field.mask.astype(bool)
-        # fraction of ETDRS field inside retina
         total = np.sum(field_mask)
         if total == 0:
             return np.nan
         in_retina = np.sum(field_mask & retina.mask)
         frac = in_retina / total
-        if frac > 0.8:
-            dt = layer.distance_transform
-            vals = dt[field_mask & retina.mask]
-            return float(np.nanmean(vals))
+        if frac > 0.5:
+            sel = maxima_mask & field_mask & retina.mask
+            vals = dt[sel]
+            return float(np.nanmean(vals)) if vals.size > 0 else np.nan
         else:
             warnings.warn(
-                "ETDRS field largely outside retina for Coverage; returning NaN"
+                "ETDRS field largely outside retina for Coverage; returning None"
             )
-            return np.nan
+            return None
 
     def plot(self, ax, layer: FundusVesselsLayer, **kwargs):
+        layer.plot(ax=ax, image=True)
         dt = layer.distance_transform
         if self.grid_field is not None:
             retina = layer.retina
@@ -95,6 +156,13 @@ class Coverage(VesselsLayerFeature):
             ax.imshow(to_plot)
             # overlay ETDRS region
             retina.grids[self.grid_field.grid()].plot(ax, field)
+            # overlay maxima points in max mode
+            if self.mode == CoverageMode.MAX:
+                maxima_mask = Coverage._local_maxima(dt, radius=2)
+                sel = maxima_mask & field_mask & retina.mask
+                ys, xs = np.nonzero(sel)
+                if ys.size > 0:
+                    ax.scatter(xs, ys, s=6, c="cyan", edgecolors="black", linewidths=0.2, alpha=0.8)
             try:
                 val = self.compute(layer)
                 if val is not None and not np.isnan(val):
@@ -103,7 +171,20 @@ class Coverage(VesselsLayerFeature):
                 pass
         else:
             ax.imshow(dt)
-            ax.text(5, 45, f'{layer.mean_distance_to_vessel:.4f}')
+            # overlay maxima points in max mode
+            if self.mode == CoverageMode.MAX:
+                retina = layer.retina
+                maxima_mask = Coverage._local_maxima(dt, radius=2)
+                sel = maxima_mask & retina.mask
+                ys, xs = np.nonzero(sel)
+                if ys.size > 0:
+                    ax.scatter(xs, ys, s=6, c="cyan", edgecolors="black", linewidths=0.2, alpha=0.8)
+            try:
+                val = self.compute(layer)
+                if val is not None and not np.isnan(val):
+                    ax.text(5, 45, f'{val:.4f}')
+            except Exception:
+                pass
 
         return ax
     

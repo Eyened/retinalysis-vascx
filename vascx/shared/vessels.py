@@ -101,7 +101,8 @@ class Vessels:
                 return default
 
         color_values = [get_value(color, s) for s in segments]
-        max_color_value = max([c for c in color_values if c is not None])
+        valid_colors = [c for c in color_values if c is not None]
+        max_color_value = max(valid_colors) if valid_colors else 0
 
         im = np.full_like(self.layer.binary, np.nan, dtype=np.float32)
         for i, segment in enumerate(segments):

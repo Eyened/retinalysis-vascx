@@ -2,10 +2,11 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from matplotlib import pyplot as plt
+from matplotlib import pyplot as plt, colors
+from skimage.exposure import equalize_adapthist
 import numpy as np
 
-from .base import RetinaFeature
+from .base import RetinaFeature, grid_field_fraction_in_bounds, grid_field_masks_and_fraction
 
 if TYPE_CHECKING:
     from vascx.fundus.retina import Retina
@@ -51,36 +52,37 @@ class VarianceOfLaplacian(RetinaFeature):
         return f"VarianceOfLaplacian(grid_field={fmt(self.grid_field)})"
 
     def compute(self, retina: 'Retina'):
+                
         if self.grid_field is None:
             return float(np.nanvar(retina.laplacian))
 
-        grid = retina.grids[self.grid_field.grid()]
-        field = grid.field(self.grid_field)
-        field_mask = field.mask.astype(bool)
-        mask = field_mask & retina.mask
+        field_mask, in_bounds_mask, frac = grid_field_masks_and_fraction(retina, self.grid_field)
+        if frac < 0.5:
+            return None
+        mask = in_bounds_mask
         if not np.any(mask):
-            return float('nan')
+            return None
         vals = np.where(mask, retina.laplacian, np.nan)
         return float(np.nanvar(vals))
 
     def plot(self, ax, retina: 'Retina', **kwargs):
-        if self.grid_field is None:
-            ax.imshow(retina.laplacian)
-            ax.text(5, 45, f"{self.compute(retina):.4f}")
-        else:
+        L = retina.laplacian.astype(np.float32)          # may contain NaNs outside mask
+        mask = np.isfinite(L)
+
+        M = np.abs(L)                                    # use magnitude for edge strength
+        low, high = np.nanpercentile(M[mask], (1, 99))   # robust, ignore NaNs
+        scale = max(high - low, 1e-6)
+        M = np.clip((M - low) / scale, 0, 1)             # normalize to [0,1]
+        M[~mask] = 0.0                                   # fill NaNs
+
+        M_eq = equalize_adapthist(M, clip_limit=0.02, nbins=256)
+        ax.imshow(M_eq, cmap='gray', vmin=0, vmax=1)
+        
+        if self.grid_field is not None:
             grid = retina.grids[self.grid_field.grid()]
             field = grid.field(self.grid_field)
-            field_mask = field.mask.astype(bool)
-            masked = np.where(field_mask, retina.laplacian, np.nan)
-            ax.imshow(masked)
-            # overlay ETDRS region
-            grid.plot(ax, field)
-            try:
-                val = self.compute(retina)
-                if val is not None and not np.isnan(val):
-                    ax.text(5, 45, f"{val:.4f}", color='white', fontsize=6)
-            except Exception:
-                pass
+            field.plot(ax)
+            
 
         return ax
     

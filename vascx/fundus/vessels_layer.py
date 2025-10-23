@@ -81,13 +81,18 @@ class FundusVesselsLayer(JointVesselsLayer):
     def plot(
         self,
         ax=None,
-        mask=True,
+        image=False,
+        mask=False,
         color=None,
         skeleton=True,
     ):
         ax = self._get_base_axes(ax)
         if color is None:
             color = self.color
+
+        if image:
+            if self.retina.image is not None:
+                ax.imshow(self.retina.image)
 
         if mask:
             self.plot_mask(ax, color=color)

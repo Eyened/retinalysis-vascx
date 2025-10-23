@@ -7,7 +7,7 @@ import numpy as np
 from vascx.shared.aggregators import mean_median_std
 from vascx.shared.vessels import Vessels
 
-from .base import LayerFeature
+from .base import LayerFeature, grid_field_fraction_in_bounds
 
 if TYPE_CHECKING:
     from rtnls_enface.grids.base import GridFieldEnum
@@ -65,6 +65,10 @@ class Caliber(LayerFeature):
         return segments
 
     def compute(self, layer: VesselTreeLayer):
+        if self.grid_field is not None:
+            frac = grid_field_fraction_in_bounds(layer.retina, self.grid_field)
+            if frac < 0.5:
+                return None
         segments = self._get_segments(layer)
         calibers = [s.median_diameter for s in segments]
         # median diameters should never be nan
@@ -73,7 +77,8 @@ class Caliber(LayerFeature):
         return self.aggregator(calibers)
 
     def plot(self, ax, layer: VesselTreeLayer, **kwargs):
-        vessels = Vessels(layer, self._get_segments(layer))
+        segments = self._get_segments(layer)
+        vessels = Vessels(layer, segments)
         ax = vessels.plot(
             ax=ax,
             text=lambda x: f"{x.median_diameter:.2f}",

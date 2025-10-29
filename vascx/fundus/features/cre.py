@@ -67,10 +67,12 @@ class CRE(LayerFeature):
         CREMode: CREMode = CREMode.Temporal,
         max_vessels: int = 6,
         hemifield: HemifieldField | None = None,
+        min_circles: int = 6,
     ):
         self.CREMode = CREMode
         self.max_vessels = max_vessels
         self.hemifield: HemifieldField | None = hemifield
+        self.min_circles: int = int(min_circles)
         
     def __repr__(self) -> str:
         return "CRE()"
@@ -85,6 +87,52 @@ class CRE(LayerFeature):
         circle = Circle(center=disc_center, r=radius)
         return circle
 
+    def __get_binary_mask(self, layer: "VesselTreeLayer", circle: Circle) -> np.ndarray:
+        """Boolean mask of circle ∧ FOD-angle constraint ∧ hemifield (if set)."""
+        retina = layer.retina
+        h, w = retina.resolution
+
+        cy, cx = circle.center.tuple
+        yy = np.arange(h)[:, None]
+        xx = np.arange(w)[None, :]
+        circle_mask = (xx - cx) ** 2 + (yy - cy) ** 2 <= circle.r ** 2
+
+        # FOD per-pixel angle mask
+        if getattr(retina, "fovea_location", None) is None or getattr(retina, "disc", None) is None:
+            fod_mask = np.ones_like(circle_mask, dtype=bool)
+        else:
+            od = retina.disc.center_of_mass
+            fy, fx = retina.fovea_location.tuple
+            vy, vx = fy - od.y, fx - od.x
+            norm_v = np.hypot(vx, vy) + 1e-6
+            dy = yy - od.y
+            dx = xx - od.x
+            norm_p = np.hypot(dx, dy) + 1e-6
+            cosang = (dx * vx + dy * vy) / (norm_p * norm_v)
+            cosang = np.clip(cosang, -1.0, 1.0)
+            ang = np.degrees(np.arccos(cosang))
+
+            if self.CREMode == CREMode.Temporal:
+                fod_mask = ang < 100.0
+            elif self.CREMode == CREMode.Nasal:
+                fod_mask = ang > 80.0
+            else:
+                fod_mask = np.ones_like(circle_mask, dtype=bool)
+
+        mask = circle_mask & fod_mask
+
+        # Optional hemifield filtering
+        if self.hemifield is not None:
+            try:
+                base_mask = retina.mask
+            except Exception:
+                base_mask = None
+            grid = HemifieldGrid(retina, resolution=retina.resolution, mask=base_mask)
+            hemi_mask = grid.field(self.hemifield).mask.astype(bool)
+            mask &= hemi_mask
+
+        return mask
+
     def get_filtered_segments(self, layer: VesselTreeLayer, circle: Circle):
         # to speed it up only at the segments with one endpoint inside and one outside of the circle
         filtered_segments = [
@@ -94,41 +142,23 @@ class CRE(LayerFeature):
             or (not circle.contains(seg.start) and circle.contains(seg.end))
         ]
 
+        # Orientation filtering kept as-is
         if self.CREMode == CREMode.Temporal:
             filtered_segments = [
                 seg
                 for seg in filtered_segments
-                if seg.fod_angle() is not None
-                and seg.fod_angle() < 100
-                and seg.orientation() is not None
-                and seg.orientation() < 90
+                if seg.fod_angle() is not None and seg.fod_angle() < 100
+                if seg.orientation() is not None and seg.orientation() < 90
             ]
         elif self.CREMode == CREMode.Nasal:
             filtered_segments = [
                 seg
                 for seg in filtered_segments
-                if seg.fod_angle() is not None
-                and seg.fod_angle() > 80
-                and seg.orientation() is not None
-                and seg.orientation() > 90
+                if seg.fod_angle() is not None and seg.fod_angle() > 80
+                if seg.orientation() is not None and seg.orientation() > 90
             ]
         else:
             pass
-
-        # Optional hemifield filtering: keep segments whose skeleton majority lies in the selected half
-        if self.hemifield is not None:
-            retina = layer.retina
-            try:
-                mask = retina.mask  # may raise if bounds not set
-            except Exception:
-                mask = None
-            grid = HemifieldGrid(retina, resolution=retina.resolution, mask=mask)
-            keep = []
-            for seg in filtered_segments:
-                frac = grid.fraction_in_field(seg.skeleton, self.hemifield)
-                if frac >= 0.5:
-                    keep.append(seg)
-            filtered_segments = keep
 
         return filtered_segments
 
@@ -170,12 +200,37 @@ class CRE(LayerFeature):
             cte = 0.95
         else:
             raise ValueError("Unrecognized layer type for CRE computation")
+        # Build mask and enforce full containment within retina bounds
+        mask = self.__get_binary_mask(layer, circle.resize(layer.retina.disc.circle.r / 5.0))
+        total = int(np.count_nonzero(mask))
+        if total == 0:
+            return None, []
+        try:
+            retina_mask = layer.retina.mask.astype(bool)
+        except Exception:
+            retina_mask = None
+        if retina_mask is not None:
+            in_bounds = np.count_nonzero(mask & retina_mask)
+            if in_bounds < total:
+                # Discard this circle if any part is out of bounds
+                return None, []
 
         intersections = self.get_intersections(layer, circle)
+        # Filter intersections by on-mask (True) values
+        h, w = mask.shape
+        filtered_intersections: List[Tuple[Segment, float]] = []
+        for seg, t in intersections:
+            y, x = seg.spline.get_point(t)
+            yi, xi = int(round(y)), int(round(x))
+            if 0 <= yi < h and 0 <= xi < w and mask[yi, xi]:
+                filtered_intersections.append((seg, t))
+        intersections = filtered_intersections
+        if len(intersections) == 0:
+            return None, []
         # Deduplicate segments that may intersect circle multiple times
         segments = list(set([p[0] for p in intersections]))
         if len(segments) == 0:
-            warnings.warn("Could not find intersecting segmentes for CRE circle.")
+            warnings.warn("Could not find intersecting segments for CRE circle.")
             return None, []
 
         # Keep up to the largest N segments by median diameter
@@ -196,12 +251,12 @@ class CRE(LayerFeature):
             if cre is not None:
                 cres.append(cre)
 
-        if len(cres) == 0:
+        if len(cres) < self.min_circles:
             return None
         else:
-            return np.median(cres).item()
+            return float(np.mean(cres))
 
-    def plot(self, ax, layer: VesselTreeLayer, **kwargs):
+    def _plot(self, ax, layer: VesselTreeLayer, **kwargs):
         """This plot shows the circles used to compute CRE,
         the segments used in the CRE computation and the CRE next to each circle
         """
@@ -227,7 +282,7 @@ class CRE(LayerFeature):
             cres.append(cre)
 
         segments = list(set(segments))
-        layer.retina.plot_image(ax=ax)
+        layer.retina.plot(ax=ax, image=True, bounds=True)
         Vessels(layer, segments).plot(
             **{
                 "show_index": True,
@@ -246,10 +301,21 @@ class CRE(LayerFeature):
                 )
             )
 
-        for i, cre in enumerate(reversed(cres)):
-            ax.text(10, 20 + 30 * i, f"{cre:.2f}", color="white", fontsize=6)
+        # for i, cre in enumerate(reversed(cres)):
+        #     ax.text(10, 20 + 30 * i, f"{cre:.2f}", color="white", fontsize=6)
 
         for p in points:
-            ax.scatter(x=p[1], y=p[0], c="green", s=1)
+            ax.scatter(x=p[1], y=p[0], c="white", s=2, marker="x")
+
+        # Overlay largest circle's mask as a transparent layer
+        try:
+            largest_circle = self.get_circle(layer, 0.5 + 0.1 * 5)
+            mask = self.__get_binary_mask(layer, largest_circle.resize(layer.retina.disc.circle.r / 5.0))
+            h, w = layer.retina.resolution
+            overlay = np.zeros((h, w, 4), dtype=float)
+            overlay[mask] = [0.0, 1.0, 0.0, 0.25]
+            ax.imshow(overlay)
+        except Exception:
+            pass
 
         return ax

@@ -93,8 +93,8 @@ class Length(LayerFeature):
     def calc_auxiliary(self, parameters):
         pass
 
-    def plot(self, ax, layer: 'VesselTreeLayer', **kwargs):
-        """Plot only the segments used in computation and overlay ETDRS field if set."""
+    def _plot(self, ax, layer: 'VesselTreeLayer', **kwargs):
+        """Draw segments used in computation and overlay ETDRS field if set."""
         field = None
         if self.grid_field is not None:
             grid = layer.retina.grids[self.grid_field.grid()]
@@ -106,11 +106,6 @@ class Length(LayerFeature):
         ]
 
         ax = layer.plot_segments(ax=ax, segments=segments)
-
-        # annotate mean length to match compute()
-        if len(segments) > 0:
-            mean_len = float(np.mean([s.length for s in segments]))
-            ax.text(5, 15, f"mean={mean_len:.2f}", color="white", fontsize=6)
 
         # plot ETDRS region
         if self.grid_field is not None:

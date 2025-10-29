@@ -41,7 +41,7 @@ class FazParameter(FAZLayerFeature):
     def plot_area(self, ax, layer: FAZLayer, **kwargs):
         raise NotImplementedError()
 
-    def plot(self, *args, **kwargs):
+    def _plot(self, *args, **kwargs):
         if self.param == FazParameterType.PerimeterLength:
             return self.plot_perimeter(*args, **kwargs)
         elif self.param == FazParameterType.Area:

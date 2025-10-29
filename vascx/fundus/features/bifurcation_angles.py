@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
 from matplotlib import patches
@@ -15,7 +14,6 @@ if TYPE_CHECKING:
     from vascx.fundus.layer import VesselTreeLayer
 
 
-@dataclass
 class BifurcationAngles(LayerFeature):
     """Aggregation of angles at bifurcations measured at distance delta along outgoing branches.
 
@@ -64,8 +62,10 @@ class BifurcationAngles(LayerFeature):
         )
 
     def _get_bifurcation_points(self, layer: VesselTreeLayer):
-        grid = layer.retina.grids[self.grid_field.grid()]
-        field = grid.field(self.grid_field)
+        field = None
+        if self.grid_field is not None:
+            grid = layer.retina.grids[self.grid_field.grid()]
+            field = grid.field(self.grid_field)
         bifurcations = layer.filter_bifurcations(field)
         bifurcations = [bif for bif in bifurcations if bif.outgoing_min_length > self.delta]
         return bifurcations
@@ -78,7 +78,7 @@ class BifurcationAngles(LayerFeature):
         bifurcations = self._get_bifurcation_points(layer)
         return self.aggregator([bif.angle(self.delta) for bif in bifurcations])
 
-    def plot(self, ax, layer: VesselTreeLayer, **kwargs):
+    def _plot(self, ax, layer: VesselTreeLayer, **kwargs):
         field = None
         if self.grid_field is not None:
             grid = layer.retina.grids[self.grid_field.grid()]

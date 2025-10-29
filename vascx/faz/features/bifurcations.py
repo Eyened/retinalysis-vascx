@@ -11,7 +11,6 @@ if TYPE_CHECKING:
     from vascx.faz.layer import FAZLayer
 
 
-@dataclass
 class BifurcationCount(FAZLayerFeature):
     def _get_bifurcation_points(self, layer: FAZLayer):
         bifurcations = []
@@ -26,7 +25,7 @@ class BifurcationCount(FAZLayerFeature):
     def compute(self, layer: FAZLayer):
         return len(self._get_bifurcation_points(layer))
 
-    def plot(self, ax, layer: FAZLayer, **kwargs):
+    def _plot(self, ax, layer: FAZLayer, **kwargs):
         _, ax = layer.plot(ax=ax, mask=True)
 
         bifurcations = self._get_bifurcation_points(layer)

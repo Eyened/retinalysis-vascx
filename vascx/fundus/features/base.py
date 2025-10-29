@@ -8,6 +8,7 @@ import numpy as np
 from vascx.shared.features import Feature
 
 if TYPE_CHECKING:
+    from matplotlib.axes import Axes
     from vascx.fundus.retina import Retina
     from vascx.fundus.layer import VesselTreeLayer
     from vascx.fundus.vessels_layer import FundusVesselsLayer
@@ -16,43 +17,49 @@ if TYPE_CHECKING:
 
 class RetinaFeature(Feature):
     @abstractmethod
-    def compute(self, retina: Retina):
+    def compute(self, retina: 'Retina'):
         """Compute the feature given its parameters.
         Subclasses are free to define the type and semantics of the parameters.
         """
         pass
 
     @abstractmethod
-    def plot(self, retina: Retina, **kwargs):
-        """Generate plots and/or written explanation about the computation of these features."""
-        pass
+    def _plot(self, ax: 'Axes', retina: 'Retina', **kwargs) -> 'Axes':
+        """Subclass draws onto ax for the given Retina and returns ax."""
+
+    def plot(self, ax: 'Axes', retina: 'Retina', **kwargs) -> 'Axes':
+        return super().plot(ax=ax, layer=retina, **kwargs)
 
 class LayerFeature(Feature):
     @abstractmethod
-    def compute(self, layer: VesselTreeLayer):
+    def compute(self, layer: 'VesselTreeLayer'):
         """Compute the feature given its parameters.
         Subclasses are free to define the type and semantics of the parameters.
         """
         pass
 
     @abstractmethod
-    def plot(self, layer: VesselTreeLayer, **kwargs):
-        """Generate plots and/or written explanation about the computation of these features."""
-        pass
+    def _plot(self, ax: 'Axes', layer: 'VesselTreeLayer', **kwargs) -> 'Axes':
+        """Subclass draws onto ax for the given VesselTreeLayer and returns ax."""
+
+    def plot(self, ax: 'Axes', layer: 'VesselTreeLayer', **kwargs) -> 'Axes':
+        return super().plot(ax=ax, layer=layer, **kwargs)
 
 
 class VesselsLayerFeature(Feature):
     @abstractmethod
-    def compute(self, layer: FundusVesselsLayer):
+    def compute(self, layer: 'FundusVesselsLayer'):
         """Compute the feature given its parameters.
         Subclasses are free to define the type and semantics of the parameters.
         """
         pass
 
     @abstractmethod
-    def plot(self, layer: FundusVesselsLayer, **kwargs):
-        """Generate plots and/or written explanation about the computation of these features."""
-        pass
+    def _plot(self, ax: 'Axes', layer: 'FundusVesselsLayer', **kwargs) -> 'Axes':
+        """Subclass draws onto ax for the given FundusVesselsLayer and returns ax."""
+
+    def plot(self, ax: 'Axes', layer: 'FundusVesselsLayer', **kwargs) -> 'Axes':
+        return super().plot(ax=ax, layer=layer, **kwargs)
 
 
 def grid_field_masks_and_fraction(retina: 'Retina', grid_field: 'GridFieldEnum') -> Tuple[np.ndarray, np.ndarray, float]:

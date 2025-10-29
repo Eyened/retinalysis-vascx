@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import warnings
-from dataclasses import dataclass
 from itertools import combinations
 from typing import TYPE_CHECKING, List, Tuple
 
@@ -18,7 +17,6 @@ if TYPE_CHECKING:
     from vascx.shared.segment import Segment
 
 
-@dataclass
 class TemporalAngle(LayerFeature):
     """Median angle between the two dominant (largest caliber) temporal arcades at circles from 2/3 OD–fovea distance outward.
 
@@ -151,7 +149,7 @@ class TemporalAngle(LayerFeature):
             warnings.warn("Couldn't find valid angles for any circle.")
             return None
 
-    def plot(self, ax, layer, **kwargs):
+    def _plot(self, ax, layer, **kwargs):
         pairs, segments, circles = [], [], []
 
         for i in range(0, 5):

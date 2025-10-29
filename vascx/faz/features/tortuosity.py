@@ -26,7 +26,6 @@ class TortuosityMeasure(str, Enum):
     Inflections = "inflections"
 
 
-@dataclass
 class Tortuosity(FAZLayerFeature):
     def __init__(
         self,
@@ -77,7 +76,7 @@ class Tortuosity(FAZLayerFeature):
         tortuosities = self.raw(layer)
         return self.aggregator(tortuosities)
 
-    def plot(self, ax, layer, **kwargs):
+    def _plot(self, ax, layer, **kwargs):
         if self.measure == TortuosityMeasure.Inflections:
             format = "{:d}"
         else:

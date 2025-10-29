@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-from dataclasses import dataclass
 from enum import Enum
 from typing import TYPE_CHECKING
 
@@ -33,7 +32,6 @@ class TortuosityMeasure(str, Enum):
     Inflections = "inflections"
 
 
-@dataclass
 class Tortuosity(LayerFeature):
     """Segment- or vessel-level tortuosity by distance ratio, curvature, or inflection counts.
 
@@ -162,7 +160,7 @@ class Tortuosity(LayerFeature):
         tortuosities = self.raw(layer)
         return self.aggregator(tortuosities)
 
-    def plot(self, ax, layer: VesselTreeLayer, **kwargs):
+    def _plot(self, ax, layer: VesselTreeLayer, **kwargs):
         segments = self.get_segments(layer)
 
         vessels = Vessels(layer, segments)

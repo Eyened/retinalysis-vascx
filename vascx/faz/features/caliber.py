@@ -27,7 +27,7 @@ class Caliber(FAZLayerFeature):
             raise ValueError("Some median diameters are nan")
         return self.aggregator(calibers)
 
-    def plot(self, ax, layer: FAZLayer, **kwargs):
+    def _plot(self, ax, layer: FAZLayer, **kwargs):
         vessels = Vessels(layer, self._get_segments(layer))
         return vessels.plot(
             ax=ax,

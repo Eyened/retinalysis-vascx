@@ -1,12 +1,12 @@
 # fmt: off
-from rtnls_enface.grids.etdrs import MiscField as ETDRS_MiscField
+from rtnls_enface.grids.etdrs import ETDRSRing
 from rtnls_enface.grids.hemifields import HemifieldField
-from rtnls_enface.grids.disc_centered import MiscField as DC_MiscField
+from rtnls_enface.grids.disc_centered import DiscCenteredRing
 
 from vascx.fundus.features.bifurcation_angles import BifurcationAngles
 from vascx.fundus.features.bifurcation_counts import BifurcationCount
 from vascx.fundus.features.caliber import Caliber
-from vascx.fundus.features.coverage import Coverage
+from vascx.fundus.features.sparsity import Sparsity, SparsityMode
 from vascx.fundus.features.cre import CRE, CREMode
 from vascx.fundus.features.disc_features import DiscFoveaDistance
 from vascx.fundus.features.tortuosity import (
@@ -21,13 +21,13 @@ from vascx.shared.aggregators import mean_median, median, median_std, sum
 from vascx.shared.features import FeatureSet
 
 
-full_v2 = FeatureSet(
+fs_full_v2 = FeatureSet(
     "full_v2",
     {
         # bifurcation angles (full, superior, inferior)
-        "bif_angles": BifurcationAngles(aggregator=median),
-        "bif_angles_sup": BifurcationAngles(grid_field=HemifieldField.Superior, aggregator=median),
-        "bif_angles_inf": BifurcationAngles(grid_field=HemifieldField.Inferior, aggregator=median),
+        "angles": BifurcationAngles(aggregator=median),
+        "angles_sup": BifurcationAngles(grid_field=HemifieldField.Superior, aggregator=median),
+        "angles_inf": BifurcationAngles(grid_field=HemifieldField.Inferior, aggregator=median),
 
         # bifurcation counts (full, superior, inferior)
         "bif": BifurcationCount(),
@@ -35,13 +35,22 @@ full_v2 = FeatureSet(
         "bif_inf": BifurcationCount(grid_field=HemifieldField.Inferior),
 
         # caliber (full, superior, inferior)
-        "diam": Caliber(aggregator=median_std),
-        "diam_sup": Caliber(grid_field=HemifieldField.Superior, aggregator=median_std),
-        "diam_inf": Caliber(grid_field=HemifieldField.Inferior, aggregator=median_std),
+        "diam": Caliber(aggregator=median),
+        "diam_sup": Caliber(grid_field=HemifieldField.Superior, aggregator=median),
+        "diam_inf": Caliber(grid_field=HemifieldField.Inferior, aggregator=median),
 
         # coverage and variance of laplacian over disc-centered full grid
-        "coverage_dc": Coverage(grid_field=DC_MiscField.Grid),
-        "lapl_dc": VarianceOfLaplacian(grid_field=DC_MiscField.Grid),
+        "sparsity_mean": Sparsity(mode=SparsityMode.MEAN),
+        "sparsity_max": Sparsity(mode=SparsityMode.MAX),
+        "sparsity_disc_mean": Sparsity(grid_field=DiscCenteredRing.FullGrid, mode=SparsityMode.MEAN),
+        "sparsity_disc_max": Sparsity(grid_field=DiscCenteredRing.FullGrid, mode=SparsityMode.MAX),
+        "sparsity_fovea_mean": Sparsity(grid_field=ETDRSRing.FullGrid, mode=SparsityMode.MEAN),
+        "sparsity_fovea_max": Sparsity(grid_field=ETDRSRing.FullGrid, mode=SparsityMode.MAX),
+
+
+        "lapl": VarianceOfLaplacian(),
+        "lapl_disc": VarianceOfLaplacian(grid_field=DiscCenteredRing.FullGrid),
+        "lapl_fovea": VarianceOfLaplacian(grid_field=ETDRSRing.FullGrid),
 
         # CRE: temporal variants in sup/inf/full; nasal and full variants on full grid
         "cre_temporal": CRE(CREMode.Temporal),
@@ -84,14 +93,14 @@ full_v2 = FeatureSet(
             mode=TortuosityMode.Segments,
             measure=TortuosityMeasure.Distance,
             length_measure=LengthMeasure.Splines,
-            grid_field=ETDRS_MiscField.Total,
+            grid_field=ETDRSRing.FullGrid,
             aggregator=median,
         ),
         "tort_curv_etdrs": Tortuosity(
             mode=TortuosityMode.Segments,
             measure=TortuosityMeasure.Curvature,
             length_measure=LengthMeasure.Splines,
-            grid_field=ETDRS_MiscField.Total,
+            grid_field=ETDRSRing.FullGrid,
             aggregator=median,
         ),
         # ETDRS total (length-weighted normalized)
@@ -99,7 +108,7 @@ full_v2 = FeatureSet(
             mode=TortuosityMode.Segments,
             measure=TortuosityMeasure.Distance,
             length_measure=LengthMeasure.Splines,
-            grid_field=ETDRS_MiscField.Total,
+            grid_field=ETDRSRing.FullGrid,
             norm_measure=LengthMeasure.Splines,
             aggregator=sum,
         ),
@@ -107,7 +116,7 @@ full_v2 = FeatureSet(
             mode=TortuosityMode.Segments,
             measure=TortuosityMeasure.Curvature,
             length_measure=LengthMeasure.Splines,
-            grid_field=ETDRS_MiscField.Total,
+            grid_field=ETDRSRing.FullGrid,
             norm_measure=LengthMeasure.Splines,
             aggregator=sum,
         ),

@@ -65,7 +65,7 @@ class VarianceOfLaplacian(RetinaFeature):
         vals = np.where(mask, retina.laplacian, np.nan)
         return float(np.nanvar(vals))
 
-    def plot(self, ax, retina: 'Retina', **kwargs):
+    def _plot(self, ax, retina: 'Retina', **kwargs):
         L = retina.laplacian.astype(np.float32)          # may contain NaNs outside mask
         mask = np.isfinite(L)
 

@@ -1,10 +1,10 @@
 # fmt: off
-from rtnls_enface.grids.etdrs import MiscField
+from rtnls_enface.grids.etdrs import ETDRSRing
 from vascx.faz.features.tortuosity import TortuosityMeasure
 from vascx.fundus.features.bifurcation_angles import BifurcationAngles
 from vascx.fundus.features.bifurcation_counts import BifurcationCount
 from vascx.fundus.features.caliber import Caliber
-from vascx.fundus.features.coverage import Coverage
+from vascx.fundus.features.sparsity import Sparsity
 from vascx.fundus.features.cre import CRE
 from vascx.fundus.features.disc_features import DiscFoveaDistance
 from vascx.fundus.features.temporal_angles import TemporalAngle
@@ -14,7 +14,7 @@ from vascx.fundus.features.vascular_densities import VascularDensity
 from vascx.shared.aggregators import mean_median, median, median_std, sum
 from vascx.shared.features import FeatureSet
 
-full_features = FeatureSet(
+fs_full = FeatureSet(
     "full",
     {
         # temporal angles
@@ -26,7 +26,7 @@ full_features = FeatureSet(
 
         # vascular densities
         "vd": VascularDensity(),
-        "vd_total": VascularDensity(MiscField.Total, cut_mask=True),
+        "vd_total": VascularDensity(ETDRSRing.FullGrid),
 
         # tortuosity on segments
         "tort_segments_skl": Tortuosity(length_measure=LengthMeasure.Skeleton, aggregator=median),
@@ -51,7 +51,7 @@ full_features = FeatureSet(
         "bif": BifurcationCount(),
 
         # general and retina-level features
-        "coverage": Coverage(),
+        "coverage": Sparsity(),
         "lapl": VarianceOfLaplacian(),
         "odfd": DiscFoveaDistance(),
     },

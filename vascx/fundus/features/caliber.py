@@ -76,7 +76,7 @@ class Caliber(LayerFeature):
             raise ValueError("Some median diameters are nan")
         return self.aggregator(calibers)
 
-    def plot(self, ax, layer: VesselTreeLayer, **kwargs):
+    def _plot(self, ax, layer: VesselTreeLayer, **kwargs):
         segments = self._get_segments(layer)
         vessels = Vessels(layer, segments)
         ax = vessels.plot(

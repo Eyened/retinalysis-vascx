@@ -7,7 +7,7 @@ from vascx.fundus.features.vascular_densities import VascularDensity
 from vascx.shared.aggregators import median, median_std
 from vascx.shared.features import FeatureSet
 
-bergmann_features = FeatureSet(
+fs_bergmann = FeatureSet(
     "bergmann",
     {
         "ta": TemporalAngle(),

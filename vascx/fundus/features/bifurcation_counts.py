@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
 from .base import LayerFeature, grid_field_fraction_in_bounds
@@ -10,7 +9,6 @@ if TYPE_CHECKING:
     from vascx.fundus.layer import VesselTreeLayer
 
 
-@dataclass
 class BifurcationCount(LayerFeature):
     """Count of Bifurcation nodes in layer.nodes, optionally within a GridField.
 
@@ -59,7 +57,7 @@ class BifurcationCount(LayerFeature):
         bifurcations = self._get_bifurcation_points(layer)
         return len(bifurcations)
 
-    def plot(self, ax, layer: VesselTreeLayer, **kwargs):
+    def _plot(self, ax, layer: VesselTreeLayer, **kwargs):
         field = None
         if self.grid_field is not None:
             grid = layer.retina.grids[self.grid_field.grid()]

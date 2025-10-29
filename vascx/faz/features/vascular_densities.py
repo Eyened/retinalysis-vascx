@@ -16,7 +16,6 @@ if TYPE_CHECKING:
     pass
 
 
-@dataclass
 class VascularDensity(FAZLayerFeature):
     def __init__(self, grid_field: GridFieldEnum = None, cut_mask: bool = False):
         self.grid_field = grid_field
@@ -27,7 +26,7 @@ class VascularDensity(FAZLayerFeature):
             return np.ones(layer.retina.resolution, dtype=np.uint8) * 255
         return layer.retina.grids[self.grid_field.grid()].field(self.grid_field).astype(np.uint8) * 255
         
-    def plot(self, ax, layer: FAZLayer, **kwargs):
+    def _plot(self, ax, layer: FAZLayer, **kwargs):
         ax = layer.retina.plot(ax=ax, layers=[])
         mask = self.get_mask(layer)
         density = self.compute(layer)

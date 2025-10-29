@@ -7,6 +7,7 @@ from vascx.shared.features import Feature
 
 if TYPE_CHECKING:
     from vascx.faz.layer import FAZLayer
+    from matplotlib.axes import Axes
 
 
 class FAZLayerFeature(Feature):
@@ -18,6 +19,8 @@ class FAZLayerFeature(Feature):
         pass
 
     @abstractmethod
-    def plot(self, layer: FAZLayer, **kwargs):
-        """Generate plots and/or written explanation about the computation of these features."""
-        pass
+    def _plot(self, ax: 'Axes', layer: FAZLayer, **kwargs) -> 'Axes':
+        """Subclass draws onto ax for the given VesselTreeLayer and returns ax."""
+
+    def plot(self,  ax: 'Axes', layer: FAZLayer, **kwargs):
+        return super().plot(ax=ax, layer=layer, **kwargs)

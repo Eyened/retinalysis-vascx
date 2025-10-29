@@ -18,7 +18,6 @@ if TYPE_CHECKING:
     from vascx.fundus.layer import VesselTreeLayer
 
 
-@dataclass
 class VascularDensity(LayerFeature):
     """Fraction of vessel pixels within an OD–fovea-oriented ellipse (or ETDRS GridField) over its area.
 
@@ -28,16 +27,15 @@ class VascularDensity(LayerFeature):
     between the optic disc and fovea, or within a specified ETDRS GridField. The ellipse extends from the 
     optic disc with 1.5x aspect ratio along the OD-fovea axis.
 
-    Options: grid_field (region selection), cut_mask (handle out-of-bounds regions by masking vs. warning).
+    Options: grid_field (region selection).
     """
     
-    def __init__(self, grid_field: GridFieldEnum = None, cut_mask: bool = False):
+    def __init__(self, grid_field: GridFieldEnum = None):
         """
         reduce_mask: If true, trim the mask when parts of it are out of bounds of the CFI.
             Otherwise, an exception is generated.
         """
         self.grid_field = grid_field
-        self.cut_mask = cut_mask
 
     def __repr__(self) -> str:
         def fmt(v):
@@ -53,8 +51,7 @@ class VascularDensity(LayerFeature):
                 return repr(v.item())
             return repr(v)
         return (
-            f"VascularDensity(grid_field={fmt(self.grid_field)}, "
-            f"cut_mask={fmt(self.cut_mask)})"
+            f"VascularDensity(grid_field={fmt(self.grid_field)})"
         )
 
     def get_circle(self, layer: VesselTreeLayer):
@@ -98,20 +95,10 @@ class VascularDensity(LayerFeature):
                 return None
         mask = self.get_mask(layer)
 
-        if self.cut_mask:
-            # zero-out everything outside the fundus mask
-            mask[~layer.retina.mask] = 0
-        else:
-            # check that mask is within fundus bounds
-            if not np.all(mask.astype(bool) <= layer.retina.mask):
-                warnings.warn(
-                    "Region for vascular density computation is out of bounds"
-                )
-                return None
-
+        mask[~layer.retina.mask] = 0
         return self.compute_for_mask(layer, mask)
 
-    def plot(self, ax, layer: VesselTreeLayer, **kwargs):
+    def _plot(self, ax, layer: VesselTreeLayer, **kwargs):
         field = None
         if self.grid_field is not None:
             grid = layer.retina.grids[self.grid_field.grid()]
@@ -122,3 +109,4 @@ class VascularDensity(LayerFeature):
             mask=True,
             grid_field=field,
         )
+        return ax

@@ -42,9 +42,14 @@ class Tortuosity(LayerFeature):
     curvature (mean curvature along spline), or inflection counts (number of direction changes). 
     Can be computed per-segment or per-vessel (resolved segments), with optional length normalization.
 
-    Options: mode (segments vs vessels), measure (distance/curvature/inflections), length_measure 
-    (splines vs skeleton), norm_measure (length normalization), min_numpoints (length filter), 
-    grid_field (spatial filtering), aggregator (statistical aggregation function).
+    Args (constructor):
+    - mode: `TortuosityMode` selecting per-segment or per-vessel computation.
+    - measure: `TortuosityMeasure` (distance, curvature, inflections).
+    - length_measure: length source (splines or skeleton) for distance-based measure.
+    - min_numpoints: minimum skeleton points required for inclusion.
+    - grid_field: optional `GridFieldEnum` restricting segments to a region.
+    - norm_measure: if set, length-weighted aggregation using the chosen length source.
+    - aggregator: function to aggregate per-entity values (e.g., mean/median/std tuple).
     """
     
     # Ideas
@@ -171,7 +176,8 @@ class Tortuosity(LayerFeature):
 
         ax = vessels.plot(
             ax=ax,
-            text=lambda x: format.format(self._compute_for_segment(x, scale=layer.retina.disc_fovea_distance)),
+            show_index=False,
+            text=lambda x: f'{100*(self._compute_for_segment(x, scale=layer.retina.disc_fovea_distance)-1):.2f}',
             cmap="tab20",
             min_numpoints=0,
             min_numpoints_caliber=self.min_numpoints,

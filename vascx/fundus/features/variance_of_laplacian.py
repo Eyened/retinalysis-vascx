@@ -25,7 +25,9 @@ class VarianceOfLaplacian(RetinaFeature):
     highlight regions of rapid intensity change, then computes the variance of the resulting 
     Laplacian map. Higher variance indicates sharper, more detailed images with better focus.
 
-    Options: grid_field (optional ETDRS region limiting computation/visualization).
+    Args (constructor):
+    - grid_field: optional `GridFieldEnum` limiting computation/visualization to a predefined region
+      (applied within the retina mask).
     """
     
     def __init__(self, grid_field: 'GridFieldEnum' = None):

@@ -21,7 +21,11 @@ class Length(LayerFeature):
     Length can be measured either along the skeleton centerline points or via fitted spline curves 
     for smoother length estimation.
 
-    Options: min_numpoints (minimum segment length filter for inclusion in computation).
+    Args (constructor):
+    - min_numpoints: minimum number of skeleton points required for a segment to be included.
+    - grid_field: optional `GridFieldEnum` restricting segments to a predefined retinal region.
+
+    Notes: `compute` uses skeleton lengths; `compute_with_spline` provides a spline-based alternative.
     """
     
     # Ideas

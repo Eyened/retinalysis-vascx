@@ -75,62 +75,129 @@ Biomarker families use different representations: mask-based features use `binar
 
 ### Biomarkers
 
-VascX computes retinal vascular biomarkers using different data representations from the processing pipeline:
+VascX computes retinal vascular biomarkers from standardized representations (binary masks, undirected/directed graphs, resolved vessels). Below we describe each feature with the exact quantity being estimated and the equations used. Throughout, B denotes the stage‑1 binary vessel mask, S the set of eligible directed segments with lengths \(\ell_i\), and R an analysis region of interest; cardinalities count pixels, and distances are in pixels unless noted.
 
-**VascularDensity**
-- *Representation*: Uses `VesselTreeLayer.binary` vessel mask
-- *Computation*: Fraction of vessel pixels within an OD–fovea-oriented ellipse or ETDRS `GridField` over total area
-- *Options*: `grid_field` (region selection), `cut_mask` (handle out-of-bounds regions)
+**VascularDensity.** The fraction of retinal area occupied by vessels in R, computed on the binary mask B:
 
-**BifurcationCount**
-- *Representation*: Uses `Bifurcation` nodes from `layer.nodes` in the directed graph
-- *Computation*: Count of bifurcation points, optionally within a specified `GridField`
-- *Options*: `grid_field` (spatial filtering)
+$$
+D \,=\, \frac{|B \cap R|}{|R|}.
+$$
 
-**BifurcationAngles**
-- *Representation*: Uses `Bifurcation` geometry from `digraph` with outgoing branch directions
-- *Computation*: Aggregation of angles at bifurcations measured at distance `delta` along branches
-- *Options*: `delta` (measurement distance), `max_angle` (angle filter), `grid_field`, `aggregator`
 
-**Caliber**
-- *Representation*: Uses `segments` with computed `median_diameter` from skeleton-derived measurements
-- *Computation*: Aggregate of segment diameters filtered by minimum length and optional spatial region
-- *Options*: `min_numpoints` (length filter), `grid_field`, `aggregator`
 
-**Length**
-- *Representation*: Uses `segments` with skeleton or spline-based length measurements
-- *Computation*: Mean segment length across all qualifying segments
-- *Options*: `min_numpoints` (minimum segment length filter)
+**BifurcationCount.** The count of branching points in the directed graph (stage‑3). Let $\mathcal{B}$ be the set of bifurcation nodes with positions $p_b$:
 
-**Tortuosity**
-- *Representation*: Uses `segments` or `resolved_segments`; curvature mode uses segment splines
-- *Computation*: Vessel tortuosity by distance ratio, curvature, or inflection counts; optionally length-normalized
-- *Options*: `mode` (segments vs vessels), `measure` (distance/curvature/inflections), `length_measure`, `norm_measure`, `min_numpoints`, `grid_field`, `aggregator`
+$$
+C \,=\, \sum_{b \in \mathcal{B}} \mathbf{1}[p_b \in R].
+$$
 
-**CRE (Central Retinal Equivalents)**
-- *Representation*: Uses `segments` with `median_diameter` and circle intersection geometry around optic disc
-- *Computation*: Recursive diameter combining of segments intersecting concentric circles; returns median across radii
-- *Options*: None exposed (uses implicit artery/vein classification constants)
+**BifurcationAngles.** For each bifurcation $b$ at position $p_b$, outgoing branch directions are estimated by sampling the branches' splines at distance $\delta$ from the node along each branch at points $q_1$ and $q_2$. Unit vectors $(u_b, v_b)$ are defined from the bifurcation point to the sample points:
 
-**TemporalAngle**
-- *Representation*: Uses `resolved_segments` with circle intersections and OD–fovea spatial geometry
-- *Computation*: Median angle between two dominant temporal arcades at circles from 2/3 OD–fovea distance outward
-- *Options*: `od_to_fovea_fraction`, `increment` (circle spacing)
+$$
+u_b = \frac{q_1 - p_b}{\|q_1 - p_b\|}, \quad v_b = \frac{q_2 - p_b}{\|q_2 - p_b\|},
+$$
 
-**Coverage** (VesselsLayerFeature)
-- *Representation*: Uses `FundusVesselsLayer.distance_transform` normalized by OD–fovea distance
-- *Computation*: Mean distance to nearest vessel pixel across all retinal pixels
-- *Options*: `ignore_fovea` (reserved for future use)
+and the bifurcation angle is defined as the angle between these vectors:
 
-**VarianceOfLaplacian** (RetinaFeature)
-- *Representation*: Uses `Retina.laplacian` - global image Laplacian operator
-- *Computation*: Variance of Laplacian map as image sharpness proxy
-- *Options*: None
+$$
+\theta_b \,=\, \arccos(u_b \cdot v_b), \quad \theta_b \in [0^\circ, 180^\circ].
+$$
 
-**DiscFoveaDistance** (RetinaFeature)
-- *Representation*: Uses `Retina` optic disc and fovea spatial coordinates
-- *Computation*: Euclidean distance between optic disc center and fovea location
-- *Options*: None
+Angles exceeding 160° are discarded as non-bifurcating continuations. Summary statistics (e.g., mean/median) are reported across valid nodes.
+
+**Caliber.** For each segment $i$, diameters are sampled along a spline fitted to its skeleton by projecting spline normals to the vessel boundary on B. The per‑segment diameter is the median along its arclength. The reported caliber aggregates over eligible segments (length $\ell_i \ge \ell_{\min}$):
+
+$$
+\operatorname{Caliber} \,=\, g\big(\{ d_i : i \in S \}\big),
+$$
+
+where \(g\) is a robust statistic (typically the median).
+
+
+**Tortuosity.** Three complementary measures are provided per segment (or per resolved vessel). Let $L_{\text{arc},i}$ be arclength and $L_{\text{chord},i}$ the end‑to‑end Euclidean distance.
+
+- Distance factor:
+
+$$
+T_i^{\text{DF}} \,=\, \frac{L_{\text{arc},i}}{L_{\text{chord},i}}.
+$$
+
+- Curvature‑based measure, using planar curvature $\kappa_i(s)$ and OD–fovea distance $d_{ODF}$ for scale normalization:
+
+$$
+T_i^{\kappa} \,=\, \frac{1}{L_{\text{arc},i}} \int_0^{L_{\text{arc},i}} \big|\kappa_i(s)\big| \, ds \; \cdot \; d_{ODF}.
+$$
+
+- Inflection count (number of curvature sign changes along the centerline):
+
+$$
+T_i^{\text{INF}} \,=\, N^{(i)}_{\text{inflections}}.
+$$
+
+When reporting a single score over multiple segments, length‑weighted aggregation may be used for normalization:
+
+$$
+T_{\text{tot}} \,=\, \sum_{i \in S} \left( \frac{\ell_i}{\sum_{j \in S} \ell_j} \right) t_i,
+$$
+
+with $t_i$ any of the measures above.
+
+**CRE (Central Retinal Equivalents).** Concentric circles centered at the optic disc are intersected with the vessel network. At each radius $r$, up to $M$ crossings with the largest segment median diameters are retained and recursively reduced via the Hubbard rule with a modality‑dependent constant $c$ (arteries: 0.88; veins: 0.95):
+
+$$
+ d \leftarrow c\,\sqrt{d_1^2 + d_2^2}
+$$
+
+applied pairwise until a single equivalent caliber $d_r$ remains. The final CRE is the median of $\{d_r\}$ across radii.
+
+**TemporalAngle.** On each concentric circle of radius \(r\), the two dominant temporal vessels are identified by diameter and spatial continuity. The angle at the disc center is
+
+$$
+\theta_r \,=\, \angle\big(\overline{OD\,p_1(r)},\, \overline{OD\,p_2(r)}\big),
+$$
+
+and the reported value is the median over radii.
+
+**Sparsity.** Let $\mathrm{DT}(x)$ represent the distance transform over $R$, ie. the normalized Euclidean distance to the nearest vessel pixel (scaled by $d_{ODF}$). Over pixels in R we report either the mean or the largest local maximum:
+
+$$
+S_{\text{mean}} \,=\, \frac{1}{|R|} \sum_{x \in R} \mathrm{DT}(x), \qquad
+S_{\max} \,=\, \max_{x \in R \cap \text{local maxima}} \mathrm{DT}(x).
+$$
+
+**VarianceOfLaplacian.** For the fundus image $I$ (grayscale), compute the discrete Laplacian $L = \Delta I$. Image sharpness is summarized as the variance over R:
+
+$$
+\operatorname{Var}\{ L(x) : x \in R \}.
+$$
+
+**DiscFoveaDistance.** With optic disc center $c_{OD}$ and fovea position $p_f$,
+
+$$
+ d_{ODF} \,=\, \lVert c_{OD} - p_f \rVert_2.
+$$
+
+### Feature localisation
+
+VascX localises feature computations using anatomical references and predefined grids:
+
+- **Anatomical anchoring**
+  - The optic disc mask and fovea position orient geometry (e.g., OD–fovea axis) and define a retinal mask.
+  - All region masks are intersected with the retinal mask; features operate only on visible retina.
+
+- **Predefined grids** (`rtnls_enface/rtnls_enface/grids`)
+  - `EllipseGrid`: ellipse centered midway between disc and fovea, major axis along OD–fovea. Fields: `FullGrid`, `Superior`, `Inferior`.
+  - `CircleGrid`: disc–fovea–centered circle (radius derived from OD–fovea distance and disc size). Fields: `FullGrid`, `Superior`, `Inferior`.
+  - `ETDRSGrid`: classic ETDRS layout with rings (`Center`, `Inner`, `Outer`), quadrants (`Superior`, `Inferior`, `Nasal`, `Temporal`, plus `Left`/`Right`), and subfields (`CSF`, `SIM`, `NIM`, `TIM`, `IIM`, `SOM`, `NOM`, `TOM`, `IOM`).
+  - `HemifieldGrid`: superior/inferior half-planes split relative to the OD–fovea axis. Fields: `FullGrid`, `Superior`, `Inferior`.
+  - `DiscCenteredGrid`: disc-anchored rings (`inner`, `center`, `outer`) and quadrants (`superior`, `inferior`, `nasal`, `temporal`, plus `left`/`right`), taking laterality into account.
+
+- **Bounds and visibility (CFI bounds)**
+  - For a chosen field, the platform evaluates the fraction within bounds using `grid_field_fraction_in_bounds` (and `grid_field_masks_and_fraction`).
+  - If the fraction in-bounds is too small (typically < 0.5), many features skip computation and return `None` to avoid out-of-frame bias.
+  - Visualizers plot the requested field overlayed on the image; computations always respect in-bounds masking.
+
+Ready-to-run feature sets are available under `vascx/fundus/feature_sets` (e.g., `full`, `bergmann`, `quality`) and can be selected by name when using `extract_in_parallel`. To generate feature descriptions alongside extraction:
 
 Ready-to-run feature sets are available under `vascx/fundus/feature_sets` (e.g., `full`, `bergmann`, `quality`) and can be selected by name when using `extract_in_parallel`. To generate feature descriptions alongside extraction:
 

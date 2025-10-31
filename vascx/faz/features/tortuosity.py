@@ -86,9 +86,9 @@ class Tortuosity(FAZLayerFeature):
 
         return vessels.plot(
             ax=ax,
-            text=lambda x: format.format(self._compute_for_segment(x)),
+            text=lambda x: f'{100*(self._compute_for_segment(x)-1):.2f}',
             **{
-                "show_index": True,
+                "show_index": False,
                 "plot_endpoints": True,
                 "plot_chord": True,
                 "cmap": "tab20",

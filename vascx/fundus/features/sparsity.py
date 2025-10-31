@@ -24,15 +24,18 @@ class SparsityMode(Enum):
 
 
 class Sparsity(VesselsLayerFeature):
-    """Coverage over distance transform to nearest vessel pixel normalized by OD–fovea distance.
+    """Sparsity over distance-to-nearest-vessel normalized by the OD–fovea distance.
 
-    Representation: Uses FundusVesselsLayer.distance_transform which computes the distance from each
-    retinal pixel to the nearest vessel pixel, normalized by the OD-fovea distance.
+    Representation: uses `FundusVesselsLayer.distance_transform` (DT), where each retinal pixel stores
+    the distance to the nearest vessel pixel, normalized by the OD–fovea distance.
 
     Computation:
-    - mode == "mean": mean of the distance transform across selected pixels.
-    - mode == "max": mean of regional maxima of the distance transform across selected pixels.
+    - mode == "mean": S_mean = mean(DT over selected pixels)
+    - mode == "max": S_max = max(DT over regional maxima within selected pixels)
 
+    Args (constructor):
+    - grid_field: optional `GridFieldEnum` restricting computation to a predefined retinal region.
+    - mode: `SparsityMode` controlling aggregation ("mean" or "max").
     """
     
     def __init__(
@@ -63,7 +66,7 @@ class Sparsity(VesselsLayerFeature):
                 return repr(v.item())
             return repr(v)
         return (
-            f"Coverage(grid_field={fmt(self.grid_field)}, "
+            f"Sparsity(grid_field={fmt(self.grid_field)}, "
             f"mode={fmt(self.mode)})"
         )
 

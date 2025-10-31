@@ -450,7 +450,7 @@ class VesselTreeLayer(VesselLayer):
             )
         ax = self._get_base_axes(ax)
         vessels = Vessels(self, segments)
-        return vessels.plot(ax=ax, **kwargs)
+        return vessels.plot(ax=ax, show_index=False, **kwargs)
 
     def plot_nodes(self, ax=None, fig=None, grid_field: GridField = None):
         if ax is None:

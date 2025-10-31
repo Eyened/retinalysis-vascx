@@ -22,21 +22,17 @@ class BifurcationAngles(LayerFeature):
 
     Computation: For each bifurcation point, measures the angle between outgoing vessel branches by 
     sampling points at distance 'delta' along each branch and computing the angle between the resulting 
-    direction vectors. Filters out angles larger than max_angle and aggregates results.
+    direction vectors. Angles larger than an internal threshold (max_angle=160°) are discarded before
+    aggregation.
 
-    Options: delta (measurement distance from bifurcation), max_angle (angle filter), grid_field 
-    (spatial filtering), aggregator (statistical aggregation function).
+    Args (constructor):
+    - delta: pixel distance from the bifurcation where branch directions are sampled.
+    - grid_field: optional `GridFieldEnum` to restrict bifurcations to a region.
+    - aggregator: function to aggregate per-bifurcation angles (e.g., mean/median).
     """
     
     def __init__(self, delta: int = 20, grid_field: GridFieldEnum = None, aggregator=mean_median,):
-        """
-        Calculation of bifurcation angles.
-
-        Args:
-            delta (int): The distance from the bifurcation point to calculate the angle.
-            max_angle (str): Angles larger than this value will be ignored.
-
-        """
+        """Configure sampling distance, optional grid field and aggregation function."""
         self.delta = delta
         self.max_angle = 160
         self.grid_field = grid_field
@@ -90,12 +86,6 @@ class BifurcationAngles(LayerFeature):
         )
 
         bifurcations = self._get_bifurcation_points(layer)
-        
-        # plot ETDRS region
-        if self.grid_field is not None:
-            grid = layer.retina.grids[self.grid_field.grid()]
-            field = grid.field(self.grid_field)
-            grid.plot(ax, field)
 
         for bif in bifurcations:
             line1, line2 = bif.lines(self.delta)

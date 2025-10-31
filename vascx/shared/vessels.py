@@ -126,15 +126,12 @@ class Vessels:
         # ax.imshow(masked, cmap=cmap, interpolation="nearest")
 
         for i, segment in enumerate(segments):
-            if text != False:
+            if text is not None:
                 text_value = get_value(text, segment)
-                if text_value is None:
-                    seg_text = f"{segment.index}"
+                if show_index:
+                    seg_text = f"{segment.index}: {text_value:s}"
                 else:
-                    if show_index:
-                        seg_text = f"{segment.index}: {text_value:s}"
-                    else:
-                        seg_text = f"{text_value:s}"
+                    seg_text = f"{text_value:s}"
                 ax.text(
                     segment.mean_xy[1],
                     segment.mean_xy[0],

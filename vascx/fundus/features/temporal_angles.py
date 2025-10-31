@@ -28,8 +28,9 @@ class TemporalAngle(LayerFeature):
     between them, and returns the median angle across all sampled radii. Captures the characteristic 
     temporal arcade geometry.
 
-    Options: od_to_fovea_fraction (starting distance as fraction of OD-fovea distance), 
-    increment (spacing between concentric sampling circles).
+    Args (constructor):
+    - od_to_fovea_fraction: starting radius as a fraction of the OD–fovea distance.
+    - increment: radial step between successive concentric sampling circles.
     """
     
     od_to_fovea_fraction: float = 2 / 3

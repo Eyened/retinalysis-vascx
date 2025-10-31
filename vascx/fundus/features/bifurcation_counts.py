@@ -17,7 +17,8 @@ class BifurcationCount(LayerFeature):
     Computation: Counts the number of bifurcation points (vessel branch points) across the retinal 
     vasculature, optionally filtered to those within a specified ETDRS GridField region.
 
-    Options: grid_field (spatial filtering to specific retinal regions).
+    Args (constructor):
+    - grid_field: optional `GridFieldEnum` restricting the count to a predefined retinal region.
     """
     
     def __init__(self, grid_field: GridFieldEnum = None):

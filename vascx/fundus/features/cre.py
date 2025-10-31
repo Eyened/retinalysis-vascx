@@ -54,12 +54,22 @@ class CREMode(str, Enum):
 class CRE(LayerFeature):
     """Central retinal equivalents with temporal/nasal/full modes and optional hemifield filtering.
 
-    Representation: Uses circle–segment intersections around the optic disc and each segment's `median_diameter`.
+    Representation: uses circle–segment intersections around the optic disc and each segment's
+    `median_diameter`.
 
-    Computation: Across concentric radii around the disc, identifies intersecting segments, optionally filters by
-    a superior/inferior hemifield, retains up to the largest `max_vessels` by `median_diameter`, and recursively
-    combines diameters using the Hubbard formula (sqrt(d1² + d2²) scaled by artery/vein constants). Returns the
-    median equivalent diameter across radii.
+    Computation: across concentric radii around the disc, identifies intersecting segments, optionally
+    filters by a superior/inferior hemifield, retains up to the largest `max_vessels` by `median_diameter`,
+    and recursively combines diameters using the Hubbard reduction (√(d₁² + d₂²)) scaled by artery/vein
+    constants (c=0.88 for arteries, c=0.95 for veins). Returns the median equivalent diameter across radii.
+
+    Args (constructor):
+    - CREMode: `CREMode` selection for temporal, nasal, or full orientation constraint.
+    - max_vessels: keep up to this many largest-caliber intersecting segments per circle.
+    - hemifield: optional `HemifieldField` to restrict to superior or inferior hemifield.
+    - min_circles: minimum number of valid circles required; else returns None.
+
+    Notes: each circle must be fully within the retinal mask; if any part is out-of-bounds, that circle
+    is discarded from the aggregation for robustness.
     """
 
     def __init__(
@@ -75,7 +85,24 @@ class CRE(LayerFeature):
         self.min_circles: int = int(min_circles)
         
     def __repr__(self) -> str:
-        return "CRE()"
+        def fmt(v):
+            import numpy as np
+            from enum import Enum
+            if v is None:
+                return "None"
+            if isinstance(v, Enum):
+                return f"{v.__class__.__name__}.{v.name}"
+            if callable(v):
+                return getattr(v, "__name__", v.__class__.__name__)
+            if isinstance(v, np.generic):
+                return repr(v.item())
+            return repr(v)
+        return (
+            f"CRE(mode={fmt(self.CREMode)}, "
+            f"max_vessels={fmt(self.max_vessels)}, "
+            f"hemifield={fmt(self.hemifield)}, "
+            f"min_circles={fmt(self.min_circles)})"
+        )
 
     def get_circle(self, layer: VesselTreeLayer, od_multiple=0.5):
         disc = layer.retina.disc

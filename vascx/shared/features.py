@@ -45,6 +45,8 @@ class Feature(ABC):
 
     def _format_value(self, value: Any) -> str:
         """Format a value for display."""
+        if value is None:
+            return "N/A"
         if isinstance(value, np.generic):
             display_value = value.item()
         else:

@@ -27,14 +27,13 @@ class VascularDensity(LayerFeature):
     between the optic disc and fovea, or within a specified ETDRS GridField. The ellipse extends from the 
     optic disc with 1.5x aspect ratio along the OD-fovea axis.
 
-    Options: grid_field (region selection).
+    Args (constructor):
+    - grid_field: optional `GridFieldEnum` selecting a predefined region; if None, uses an OD–fovea
+      oriented ellipse (`EllipseGrid`).
     """
     
     def __init__(self, grid_field: GridFieldEnum = None):
-        """
-        reduce_mask: If true, trim the mask when parts of it are out of bounds of the CFI.
-            Otherwise, an exception is generated.
-        """
+        """Configure optional ETDRS/other grid region; default uses an OD–fovea ellipse."""
         self.grid_field = grid_field
 
     def __repr__(self) -> str:

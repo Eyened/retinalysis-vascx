@@ -25,8 +25,10 @@ class Caliber(LayerFeature):
     aggregator (e.g., median/std). Segment diameters are computed from skeleton-derived measurements 
     using spline interpolation and perpendicular distance sampling.
 
-    Options: min_numpoints (length filter), grid_field (spatial filtering), aggregator 
-    (statistical aggregation function).
+    Args (constructor):
+    - min_numpoints: minimum number of skeleton points required for segment inclusion.
+    - grid_field: optional `GridFieldEnum` restricting segments to a predefined retinal region.
+    - aggregator: function that aggregates the set of diameters (e.g., mean/median/std tuple).
     """
     
     def __init__(
@@ -82,6 +84,7 @@ class Caliber(LayerFeature):
         ax = vessels.plot(
             ax=ax,
             text=lambda x: f"{x.median_diameter:.2f}",
+            show_index=False,
             cmap="tab20",
             min_numpoints=0,
             min_numpoints_caliber=self.min_numpoints,

@@ -2,19 +2,17 @@
 
 VascX was created for the extraction of vascular features from fundus image segmentations.
 
+**Important!** This repository contains the feature extraction part of the VascX pipeline.
+
+For details about our segmentation models please refer our [models repository](https://github.com/Eyened/rtnls_vascx_models) an its related open access paper [VascX Models: Deep Ensembles for Retinal Vascular Analysis From Color Fundus Images](https://tvst.arvojournals.org/article.aspx?articleid=2810436)
+
 ### Installation
 
 To install the entire fundus analysis pipeline including fundus preprocessing, model inference code and vascular biomarker extraction:
 
-1. Create a conda or virtualenv virtual environment, or otherwise ensure a clean environment.
+1. Create a virtual environment, or otherwise ensure a clean environment.
 
-2. Install the [rtnls_inference package](https://github.com/Eyened/retinalysis-inference):
-
-```
-pip install retinalysis-inference
-```
-
-5. Install VascX:
+2. Install VascX:
 
 ```
 pip install retinalysis-vascx
@@ -22,9 +20,9 @@ pip install retinalysis-vascx
 
 ### Usage
 
-To speed up re-execution of vascx we recommend to run the segmentation and feature extraction steps separately:
+To speed up re-execution of VascX we recommend to run the segmentation and feature extraction steps separately:
 
-To run on the provided samples folder (in the git):
+To run on the provided samples folder in our git repository:
 
 ```
 git clone git@github.com:Eyened/retinalysis-vascx.git rtnls_vascx
@@ -33,8 +31,24 @@ vascx run-models ./samples/fundus/original/ /path/to/segmentations
 vascx calc-biomarkers /path/to/segmentations /path/to/features.csv --feature_set full --n-jobs 8 --logfile /path/to/logfile.txt
 ```
 
+Note that `vascx run-models` will write segmentations and other model predictions to `/path/to/segmentations`, which will have the following structure:
 
-We also provide notebooks with the three stages:
+```
+/path/to/segmentations
+  - preprocessed_rgb/ - preprocessed fundus images
+  - artery_vein/ - artery-vein model segmentations
+  - vessels/ - vessel model segmentations
+  - disc/ - optic disc model segmentations
+  - overlays/ - optional overlays showing the segmentations
+  - bounds.csv - contains the bounds of the fundus image
+  - fovea.csv - model predictions of the fovea locations for each image
+  - quality.csv - model estimations of CFI quality
+```
+
+The folders above will contain images with matching filenames.
+
+
+We also provide notebooks for running the three stages:
 
 1. Preprocessing. See [this notebook](./notebooks/0_preprocess.ipynb). This step is CPU-heavy and benefits from parallelization (see notebook).
 
@@ -45,6 +59,8 @@ We also provide notebooks with the three stages:
 
 
 ### Implementation
+
+
 
 VascX processes vessel segmentations through four main stages, each producing different data representations:
 
@@ -83,13 +99,15 @@ $$
 D \,=\, \frac{|B \cap R|}{|R|}.
 $$
 
-
+![](samples/figures/vascular_density.png)
 
 **BifurcationCount.** The count of branching points in the directed graph (stage‑3). Let $\mathcal{B}$ be the set of bifurcation nodes with positions $p_b$:
 
 $$
 C \,=\, \sum_{b \in \mathcal{B}} \mathbf{1}[p_b \in R].
 $$
+
+![](samples/figures/bifurcation_count.png)
 
 **BifurcationAngles.** For each bifurcation $b$ at position $p_b$, outgoing branch directions are estimated by sampling the branches' splines at distance $\delta$ from the node along each branch at points $q_1$ and $q_2$. Unit vectors $(u_b, v_b)$ are defined from the bifurcation point to the sample points:
 
@@ -105,6 +123,8 @@ $$
 
 Angles exceeding 160° are discarded as non-bifurcating continuations. Summary statistics (e.g., mean/median) are reported across valid nodes.
 
+![](samples/figures/bifurcation_angles.png)
+
 **Caliber.** For each segment $i$, diameters are sampled along a spline fitted to its skeleton by projecting spline normals to the vessel boundary on B. The per‑segment diameter is the median along its arclength. The reported caliber aggregates over eligible segments (length $\ell_i \ge \ell_{\min}$):
 
 $$
@@ -113,6 +133,7 @@ $$
 
 where \(g\) is a robust statistic (typically the median).
 
+![](samples/figures/caliber.png)
 
 **Tortuosity.** Three complementary measures are provided per segment (or per resolved vessel). Let $L_{\text{arc},i}$ be arclength and $L_{\text{chord},i}$ the end‑to‑end Euclidean distance.
 
@@ -142,6 +163,8 @@ $$
 
 with $t_i$ any of the measures above.
 
+![](samples/figures/tortuosity.png)
+
 **CRE (Central Retinal Equivalents).** Concentric circles centered at the optic disc are intersected with the vessel network. At each radius $r$, up to $M$ crossings with the largest segment median diameters are retained and recursively reduced via the Hubbard rule with a modality‑dependent constant $c$ (arteries: 0.88; veins: 0.95):
 
 $$
@@ -149,6 +172,8 @@ $$
 $$
 
 applied pairwise until a single equivalent caliber $d_r$ remains. The final CRE is the median of $\{d_r\}$ across radii.
+
+![](samples/figures/cre.png)
 
 **TemporalAngle.** On each concentric circle of radius \(r\), the two dominant temporal vessels are identified by diameter and spatial continuity. The angle at the disc center is
 
@@ -158,12 +183,16 @@ $$
 
 and the reported value is the median over radii.
 
+![](samples/figures/temporal_angle.png)
+
 **Sparsity.** Let $\mathrm{DT}(x)$ represent the distance transform over $R$, ie. the normalized Euclidean distance to the nearest vessel pixel (scaled by $d_{ODF}$). Over pixels in R we report either the mean or the largest local maximum:
 
 $$
 S_{\text{mean}} \,=\, \frac{1}{|R|} \sum_{x \in R} \mathrm{DT}(x), \qquad
 S_{\max} \,=\, \max_{x \in R \cap \text{local maxima}} \mathrm{DT}(x).
 $$
+
+![](samples/figures/sparsity_max.png)
 
 **VarianceOfLaplacian.** For the fundus image $I$ (grayscale), compute the discrete Laplacian $L = \Delta I$. Image sharpness is summarized as the variance over R:
 
@@ -176,6 +205,7 @@ $$
 $$
  d_{ODF} \,=\, \lVert c_{OD} - p_f \rVert_2.
 $$
+
 
 ### Feature localisation
 
@@ -204,3 +234,10 @@ Ready-to-run feature sets are available under `vascx/fundus/feature_sets` (e.g.,
 ```python
 df = extract_in_parallel(examples, "full", n_jobs=8, descriptions_output_path="feature_descriptions_full.txt")
 ```
+
+
+## Citation
+
+If you use VascX, please cite our paper:
+
+Jose Vargas Quiros, Bart Liefers, Karin A. van Garderen, Jeroen P. Vermeulen, Caroline Klaver; VascX Models: Deep Ensembles for Retinal Vascular Analysis From Color Fundus Images. Trans. Vis. Sci. Tech. 2025;14(7):19. https://doi.org/10.1167/tvst.14.7.19.

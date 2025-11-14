@@ -5,7 +5,7 @@ import cv2
 import numpy as np
 from typing_extensions import TypeAlias
 from matplotlib import pyplot as plt
-from rtnls_enface import Fundus
+from rtnls_enface.fundus import Fundus
 from rtnls_enface.utils.data_loading import open_binary_mask
 from rtnls_enface.utils.image import match_resolution
 from vascx.fundus.features.base import LayerFeature, RetinaFeature, VesselsLayerFeature

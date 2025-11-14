@@ -8,10 +8,6 @@ from matplotlib import pyplot as plt
 from vascx.shared.segment import Segment
 
 
-def default_seg_color(seg):
-    return seg.index % 20
-
-
 class Vessels:
     def __init__(self, layer, segments: List[Segment]):
         self.layer = layer
@@ -66,7 +62,6 @@ class Vessels:
     def plot(
         self,
         text: Union[Callable, str] = None,
-        color: Union[Callable, str] = default_seg_color,
         filter_fn=None,
         show_index=True,
         plot_image=True,
@@ -92,17 +87,10 @@ class Vessels:
         if filter_fn is not None:
             segments = [s for s in segments if filter_fn(s)]
 
-        def get_value(accesor: Callable | str | None, segment, default=None):
-            if isinstance(accesor, str):
-                return getattr(segment, accesor)
-            elif callable(accesor):
-                return accesor(segment)
-            else:
-                return default
+    
 
-        color_values = [get_value(color, s) for s in segments]
-        valid_colors = [c for c in color_values if c is not None]
-        max_color_value = max(valid_colors) if valid_colors else 0
+        color_values = [i % 20 for i in range(len(segments))]
+        max_color_value = max(color_values) if color_values else 0
 
         im = np.full_like(self.layer.binary, np.nan, dtype=np.float32)
         for i, segment in enumerate(segments):

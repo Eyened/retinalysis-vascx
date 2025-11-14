@@ -6,8 +6,8 @@ from typing import TYPE_CHECKING, List, Tuple
 
 import numpy as np
 from matplotlib import pyplot as plt
-
 from rtnls_enface.base import Circle, Line, Point
+
 from vascx.shared.vessels import Vessels
 
 from .base import LayerFeature
@@ -20,19 +20,19 @@ if TYPE_CHECKING:
 class TemporalAngle(LayerFeature):
     """Median angle between the two dominant (largest caliber) temporal arcades at circles from 2/3 OD–fovea distance outward.
 
-    Representation: Uses resolved_segments with circle intersections and OD–fovea spatial geometry. 
+    Representation: Uses resolved_segments with circle intersections and OD–fovea spatial geometry.
     Operates on the resolved vessel graph to identify major temporal vessel arcades.
 
-    Computation: At concentric circles starting from 2/3 of the OD-fovea distance, identifies the two 
-    largest-caliber temporal vessels (fovea-side, angle < 90°) crossing each circle, measures the angle 
-    between them, and returns the median angle across all sampled radii. Captures the characteristic 
+    Computation: At concentric circles starting from 2/3 of the OD-fovea distance, identifies the two
+    largest-caliber temporal vessels (fovea-side, angle < 90°) crossing each circle, measures the angle
+    between them, and returns the median angle across all sampled radii. Captures the characteristic
     temporal arcade geometry.
 
     Args (constructor):
     - od_to_fovea_fraction: starting radius as a fraction of the OD–fovea distance.
     - increment: radial step between successive concentric sampling circles.
     """
-    
+
     od_to_fovea_fraction: float = 2 / 3
     increment: float = 0.03
 
@@ -43,8 +43,10 @@ class TemporalAngle(LayerFeature):
 
     def __repr__(self) -> str:
         def fmt(v):
-            import inspect, numpy as np
             from enum import Enum
+
+            import numpy as np
+
             if v is None:
                 return "None"
             if isinstance(v, Enum):
@@ -54,6 +56,7 @@ class TemporalAngle(LayerFeature):
             if isinstance(v, np.generic):
                 return repr(v.item())
             return repr(v)
+
         return (
             f"TemporalAngle(od_to_fovea_fraction={fmt(self.od_to_fovea_fraction)}, "
             f"increment={fmt(self.increment)})"
@@ -131,8 +134,6 @@ class TemporalAngle(LayerFeature):
             },
         )
 
-    
-
     def compute(self, layer: VesselTreeLayer, **kwargs):
         angles = []
         for i in range(0, 5):
@@ -176,11 +177,14 @@ class TemporalAngle(LayerFeature):
         od = layer.retina.disc.center_of_mass
 
         for circle in circles:
-            ax.add_patch(
-                plt.Circle(
-                    circle.center.tuple_xy, circle.r, color="w", fill=False, lw=0.5
-                )
+            # ax.add_patch(
+
+            # )
+            circle = plt.Circle(
+                circle.center.tuple_xy, circle.r, color="w", fill=False, lw=0.5
             )
+            circle.set_clip_path(ax.patch)  # ensure anything outside axes isn't drawn
+            ax.add_artist(circle)  # does not update data limits
 
         for pair in pairs:
             ax.plot(

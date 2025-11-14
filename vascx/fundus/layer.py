@@ -207,7 +207,7 @@ class VesselTreeLayer(VesselLayer):
     @cached_property
     def vessels(self):
         """Resolved vessels (segments) of the vasculature, after running a vessel resolving algorithm on the trees."""
-        G = copy.deepcopy(self.digraph)
+        G = copy.copy(self.digraph)
 
         def recursive_set_prop_values(edge):
             u, v = edge
@@ -285,8 +285,8 @@ class VesselTreeLayer(VesselLayer):
             open_edge = recursive_merge(edge)
             merge_edges(open_edge)
 
-        for i, (u, v) in enumerate(G.edges()):
-            G[u][v]["segment"].index = i
+        # for i, (u, v) in enumerate(G.edges()):
+        #     G[u][v]["segment"].index = i
 
         return G
 
@@ -427,11 +427,13 @@ class VesselTreeLayer(VesselLayer):
     def plot_vessels(self, ax=None, grid_field: GridField = None, **kwargs):
         ax = self._get_base_axes(ax)
         if grid_field is None:
-            g = self.vessels
+            segs = self.resolved_segments
         else:
             segs = self._filter_resolved_segments(grid_field)
-            g = self._edge_subgraph_from_segments(self.vessels, segs)
-        plot_digraph(ax, g, **kwargs)
+            # g = self._edge_subgraph_from_segments(self.vessels, segs)
+        # plot_digraph(ax, g, **kwargs)
+        vessels = Vessels(self, segs)
+        return vessels.plot(ax=ax, show_index=False, **kwargs)
 
     def plot_tree_roots(self, ax=None, **kwargs):
         g = Graph(self.trees)

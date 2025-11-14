@@ -3,5 +3,6 @@ __pycache__
 *.egg-info
 *.zip
 /samples/*
+!/samples/figures
 !/samples/fundus/original
 /paper/

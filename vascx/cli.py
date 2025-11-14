@@ -6,6 +6,7 @@ import pandas as pd
 import torch
 import logging
 import numpy as np
+import random
 
 from rtnls_fundusprep.cli import _run_preprocessing
 from vascx.shared.features import FeatureSet
@@ -18,6 +19,7 @@ from .inference import (
     batch_create_overlays
 )
 from .utils.analysis import extract_in_parallel
+from .utils.feature_docs import write_feature_descriptions
 
 
 @click.group(name="vascx")
@@ -210,7 +212,8 @@ def run_models(
 @click.option("--n_jobs", type=int, default=8, help="Number of extraction workers")
 @click.option("--logfile", type=click.Path(), default=None, help="Optional log file for warnings")
 @click.option("--plots_folder", type=click.Path(), default=None, help="Optional folder to save per-feature plots")
-def calc_biomarkers(input_path, output_csv, feature_set, n_jobs, logfile, plots_folder):
+@click.option("--sample", type=int, default=None, help="Sample N examples for testing")
+def calc_biomarkers(input_path, output_csv, feature_set, n_jobs, logfile, plots_folder, sample):
     """Extract vascular biomarkers from a run_models output folder and save to CSV.
 
     INPUT_PATH is the output directory from 'vascx run-models' containing folders
@@ -287,6 +290,15 @@ def calc_biomarkers(input_path, output_csv, feature_set, n_jobs, logfile, plots_
         click.echo("No valid examples assembled; aborting.")
         return
 
+    # Optionally sample a subset for quick tests
+    orig_len = len(examples)
+    if sample is not None:
+        if sample < orig_len:
+            examples = random.sample(examples, sample)
+            click.echo(f"Sampling {sample} of {orig_len} examples")
+        else:
+            click.echo(f"--sample={sample} >= {orig_len}; using all examples")
+
     # Optional logger
     logger = None
     if logfile is not None:
@@ -315,19 +327,17 @@ def calc_biomarkers(input_path, output_csv, feature_set, n_jobs, logfile, plots_
     )
 
     # Write feature descriptions to file
-    _feature_set = FeatureSet.get_by_name(feature_set)
-    path = output_csv.parent / f"feature_descriptions.txt"
-    lines = []
-    for key, feat in _feature_set.items():
-        doc = inspect.getdoc(feat.__class__) or "No description available."
-        lines.append(f"[{key}]")
-        lines.append(repr(feat))
-        lines.append(doc.strip())
-        lines.append("")  # blank line between entries
-    
-    with open(path, "w", encoding="utf-8") as f:
-        f.write("\n".join(lines))
+    write_feature_descriptions(feature_set, output_csv.parent / "feature_descriptions.txt")
     
     # Save results
     df.to_csv(output_csv)
     click.echo(f"Features saved to {output_csv}")
+
+
+@cli.command()
+@click.argument("output_file", type=click.Path())
+@click.option("--feature_set", required=True, help="Name of the feature set")
+def write_readme(output_file, feature_set):
+    """Write only the feature descriptions to OUTPUT_FILE."""
+    write_feature_descriptions(feature_set, Path(output_file))
+    click.echo(f"Feature descriptions written to {output_file}")

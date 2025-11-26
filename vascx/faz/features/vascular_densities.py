@@ -1,13 +1,11 @@
 from __future__ import annotations
 
-from dataclasses import dataclass
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Optional
 
 import cv2
-import matplotlib as mpl
-from matplotlib.colors import LinearSegmentedColormap
 import numpy as np
-from rtnls_enface.grids.base import GridFieldEnum
+from matplotlib.colors import LinearSegmentedColormap
+from rtnls_enface.grids.specifications import BaseGridFieldSpecification
 from vascx.faz.layer import FAZLayer
 
 from .base import FAZLayerFeature
@@ -17,15 +15,20 @@ if TYPE_CHECKING:
 
 
 class VascularDensity(FAZLayerFeature):
-    def __init__(self, grid_field: GridFieldEnum = None, cut_mask: bool = False):
-        self.grid_field = grid_field
+    def __init__(
+        self,
+        grid_field: Optional[BaseGridFieldSpecification] = None,
+        cut_mask: bool = False,
+    ):
+        self.grid_field_spec = grid_field
         self.cut_mask = cut_mask
 
     def get_mask(self, layer: FAZLayer):
-        if self.grid_field is None:
+        if self.grid_field_spec is None:
             return np.ones(layer.retina.resolution, dtype=np.uint8) * 255
-        return layer.retina.grids[self.grid_field.grid()].field(self.grid_field).astype(np.uint8) * 255
-        
+        field = layer.retina.get_grid_field(self.grid_field_spec)
+        return field.mask.astype(np.uint8) * 255
+
     def _plot(self, ax, layer: FAZLayer, **kwargs):
         ax = layer.retina.plot(ax=ax, layers=[])
         mask = self.get_mask(layer)
@@ -38,8 +41,8 @@ class VascularDensity(FAZLayerFeature):
         ax.imshow(selected_pixels, cmap=cmap)
 
         # plot ETDRS region
-        if self.grid_field is not None:
-            layer.retina.grids[self.grid_field.grid()].plot(ax, self.grid_field)
+        if self.grid_field_spec is not None:
+            layer.retina.get_grid_field(self.grid_field_spec).plot(ax)
 
         ax.text(10, 30, f"{density:.3f}", color="white", fontsize=6)
 

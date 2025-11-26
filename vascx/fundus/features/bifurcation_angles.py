@@ -1,27 +1,26 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Optional
 
 from matplotlib import patches
+from rtnls_enface.grids.specifications import BaseGridFieldSpecification
 
-from rtnls_enface.base import Line, Point
 from vascx.shared.aggregators import mean_median
 
 from .base import LayerFeature, grid_field_fraction_in_bounds
 
 if TYPE_CHECKING:
-    from rtnls_enface.grids.base import GridFieldEnum
     from vascx.fundus.layer import VesselTreeLayer
 
 
 class BifurcationAngles(LayerFeature):
     """Aggregation of angles at bifurcations measured at distance delta along outgoing branches.
 
-    Representation: Uses Bifurcation geometry from digraph with outgoing branch directions computed 
+    Representation: Uses Bifurcation geometry from digraph with outgoing branch directions computed
     from skeleton points at specified distances from bifurcation nodes.
 
-    Computation: For each bifurcation point, measures the angle between outgoing vessel branches by 
-    sampling points at distance 'delta' along each branch and computing the angle between the resulting 
+    Computation: For each bifurcation point, measures the angle between outgoing vessel branches by
+    sampling points at distance 'delta' along each branch and computing the angle between the resulting
     direction vectors. Angles larger than an internal threshold (max_angle=160°) are discarded before
     aggregation.
 
@@ -30,18 +29,25 @@ class BifurcationAngles(LayerFeature):
     - grid_field: optional `GridFieldEnum` to restrict bifurcations to a region.
     - aggregator: function to aggregate per-bifurcation angles (e.g., mean/median).
     """
-    
-    def __init__(self, delta: int = 20, grid_field: GridFieldEnum = None, aggregator=mean_median,):
+
+    def __init__(
+        self,
+        delta: int = 20,
+        grid_field: Optional[BaseGridFieldSpecification] = None,
+        aggregator=mean_median,
+    ):
         """Configure sampling distance, optional grid field and aggregation function."""
         self.delta = delta
         self.max_angle = 160
-        self.grid_field = grid_field
+        super().__init__(grid_field_spec=grid_field)
         self.aggregator = aggregator
 
     def __repr__(self) -> str:
         def fmt(v):
-            import inspect, numpy as np
             from enum import Enum
+
+            import numpy as np
+
             if v is None:
                 return "None"
             if isinstance(v, Enum):
@@ -51,34 +57,31 @@ class BifurcationAngles(LayerFeature):
             if isinstance(v, np.generic):
                 return repr(v.item())
             return repr(v)
+
         return (
             f"BifurcationAngles(delta={fmt(self.delta)}, "
-            f"grid_field={fmt(self.grid_field)}, "
+            f"grid_field_spec={fmt(self.grid_field_spec)}, "
             f"aggregator={fmt(self.aggregator)})"
         )
 
     def _get_bifurcation_points(self, layer: VesselTreeLayer):
-        field = None
-        if self.grid_field is not None:
-            grid = layer.retina.grids[self.grid_field.grid()]
-            field = grid.field(self.grid_field)
+        field = self._get_grid_field(layer)
         bifurcations = layer.filter_bifurcations(field)
-        bifurcations = [bif for bif in bifurcations if bif.outgoing_min_length > self.delta]
+        bifurcations = [
+            bif for bif in bifurcations if bif.outgoing_min_length > self.delta
+        ]
         return bifurcations
 
     def compute(self, layer: VesselTreeLayer):
-        if self.grid_field is not None:
-            frac = grid_field_fraction_in_bounds(layer.retina, self.grid_field)
+        if self.grid_field_spec is not None:
+            frac = grid_field_fraction_in_bounds(layer.retina, self.grid_field_spec)
             if frac < 0.5:
                 return None
         bifurcations = self._get_bifurcation_points(layer)
         return self.aggregator([bif.angle(self.delta) for bif in bifurcations])
 
     def _plot(self, ax, layer: VesselTreeLayer, **kwargs):
-        field = None
-        if self.grid_field is not None:
-            grid = layer.retina.grids[self.grid_field.grid()]
-            field = grid.field(self.grid_field)
+        field = self._get_grid_field(layer)
         ax = layer.plot(
             ax=ax,
             segments=True,

@@ -3,11 +3,12 @@ from typing import Any, Callable, Optional, Tuple, Union
 
 import cv2
 import numpy as np
-from typing_extensions import TypeAlias
 from matplotlib import pyplot as plt
 from rtnls_enface.fundus import Fundus
 from rtnls_enface.utils.data_loading import open_binary_mask
 from rtnls_enface.utils.image import match_resolution
+from typing_extensions import TypeAlias
+
 from vascx.fundus.features.base import LayerFeature, RetinaFeature, VesselsLayerFeature
 from vascx.fundus.layer import VesselTreeLayer
 from vascx.fundus.vessels_layer import FundusVesselsLayer
@@ -59,15 +60,21 @@ class Retina(Fundus):
 
         return res
 
-    def calc_features(self, feature_set: FeatureSet, plots_folder: Optional[str] = None):
+    def calc_features(
+        self, feature_set: FeatureSet, plots_folder: Optional[str] = None
+    ):
         all_features = {}
         for feature_name, feature in feature_set.items():
             if isinstance(feature, RetinaFeature):
                 targets = [("retina", self)]
             elif isinstance(feature, LayerFeature):
-                targets = [(layer.name, layer) for layer in self.get_layers(VesselTreeLayer)]
+                targets = [
+                    (layer.name, layer) for layer in self.get_layers(VesselTreeLayer)
+                ]
             elif isinstance(feature, VesselsLayerFeature):
-                targets = [(layer.name, layer) for layer in self.get_layers(FundusVesselsLayer)]
+                targets = [
+                    (layer.name, layer) for layer in self.get_layers(FundusVesselsLayer)
+                ]
             else:
                 continue
 
@@ -81,17 +88,49 @@ class Retina(Fundus):
                         all_features[f"{feature_name}_{target.name}_{k}"] = v
                 else:
                     all_features[f"{feature_name}_{target.name}"] = res
-                
-                if plots_folder is not None and res is not None: # only save plots if the feature was computed successfully
+
+                if (
+                    plots_folder is not None and res is not None
+                ):  # only save plots if the feature was computed successfully
                     fig, ax = plt.subplots(1, 1, figsize=(8, 8), dpi=300)
                     feature.plot(ax, target)
-                    fname_prefix = (str(self.id) if self.id is not None else "sample")
+                    fname_prefix = str(self.id) if self.id is not None else "sample"
                     fname = f"{fname_prefix}_{feature_name}_{target_name}.png"
-                    fig.savefig(Path(plots_folder) / fname, dpi=200, bbox_inches="tight")
+                    fig.savefig(
+                        Path(plots_folder) / fname, dpi=200, bbox_inches="tight"
+                    )
                     plt.close(fig)
 
         return all_features
 
+    def plot(
+        self,
+        ax=None,
+        av=True,
+        vessels=False,
+        image=True,
+        disc=False,
+        fovea=False,
+        bounds=False,
+        **kwargs,
+    ):
+        if ax is None:
+            fig, ax = plt.subplots(1, 1, figsize=(8, 8), dpi=300)
+            ax.imshow(np.zeros(self.resolution))
+            ax.set_axis_off()
+
+        super().plot(
+            ax=ax, image=image, disc=disc, fovea=fovea, bounds=bounds, **kwargs
+        )
+
+        if av:
+            self.arteries.plot(ax=ax, mask=True, color=(1, 0, 0))
+            self.veins.plot(ax=ax, mask=True, color=(0, 0, 1))
+
+        if vessels:
+            self.vessels.plot(ax=ax, mask=True, color=(1, 1, 1))
+
+        return ax
 
     @classmethod
     def from_file(

@@ -1,9 +1,10 @@
 from __future__ import annotations
 
 from enum import Enum
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Optional
 
 import numpy as np
+from rtnls_enface.grids.specifications import BaseGridFieldSpecification
 
 from vascx.shared.aggregators import mean_median_std
 from vascx.shared.segment import Segment, SplineInterpolation
@@ -12,7 +13,6 @@ from vascx.shared.vessels import Vessels
 from .base import LayerFeature, grid_field_fraction_in_bounds
 
 if TYPE_CHECKING:
-    from rtnls_enface.grids.base import GridFieldEnum
     from vascx.fundus.layer import VesselTreeLayer
 
 
@@ -35,11 +35,11 @@ class TortuosityMeasure(str, Enum):
 class Tortuosity(LayerFeature):
     """Segment- or vessel-level tortuosity by distance ratio, curvature, or inflection counts.
 
-    Representation: Uses segments or resolved_segments; for curvature uses Segment spline; 
+    Representation: Uses segments or resolved_segments; for curvature uses Segment spline;
     optionally length-normalized. Operates on either individual segments or merged vessel trees.
 
-    Computation: Measures vessel tortuosity using three methods: distance ratio (arc length / chord length), 
-    curvature (mean curvature along spline), or inflection counts (number of direction changes). 
+    Computation: Measures vessel tortuosity using three methods: distance ratio (arc length / chord length),
+    curvature (mean curvature along spline), or inflection counts (number of direction changes).
     Can be computed per-segment or per-vessel (resolved segments), with optional length normalization.
 
     Args (constructor):
@@ -51,7 +51,7 @@ class Tortuosity(LayerFeature):
     - norm_measure: if set, length-weighted aggregation using the chosen length source.
     - aggregator: function to aggregate per-entity values (e.g., mean/median/std tuple).
     """
-    
+
     # Ideas
     # tortuosity for different levels of caliber
     #   what happens when small vessels not visible
@@ -63,7 +63,7 @@ class Tortuosity(LayerFeature):
         measure: TortuosityMeasure = TortuosityMeasure.Distance,
         length_measure: LengthMeasure = LengthMeasure.Splines,
         min_numpoints: int = 25,
-        grid_field: GridFieldEnum = None,
+        grid_field: Optional[BaseGridFieldSpecification] = None,
         norm_measure: LengthMeasure = None,
         aggregator=mean_median_std,
         **kwargs,
@@ -72,14 +72,16 @@ class Tortuosity(LayerFeature):
         self.measure = measure
         self.length_measure = length_measure
         self.min_numpoints = min_numpoints
-        self.grid_field = grid_field
+        super().__init__(grid_field_spec=grid_field)
         self.norm_measure = norm_measure
         self.aggregator = aggregator
 
     def __repr__(self) -> str:
         def fmt(v):
-            import inspect, numpy as np
             from enum import Enum
+
+            import numpy as np
+
             if v is None:
                 return "None"
             if isinstance(v, Enum):
@@ -89,12 +91,13 @@ class Tortuosity(LayerFeature):
             if isinstance(v, np.generic):
                 return repr(v.item())
             return repr(v)
+
         return (
             f"Tortuosity(mode={fmt(self.mode)}, "
             f"measure={fmt(self.measure)}, "
             f"length_measure={fmt(self.length_measure)}, "
             f"min_numpoints={fmt(self.min_numpoints)}, "
-            f"grid_field={fmt(self.grid_field)}, "
+            f"grid_field_spec={fmt(self.grid_field_spec)}, "
             f"norm_measure={fmt(self.norm_measure)}, "
             f"aggregator={fmt(self.aggregator)})"
         )
@@ -102,7 +105,11 @@ class Tortuosity(LayerFeature):
     def _compute_for_segment(self, segment: Segment, scale: float):
         if self.measure == TortuosityMeasure.Distance:
             if self.length_measure == LengthMeasure.Splines:
-                return segment.spline.length() / segment.chord_length if segment.spline is not None else np.nan
+                return (
+                    segment.spline.length() / segment.chord_length
+                    if segment.spline is not None
+                    else np.nan
+                )
             elif self.length_measure == LengthMeasure.Skeleton:
                 return np.mean(segment.length / segment.chord_length)
             else:
@@ -115,7 +122,7 @@ class Tortuosity(LayerFeature):
             return len(spline.inflection_points(every=10))
         else:
             raise NotImplementedError()
-        
+
     def _compute_norm_measure_for_segment(self, segment: Segment):
         if self.norm_measure == LengthMeasure.Splines:
             return segment.spline.length() if segment.spline is not None else np.nan
@@ -124,20 +131,16 @@ class Tortuosity(LayerFeature):
         else:
             raise NotImplementedError()
 
-
     def get_segments(self, layer: VesselTreeLayer):
         if self.mode == TortuosityMode.Segments:
-            field = None
-            if self.grid_field is not None:
-                grid = layer.retina.grids[self.grid_field.grid()]
-                field = grid.field(self.grid_field)
+            field = self._get_grid_field(layer)
             segments = layer.filter_segments(field=field, field_threshold=0.5)
-            
+
         elif self.mode == TortuosityMode.Vessels:
             segments = layer.resolved_segments
         else:
             raise ValueError(f"Unknown mode {self.mode}")
-        
+
         segments = [
             segment
             for segment in segments
@@ -149,17 +152,24 @@ class Tortuosity(LayerFeature):
         segments = self.get_segments(layer)
 
         vals = np.array(
-            [self._compute_for_segment(vessel, scale=layer.retina.disc_fovea_distance) for vessel in segments]
+            [
+                self._compute_for_segment(
+                    vessel, scale=layer.retina.disc_fovea_distance
+                )
+                for vessel in segments
+            ]
         )
 
         if self.norm_measure is not None:
-            norm_vals = np.array([self._compute_norm_measure_for_segment(seg) for seg in segments])
+            norm_vals = np.array(
+                [self._compute_norm_measure_for_segment(seg) for seg in segments]
+            )
             vals = vals * norm_vals / np.nansum(norm_vals)
         return vals
 
     def compute(self, layer: VesselTreeLayer):
-        if self.grid_field is not None:
-            frac = grid_field_fraction_in_bounds(layer.retina, self.grid_field)
+        if self.grid_field_spec is not None:
+            frac = grid_field_fraction_in_bounds(layer.retina, self.grid_field_spec)
             if frac < 0.5:
                 return None
         tortuosities = self.raw(layer)
@@ -177,7 +187,7 @@ class Tortuosity(LayerFeature):
         ax = vessels.plot(
             ax=ax,
             show_index=False,
-            text=lambda x: f'{100*(self._compute_for_segment(x, scale=layer.retina.disc_fovea_distance)-1):.2f}',
+            text=lambda x: f"{100 * (self._compute_for_segment(x, scale=layer.retina.disc_fovea_distance) - 1):.2f}",
             cmap="tab20",
             min_numpoints=0,
             min_numpoints_caliber=self.min_numpoints,
@@ -187,8 +197,7 @@ class Tortuosity(LayerFeature):
         )
 
         # plot ETDRS region
-        if self.grid_field is not None:
-            grid = layer.retina.grids[self.grid_field.grid()]
-            field = grid.field(self.grid_field)
-            grid.plot(ax, field)
+        field = self._get_grid_field(layer)
+        if field is not None:
+            field.plot(ax)
         return ax

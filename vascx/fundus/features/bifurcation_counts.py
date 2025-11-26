@@ -1,11 +1,12 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Optional
+
+from rtnls_enface.grids.specifications import BaseGridFieldSpecification
 
 from .base import LayerFeature, grid_field_fraction_in_bounds
 
 if TYPE_CHECKING:
-    from rtnls_enface.grids.base import GridFieldEnum
     from vascx.fundus.layer import VesselTreeLayer
 
 
@@ -14,24 +15,26 @@ class BifurcationCount(LayerFeature):
 
     Representation: Uses Bifurcation nodes from layer.nodes in the directed graph representation.
 
-    Computation: Counts the number of bifurcation points (vessel branch points) across the retinal 
+    Computation: Counts the number of bifurcation points (vessel branch points) across the retinal
     vasculature, optionally filtered to those within a specified ETDRS GridField region.
 
     Args (constructor):
     - grid_field: optional `GridFieldEnum` restricting the count to a predefined retinal region.
     """
-    
-    def __init__(self, grid_field: GridFieldEnum = None):
+
+    def __init__(self, grid_field: Optional[BaseGridFieldSpecification] = None):
         """
         Calculation of the number of bifurcation points.
 
         """
-        self.grid_field = grid_field
+        super().__init__(grid_field_spec=grid_field)
 
     def __repr__(self) -> str:
         def fmt(v):
-            import inspect, numpy as np
             from enum import Enum
+
+            import numpy as np
+
             if v is None:
                 return "None"
             if isinstance(v, Enum):
@@ -41,28 +44,23 @@ class BifurcationCount(LayerFeature):
             if isinstance(v, np.generic):
                 return repr(v.item())
             return repr(v)
-        return f"BifurcationCount(grid_field={fmt(self.grid_field)})"
+
+        return f"BifurcationCount(grid_field_spec={fmt(self.grid_field_spec)})"
 
     def _get_bifurcation_points(self, layer: VesselTreeLayer):
-        if self.grid_field is None:
-            return layer.filter_bifurcations(None)
-        grid = layer.retina.grids[self.grid_field.grid()]
-        field = grid.field(self.grid_field)
+        field = self._get_grid_field(layer)
         return layer.filter_bifurcations(field)
 
     def compute(self, layer: VesselTreeLayer):
-        if self.grid_field is not None:
-            frac = grid_field_fraction_in_bounds(layer.retina, self.grid_field)
+        if self.grid_field_spec is not None:
+            frac = grid_field_fraction_in_bounds(layer.retina, self.grid_field_spec)
             if frac < 0.5:
                 return None
         bifurcations = self._get_bifurcation_points(layer)
         return len(bifurcations)
 
     def _plot(self, ax, layer: VesselTreeLayer, **kwargs):
-        field = None
-        if self.grid_field is not None:
-            grid = layer.retina.grids[self.grid_field.grid()]
-            field = grid.field(self.grid_field)
+        field = self._get_grid_field(layer)
         ax = layer.plot(
             ax=ax,
             image=True,
@@ -72,10 +70,8 @@ class BifurcationCount(LayerFeature):
         bifurcations = self._get_bifurcation_points(layer)
 
         # plot ETDRS region
-        if self.grid_field is not None:
-            grid = layer.retina.grids[self.grid_field.grid()]
-            field = grid.field(self.grid_field)
-            grid.plot(ax, field)
+        if field is not None:
+            field.plot(ax)
 
         for bif in bifurcations:
             ax.scatter(*bif.position.tuple_xy, s=6, color="w", marker="x")

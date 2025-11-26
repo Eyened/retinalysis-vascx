@@ -1,16 +1,14 @@
 from __future__ import annotations
 
 from functools import cached_property
-from typing import TYPE_CHECKING, Tuple, Union
+from typing import TYPE_CHECKING, Tuple
 
 import numpy as np
 from matplotlib import pyplot as plt
-from scipy.ndimage import distance_transform_edt
-from skimage.morphology import skeletonize as skimage_skeletonize
-from scipy.ndimage import gaussian_filter
-
-from rtnls_enface.base import LayerType
 from rtnls_enface.disc import OpticDisc
+from scipy.ndimage import distance_transform_edt, gaussian_filter
+from skimage.morphology import skeletonize as skimage_skeletonize
+
 from vascx.shared.base import JointVesselsLayer
 from vascx.shared.masks import binarize_and_fill
 from vascx.utils.plotting import plot_mask
@@ -38,7 +36,8 @@ class FundusVesselsLayer(JointVesselsLayer):
     def disc(self) -> OpticDisc:
         return self.retina.disc
 
-    @cached_property
+    # @cached_property
+    @property
     def binary(self) -> np.ndarray:
         return binarize_and_fill(self.mask)
 
@@ -66,13 +65,14 @@ class FundusVesselsLayer(JointVesselsLayer):
         dt_skeleton[dt_bounds < dt_skeleton] = np.nan
 
         dt_skeleton[self.retina.disc.mask.astype(bool)] = np.nan
-        
+        dt_skeleton[self.binary] = np.nan
+
         return dt_skeleton / self.retina.disc_fovea_distance
 
     @cached_property
-    def   mean_distance_to_vessel(self) -> float:
+    def mean_distance_to_vessel(self) -> float:
         return np.nanmean(self.distance_transform)
-    
+
     @cached_property
     def invisibility_map(self) -> float:
         mask = np.nan_to_num(self.distance_transform, nan=0.0)

@@ -1,24 +1,24 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Optional
 
 import numpy as np
+from rtnls_enface.grids.specifications import BaseGridFieldSpecification
 
 from .base import LayerFeature, grid_field_fraction_in_bounds
 
 if TYPE_CHECKING:
-    from rtnls_enface.grids.base import GridFieldEnum
     from vascx.fundus.layer import VesselTreeLayer
 
 
 class Length(LayerFeature):
     """Mean segment length (skeleton by default; spline alternative available).
 
-    Representation: Uses segments with skeleton or spline-based length measurements from the 
+    Representation: Uses segments with skeleton or spline-based length measurements from the
     VesselTreeLayer directed graph representation.
 
-    Computation: Computes mean length across all segments that meet the minimum length threshold. 
-    Length can be measured either along the skeleton centerline points or via fitted spline curves 
+    Computation: Computes mean length across all segments that meet the minimum length threshold.
+    Length can be measured either along the skeleton centerline points or via fitted spline curves
     for smoother length estimation.
 
     Args (constructor):
@@ -27,7 +27,7 @@ class Length(LayerFeature):
 
     Notes: `compute` uses skeleton lengths; `compute_with_spline` provides a spline-based alternative.
     """
-    
+
     # Ideas
     # tortuosity for different levels of caliber
     #   what happens when small vessels not visible
@@ -35,7 +35,7 @@ class Length(LayerFeature):
     def __init__(
         self,
         min_numpoints: int = 25,
-        grid_field: 'GridFieldEnum' = None,
+        grid_field: Optional[BaseGridFieldSpecification] = None,
         **kwargs,
     ):
         """Mean segment length within optional ETDRS grid_field using skeleton lengths.
@@ -44,12 +44,14 @@ class Length(LayerFeature):
         via `layer.filter_segments(field=self.grid_field)` prior to aggregation.
         """
         self.min_numpoints = min_numpoints
-        self.grid_field = grid_field
+        super().__init__(grid_field_spec=grid_field)
 
     def __repr__(self) -> str:
         def fmt(v):
-            import inspect, numpy as np
             from enum import Enum
+
+            import numpy as np
+
             if v is None:
                 return "None"
             if isinstance(v, Enum):
@@ -59,19 +61,19 @@ class Length(LayerFeature):
             if isinstance(v, np.generic):
                 return repr(v.item())
             return repr(v)
+
         return (
             f"Length(min_numpoints={fmt(self.min_numpoints)}, "
-            f"grid_field={fmt(self.grid_field)})"
+            f"grid_field_spec={fmt(self.grid_field_spec)})"
         )
 
     def compute_with_spline(self, layer: VesselTreeLayer):
         field = None
-        if self.grid_field is not None:
-            frac = grid_field_fraction_in_bounds(layer.retina, self.grid_field)
+        if self.grid_field_spec is not None:
+            frac = grid_field_fraction_in_bounds(layer.retina, self.grid_field_spec)
             if frac < 0.5:
                 return None
-            grid = layer.retina.grids[self.grid_field.grid()]
-            field = grid.field(self.grid_field)
+            field = self._get_grid_field(layer)
         segments = [
             segment
             for segment in layer.filter_segments(field=field)
@@ -81,12 +83,11 @@ class Length(LayerFeature):
 
     def compute(self, layer: VesselTreeLayer):
         field = None
-        if self.grid_field is not None:
-            frac = grid_field_fraction_in_bounds(layer.retina, self.grid_field)
+        if self.grid_field_spec is not None:
+            frac = grid_field_fraction_in_bounds(layer.retina, self.grid_field_spec)
             if frac < 0.5:
                 return None
-            grid = layer.retina.grids[self.grid_field.grid()]
-            field = grid.field(self.grid_field)
+            field = self._get_grid_field(layer)
         segments = [
             segment
             for segment in layer.filter_segments(field=field)
@@ -97,12 +98,9 @@ class Length(LayerFeature):
     def calc_auxiliary(self, parameters):
         pass
 
-    def _plot(self, ax, layer: 'VesselTreeLayer', **kwargs):
+    def _plot(self, ax, layer: "VesselTreeLayer", **kwargs):
         """Draw segments used in computation and overlay ETDRS field if set."""
-        field = None
-        if self.grid_field is not None:
-            grid = layer.retina.grids[self.grid_field.grid()]
-            field = grid.field(self.grid_field)
+        field = self._get_grid_field(layer)
         segments = [
             segment
             for segment in layer.filter_segments(field=field)
@@ -112,8 +110,6 @@ class Length(LayerFeature):
         ax = layer.plot_segments(ax=ax, segments=segments)
 
         # plot ETDRS region
-        if self.grid_field is not None:
-            grid = layer.retina.grids[self.grid_field.grid()]
-            field = grid.field(self.grid_field)
-            grid.plot(ax, field)
+        if field is not None:
+            field.plot(ax)
         return ax

@@ -1,15 +1,19 @@
 from __future__ import annotations
 
-from enum import Enum
 import warnings
-from dataclasses import dataclass
+from enum import Enum
 from typing import TYPE_CHECKING, List, Tuple
 
 import numpy as np
 from matplotlib import pyplot as plt
+from rtnls_enface.base import Circle
+from rtnls_enface.grids.hemifields import HemifieldField
+from rtnls_enface.grids.specifications import (
+    BaseGridFieldSpecification,
+    GridFieldSpecification,
+    HemifieldGridSpecification,
+)
 
-from rtnls_enface.base import Circle, LayerType
-from rtnls_enface.grids.hemifields import HemifieldGrid, HemifieldField
 from vascx.shared.segment import Segment
 from vascx.shared.vessels import Vessels
 
@@ -51,6 +55,7 @@ class CREMode(str, Enum):
     Temporal = "temporal"
     Full = "full"
 
+
 class CRE(LayerFeature):
     """Central retinal equivalents with temporal/nasal/full modes and optional hemifield filtering.
 
@@ -76,18 +81,26 @@ class CRE(LayerFeature):
         self,
         CREMode: CREMode = CREMode.Temporal,
         max_vessels: int = 6,
-        hemifield: HemifieldField | None = None,
+        hemifield: HemifieldField | BaseGridFieldSpecification | None = None,
         min_circles: int = 6,
     ):
         self.CREMode = CREMode
         self.max_vessels = max_vessels
-        self.hemifield: HemifieldField | None = hemifield
+        if isinstance(hemifield, BaseGridFieldSpecification) or hemifield is None:
+            self.hemifield_spec: BaseGridFieldSpecification | None = hemifield
+        else:
+            self.hemifield_spec = GridFieldSpecification(
+                HemifieldGridSpecification(),
+                hemifield,
+            )
         self.min_circles: int = int(min_circles)
-        
+
     def __repr__(self) -> str:
         def fmt(v):
-            import numpy as np
             from enum import Enum
+
+            import numpy as np
+
             if v is None:
                 return "None"
             if isinstance(v, Enum):
@@ -97,10 +110,11 @@ class CRE(LayerFeature):
             if isinstance(v, np.generic):
                 return repr(v.item())
             return repr(v)
+
         return (
             f"CRE(mode={fmt(self.CREMode)}, "
             f"max_vessels={fmt(self.max_vessels)}, "
-            f"hemifield={fmt(self.hemifield)}, "
+            f"hemifield_spec={fmt(self.hemifield_spec)}, "
             f"min_circles={fmt(self.min_circles)})"
         )
 
@@ -122,10 +136,13 @@ class CRE(LayerFeature):
         cy, cx = circle.center.tuple
         yy = np.arange(h)[:, None]
         xx = np.arange(w)[None, :]
-        circle_mask = (xx - cx) ** 2 + (yy - cy) ** 2 <= circle.r ** 2
+        circle_mask = (xx - cx) ** 2 + (yy - cy) ** 2 <= circle.r**2
 
         # FOD per-pixel angle mask
-        if getattr(retina, "fovea_location", None) is None or getattr(retina, "disc", None) is None:
+        if (
+            getattr(retina, "fovea_location", None) is None
+            or getattr(retina, "disc", None) is None
+        ):
             fod_mask = np.ones_like(circle_mask, dtype=bool)
         else:
             od = retina.disc.center_of_mass
@@ -149,14 +166,9 @@ class CRE(LayerFeature):
         mask = circle_mask & fod_mask
 
         # Optional hemifield filtering
-        if self.hemifield is not None:
-            try:
-                base_mask = retina.mask
-            except Exception:
-                base_mask = None
-            grid = HemifieldGrid(retina, resolution=retina.resolution, mask=base_mask)
-            hemi_mask = grid.field(self.hemifield).mask.astype(bool)
-            mask &= hemi_mask
+        if self.hemifield_spec is not None:
+            hemi_field = retina.get_grid_field(self.hemifield_spec)
+            mask &= hemi_field.mask.astype(bool)
 
         return mask
 
@@ -221,14 +233,16 @@ class CRE(LayerFeature):
         return recursive_cre(sc, cte)
 
     def compute_cre_for_circle(self, layer: VesselTreeLayer, circle: Circle):
-        if layer.name == 'arteries':
+        if layer.name == "arteries":
             cte = 0.88
-        elif layer.name == 'veins':
+        elif layer.name == "veins":
             cte = 0.95
         else:
             raise ValueError("Unrecognized layer type for CRE computation")
         # Build mask and enforce full containment within retina bounds
-        mask = self.__get_binary_mask(layer, circle.resize(layer.retina.disc.circle.r / 5.0))
+        mask = self.__get_binary_mask(
+            layer, circle.resize(layer.retina.disc.circle.r / 5.0)
+        )
         total = int(np.count_nonzero(mask))
         if total == 0:
             return None, []
@@ -267,8 +281,6 @@ class CRE(LayerFeature):
         calibers = [s.median_diameter for s in segments]
         return self.recursive_cre(calibers, cte), intersections
 
-    
-
     def compute(self, layer: VesselTreeLayer):
         cres = []
         for i in range(0, 6):
@@ -289,14 +301,10 @@ class CRE(LayerFeature):
         """
         segments, circles, cres, points = [], [], [], []
         # Optionally overlay hemifield axis
-        if self.hemifield is not None:
+        if self.hemifield_spec is not None:
             retina = layer.retina
-            try:
-                mask = retina.mask
-            except Exception:
-                mask = None
-            grid = HemifieldGrid(retina, resolution=retina.resolution, mask=mask)
-            grid.plot(ax)
+            field = retina.get_grid_field(self.hemifield_spec)
+            field.plot(ax)
         for i in range(0, 6):
             circle = self.get_circle(layer, 0.5 + 0.1 * i)
 
@@ -337,7 +345,9 @@ class CRE(LayerFeature):
         # Overlay largest circle's mask as a transparent layer
         try:
             largest_circle = self.get_circle(layer, 0.5 + 0.1 * 5)
-            mask = self.__get_binary_mask(layer, largest_circle.resize(layer.retina.disc.circle.r / 5.0))
+            mask = self.__get_binary_mask(
+                layer, largest_circle.resize(layer.retina.disc.circle.r / 5.0)
+            )
             h, w = layer.retina.resolution
             overlay = np.zeros((h, w, 4), dtype=float)
             overlay[mask] = [0.0, 1.0, 0.0, 0.25]

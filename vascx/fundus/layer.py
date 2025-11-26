@@ -9,11 +9,11 @@ import matplotlib.pyplot as plt
 import networkx as nx
 import numpy as np
 from networkx import DiGraph, Graph, connected_components, get_node_attributes
+from rtnls_enface.disc import OpticDisc
+from rtnls_enface.grids.base import GridField
 from scipy.ndimage import distance_transform_edt
 from skimage.morphology import skeletonize as skimage_skeletonize
 
-from rtnls_enface.disc import OpticDisc
-from rtnls_enface.grids.base import GridField
 from vascx.fundus.vessel_resolve import RecursiveWeightedAverageResolver
 from vascx.shared.base import VesselLayer
 from vascx.shared.graph import calc_digraph, correct_digraph, make_graph, make_nodes
@@ -61,7 +61,6 @@ class VesselTreeLayer(VesselLayer):
     @cached_property
     def binary(self) -> np.ndarray:
         bin = binarize_and_fill(self.mask)
-        # bin = remove_small_objects(bin, 30, connectivity=5)
         return bin
 
     @cached_property
@@ -197,11 +196,7 @@ class VesselTreeLayer(VesselLayer):
         if field is None:
             return self.bifurcations
         grid = field.grid
-        return [
-            n
-            for n in self.bifurcations
-            if grid.point_in_field(n.position, field)
-        ]
+        return [n for n in self.bifurcations if grid.point_in_field(n.position, field)]
 
     # STAGE 4: vessels
     @cached_property
@@ -349,11 +344,11 @@ class VesselTreeLayer(VesselLayer):
         nodes=False,
         digraph=False,
         vessels=False,
-        grid_field: GridField = None
+        grid_field: GridField = None,
     ):
         ax = self._get_base_axes(ax)
         if color is None:
-            color = (1,1,1)
+            color = (1, 1, 1)
 
         if image:
             if self.retina.image is not None:
@@ -448,7 +443,9 @@ class VesselTreeLayer(VesselLayer):
     ):
         if segments is None:
             segments = (
-                self.filter_segments(grid_field) if grid_field is not None else self.segments
+                self.filter_segments(grid_field)
+                if grid_field is not None
+                else self.segments
             )
         ax = self._get_base_axes(ax)
         vessels = Vessels(self, segments)
@@ -469,9 +466,7 @@ class VesselTreeLayer(VesselLayer):
 
         return fig, ax
 
-    def _edge_subgraph_from_segments(
-        self, base: DiGraph, segments: List[Segment]
-    ):
+    def _edge_subgraph_from_segments(self, base: DiGraph, segments: List[Segment]):
         seg_set = set(segments)
         kept_edges = [
             (u, v)

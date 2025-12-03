@@ -1,10 +1,10 @@
 [build-system]
-requires = ["setuptools>=68", "wheel"]
+requires = ["setuptools>=68", "setuptools-scm>=8", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
 name = "vascx"
-version = "0.0.0"
+dynamic = ["version"]
 description = "Retinal analysis toolbox for Python"
 readme = { file = "README.md", content-type = "text/markdown" }
 authors = [{ name = "Jose Vargas", email = "j.vargasquiros@erasmusmc.nl" }]
@@ -37,4 +37,6 @@ zip-safe = false
 [tool.setuptools.packages.find]
 include = ["vascx*"]
 
+[tool.setuptools_scm]
+# can be empty if no extra settings are needed, presence enables setuptools-scm
 

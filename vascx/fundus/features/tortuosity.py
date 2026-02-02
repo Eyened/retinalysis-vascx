@@ -175,6 +175,18 @@ class Tortuosity(LayerFeature):
         tortuosities = self.raw(layer)
         return self.aggregator(tortuosities)
 
+    def display_name(self, layer_name: str, key: str = None) -> str:
+        from .base import get_aggregator_prefix, get_grid_field_suffix, get_layer_suffix
+
+        agg = get_aggregator_prefix(self.aggregator, key)
+        if self.norm_measure is not None:
+            agg = "Normalized "
+
+        field = get_grid_field_suffix(self.grid_field_spec)
+        layer = get_layer_suffix(layer_name)
+        measure = self.measure.name.title()
+        return f"{agg}{measure} Tortuosity{field}{layer}"
+
     def _plot(self, ax, layer: VesselTreeLayer, **kwargs):
         segments = self.get_segments(layer)
 

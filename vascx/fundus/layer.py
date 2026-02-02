@@ -228,7 +228,7 @@ class VesselTreeLayer(VesselLayer):
                 nx.set_edge_attributes(G, {edge: agg_length + length}, "agg_length")
                 return agg_value, agg_length + length
 
-        def merge_edges(edges):
+        def merge_edges(edges, depth):
             # Ensure edge_list has consecutive edges
             for i in range(len(edges) - 1):
                 if edges[i][1] != edges[i + 1][0]:
@@ -241,6 +241,7 @@ class VesselTreeLayer(VesselLayer):
             skeleton = np.concatenate([s.skeleton for s in segments], axis=0)
             seg = Segment(skeleton, edge=edge)
             seg.layer = self
+            seg._depth = depth
             pixels = [self.get_segment_pixels(s) for s in segments]
             seg._pixels = [item for sublist in pixels for item in sublist]
 
@@ -251,7 +252,7 @@ class VesselTreeLayer(VesselLayer):
             # Add a new edge with combined properties
             G.add_edge(*edge, segment=seg)
 
-        def recursive_merge(edge):
+        def recursive_merge(edge, depth):
             u, v = edge
             outgoing_edges = G.out_edges(v)
 
@@ -266,28 +267,29 @@ class VesselTreeLayer(VesselLayer):
                 reverse=True,
             )
             # get open and completed edges for the edge with max agg_value
-            os = recursive_merge(outgoing_edges[0])
+            os = recursive_merge(outgoing_edges[0], depth)
 
             # the rest are all completed segments
             for e in outgoing_edges[1:]:
-                merge_edges(recursive_merge(e))
+                merge_edges(recursive_merge(e, depth + 1), depth + 1)
 
             return [edge] + os
 
         root_edges = [list(G.out_edges(n))[0] for n in self.trees]
         for edge in root_edges:
             recursive_set_prop_values(edge)
-            open_edge = recursive_merge(edge)
-            merge_edges(open_edge)
-
-        # for i, (u, v) in enumerate(G.edges()):
-        #     G[u][v]["segment"].index = i
+            open_edge = recursive_merge(edge, depth=0)
+            merge_edges(open_edge, depth=0)
 
         return G
 
     @cached_property
     def resolved_segments(self) -> List[Segment]:
         return [self.vessels.edges[e]["segment"] for e in self.vessels.edges()]
+
+    @cached_property
+    def vessels_object(self) -> Vessels:
+        return Vessels(self, self.resolved_segments)
 
     def make_trees(self):
         # _trees is a list of segments, each is the root of a separate tree
@@ -324,6 +326,8 @@ class VesselTreeLayer(VesselLayer):
                 img[p[0], p[1], :] = [255, 0, 0]
         return img
 
+    
+
     def get_segment(self, id: int):
         for seg in self.segments:
             if seg.id == id:
@@ -345,6 +349,7 @@ class VesselTreeLayer(VesselLayer):
         digraph=False,
         vessels=False,
         grid_field: GridField = None,
+        **kwargs,
     ):
         ax = self._get_base_axes(ax)
         if color is None:
@@ -361,7 +366,7 @@ class VesselTreeLayer(VesselLayer):
             self.plot_skeleton(ax, color=(1, 1, 1), grid_field=grid_field)
 
         if segments:
-            self.plot_segments(ax, grid_field=grid_field)
+            self.plot_segments(ax, grid_field=grid_field, **kwargs)
 
         if nodes:
             self.plot_nodes(ax, grid_field=grid_field)
@@ -388,8 +393,7 @@ class VesselTreeLayer(VesselLayer):
                 ax.imshow(self.retina.image)
         return ax
 
-    def plot_mask(self, ax=None, grid_field: GridField = None, **kwargs):
-        ax = self._get_base_axes(ax)
+    def plot_mask(self, ax, grid_field: GridField = None, **kwargs):
         base_mask = (
             self.binary_nodisc if self.binary_nodisc is not None else self.binary
         )
@@ -399,19 +403,16 @@ class VesselTreeLayer(VesselLayer):
             mask_to_show = base_mask
         plot_mask(ax, mask_to_show, **kwargs)
 
-    def plot_skeleton(self, ax=None, grid_field: GridField = None, **kwargs):
-        ax = self._get_base_axes(ax)
+    def plot_skeleton(self, ax, grid_field: GridField = None, **kwargs):
         skeleton = self.skeleton
         if grid_field is not None:
             skeleton = skeleton & grid_field.mask
         plot_mask(ax, skeleton, **kwargs)
 
-    def plot_graph(self, ax=None, **kwargs):
-        ax = self._get_base_axes(ax)
+    def plot_graph(self, ax, **kwargs):
         plot_graph(ax, self.graph, **kwargs)
 
-    def plot_digraph(self, ax=None, grid_field: GridField = None, **kwargs):
-        ax = self._get_base_axes(ax)
+    def plot_digraph(self, ax, grid_field: GridField = None, **kwargs):
         if grid_field is None:
             g = self.digraph
         else:
@@ -419,24 +420,17 @@ class VesselTreeLayer(VesselLayer):
             g = self._edge_subgraph_from_segments(self.digraph, segs)
         plot_digraph(ax, g, **kwargs)
 
-    def plot_vessels(self, ax=None, grid_field: GridField = None, **kwargs):
-        ax = self._get_base_axes(ax)
-        if grid_field is None:
-            segs = self.resolved_segments
-        else:
-            segs = self._filter_resolved_segments(grid_field)
-            # g = self._edge_subgraph_from_segments(self.vessels, segs)
-        # plot_digraph(ax, g, **kwargs)
-        vessels = Vessels(self, segs)
+    def plot_vessels(self, ax, grid_field: GridField = None, **kwargs):
+        
         return vessels.plot(ax=ax, show_index=False, **kwargs)
 
-    def plot_tree_roots(self, ax=None, **kwargs):
+    def plot_tree_roots(self, ax, **kwargs):
         g = Graph(self.trees)
         return self.plot_graph(ax, g, **kwargs)
 
     def plot_segments(
         self,
-        ax=None,
+        ax,
         segments: List[Segment] = None,
         grid_field: GridField = None,
         **kwargs,
@@ -447,14 +441,11 @@ class VesselTreeLayer(VesselLayer):
                 if grid_field is not None
                 else self.segments
             )
-        ax = self._get_base_axes(ax)
         vessels = Vessels(self, segments)
         return vessels.plot(ax=ax, show_index=False, **kwargs)
 
-    def plot_nodes(self, ax=None, fig=None, grid_field: GridField = None):
-        if ax is None:
-            fig, ax = self._get_base_axes(None, None)
-            self.plot_skeleton(ax, fig)
+    
+    def plot_nodes(self, ax, fig=None, grid_field: GridField = None):
         nodes = self.filter_nodes(grid_field) if grid_field is not None else self.nodes
         for node in nodes:
             if isinstance(node, Bifurcation):

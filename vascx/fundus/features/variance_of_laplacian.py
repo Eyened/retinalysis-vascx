@@ -68,6 +68,12 @@ class VarianceOfLaplacian(RetinaFeature):
         vals = np.where(mask, retina.laplacian, np.nan)
         return float(np.nanvar(vals))
 
+    def display_name(self, key: str = None, **kwargs) -> str:
+        from .base import get_grid_field_suffix
+
+        field = get_grid_field_suffix(self.grid_field_spec)
+        return f"Laplacian Variance{field} - IM"
+
     def _plot(self, ax, retina: "Retina", **kwargs):
         L = retina.laplacian.astype(np.float32)  # may contain NaNs outside mask
         mask = np.isfinite(L)

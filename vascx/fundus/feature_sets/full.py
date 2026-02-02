@@ -57,7 +57,7 @@ fs_full = FeatureSet(
         "tort_vessels_infl": Tortuosity(mode=TortuosityMode.Vessels, measure=TortuosityMeasure.Inflections, aggregator=median),
 
         # bifurcation angles        
-        "bif_angles": BifurcationAngles(aggregator=mean_median),
+        "bif_angles": BifurcationAngles(aggregator=median),
         "bif": BifurcationCount(),
 
         # general and retina-level features

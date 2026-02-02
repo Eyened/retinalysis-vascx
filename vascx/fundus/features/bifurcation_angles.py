@@ -76,9 +76,18 @@ class BifurcationAngles(LayerFeature):
         if self.grid_field_spec is not None:
             frac = grid_field_fraction_in_bounds(layer.retina, self.grid_field_spec)
             if frac < 0.5:
+                print(f"BifurcationAngles: grid field fraction in bounds is less than 0.5: {frac}")
                 return None
         bifurcations = self._get_bifurcation_points(layer)
         return self.aggregator([bif.angle(self.delta) for bif in bifurcations])
+
+    def display_name(self, layer_name: str, key: str = None) -> str:
+        from .base import get_aggregator_prefix, get_grid_field_suffix, get_layer_suffix
+
+        agg = get_aggregator_prefix(self.aggregator, key)
+        field = get_grid_field_suffix(self.grid_field_spec)
+        layer = get_layer_suffix(layer_name)
+        return f"{agg}Bifurcation Angle{field}{layer}"
 
     def _plot(self, ax, layer: VesselTreeLayer, **kwargs):
         field = self._get_grid_field(layer)

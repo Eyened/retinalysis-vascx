@@ -39,6 +39,9 @@ class Segment:
         self._mean_xy: Tuple[float, float] = None
         self._thickest_diam: float = 0
 
+        # depth of the edge in the tree structure
+        self._depth = None
+
         self.original_segments = None
 
     @cached_property
@@ -61,7 +64,8 @@ class Segment:
     def spline(self) -> SplineInterpolation:
         if len(self.skeleton) <= 4:
             return None
-        return SplineInterpolation(self)
+        spline = SplineInterpolation(self)
+        return spline
 
     @cached_property
     def length(self) -> float:

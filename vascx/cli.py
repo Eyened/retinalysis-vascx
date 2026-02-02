@@ -77,9 +77,9 @@ def run_models(
     if overlay:
         overlay_path.mkdir(exist_ok=True, parents=True)
 
-    bounds_path = output_path / "bounds.csv" if preprocess else None
-    quality_path = output_path / "quality.csv" if quality else None
-    fovea_path = output_path / "fovea.csv" if fovea else None
+    bounds_path = output_path / "bounds.csv"
+    quality_path = output_path / "quality.csv"
+    fovea_path = output_path / "fovea.csv"
 
     # Determine if input is a folder or CSV file
     data_path = Path(data_path)
@@ -128,11 +128,9 @@ def run_models(
             bounds_path=bounds_path,
             n_jobs=n_jobs,
         )
-        # Use the preprocessed images for subsequent steps
-        preprocessed_files = list(preprocess_rgb_path.glob("*.png"))
-    else:
-        # Use the input files directly
-        preprocessed_files = files
+        
+    # Use the preprocessed images for subsequent steps
+    preprocessed_files = list(preprocess_rgb_path.glob("*.png"))
     ids = [f.stem for f in preprocessed_files]
 
     # Set up GPU device
@@ -183,17 +181,17 @@ def run_models(
     if overlay:
         click.echo("Creating visualization overlays...")
 
-        # Prepare fovea data if available
-        fovea_data = None
-        if df_fovea is not None:
-            fovea_data = {
-                idx: (row["x_fovea"], row["y_fovea"])
-                for idx, row in df_fovea.iterrows()
-            }
+        # read fovea data if necessary
+        if df_fovea is None:
+            df_fovea = pd.read_csv(fovea_path)
+        fovea_data = {
+            idx: (row["x_fovea"], row["y_fovea"])
+            for idx, row in df_fovea.iterrows() # type: ignore[arg-type]
+        }
 
         # Create visualization overlays
         batch_create_overlays(
-            rgb_dir=preprocess_rgb_path if preprocess else data_path,
+            rgb_dir=preprocess_rgb_path,
             output_dir=overlay_path,
             av_dir=av_path,
             disc_dir=disc_path,
@@ -205,26 +203,7 @@ def run_models(
     click.echo(f"All requested processing complete. Results saved to {output_path}")
 
 
-@cli.command()
-@click.argument("input_path", type=click.Path(exists=True))
-@click.argument("output_csv", type=click.Path())
-@click.option("--feature_set", required=True, help="Name of the feature set to run")
-@click.option("--n_jobs", type=int, default=8, help="Number of extraction workers")
-@click.option("--logfile", type=click.Path(), default=None, help="Optional log file for warnings")
-@click.option("--plots_folder", type=click.Path(), default=None, help="Optional folder to save per-feature plots")
-@click.option("--sample", type=int, default=None, help="Sample N examples for testing")
-def calc_biomarkers(input_path, output_csv, feature_set, n_jobs, logfile, plots_folder, sample):
-    """Extract vascular biomarkers from a run_models output folder and save to CSV.
-
-    INPUT_PATH is the output directory from 'vascx run-models' containing folders
-    like 'preprocessed_rgb/', 'artery_vein/', 'vessels/', 'disc/' plus 'bounds.csv'
-    and 'fovea.csv'. OUTPUT_CSV is the destination CSV file path for features.
-    """
-
-    input_path = Path(input_path)
-    output_csv = Path(output_csv)
-    output_csv.parent.mkdir(parents=True, exist_ok=True)
-
+def make_examples(input_path):
     # Required subpaths
     preprocess_rgb_path = input_path / "preprocessed_rgb"
     av_dir = input_path / "artery_vein"
@@ -285,7 +264,30 @@ def calc_biomarkers(input_path, output_csv, feature_set, n_jobs, logfile, plots_
             )
         except Exception as e:
             click.echo(f"Skipping {id_}: error assembling inputs: {e}")
+    
+    return examples
 
+@cli.command()
+@click.argument("input_path", type=click.Path(exists=True))
+@click.argument("output_csv", type=click.Path())
+@click.option("--feature_set", required=True, help="Name of the feature set to run")
+@click.option("--n_jobs", type=int, default=8, help="Number of extraction workers")
+@click.option("--logfile", type=click.Path(), default=None, help="Optional log file for warnings")
+@click.option("--plots_folder", type=click.Path(), default=None, help="Optional folder to save per-feature plots")
+@click.option("--sample", type=int, default=None, help="Sample N examples for testing")
+def calc_biomarkers(input_path, output_csv, feature_set, n_jobs, logfile, plots_folder, sample):
+    """Extract vascular biomarkers from a run_models output folder and save to CSV.
+
+    INPUT_PATH is the output directory from 'vascx run-models' containing folders
+    like 'preprocessed_rgb/', 'artery_vein/', 'vessels/', 'disc/' plus 'bounds.csv'
+    and 'fovea.csv'. OUTPUT_CSV is the destination CSV file path for features.
+    """
+
+    input_path = Path(input_path)
+    output_csv = Path(output_csv)
+    output_csv.parent.mkdir(parents=True, exist_ok=True)
+    
+    examples = make_examples(input_path)
     if not examples:
         click.echo("No valid examples assembled; aborting.")
         return

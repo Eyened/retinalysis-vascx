@@ -95,6 +95,13 @@ class Length(LayerFeature):
         ]
         return np.mean([segment.length for segment in segments])
 
+    def display_name(self, layer_name: str, key: str = None) -> str:
+        from .base import get_grid_field_suffix, get_layer_suffix
+
+        field = get_grid_field_suffix(self.grid_field_spec)
+        layer = get_layer_suffix(layer_name)
+        return f"Mean Segment Length{field}{layer}"
+
     def calc_auxiliary(self, parameters):
         pass
 

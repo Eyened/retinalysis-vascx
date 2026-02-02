@@ -70,6 +70,7 @@ class Caliber(LayerFeature):
         return segments
 
     def compute(self, layer: VesselTreeLayer):
+        # raise NotImplementedError("Caliber is not implemented")
         if self.grid_field_spec is not None:
             frac = grid_field_fraction_in_bounds(layer.retina, self.grid_field_spec)
             if frac < 0.5:
@@ -80,6 +81,14 @@ class Caliber(LayerFeature):
         if np.isnan(calibers).any():
             raise ValueError("Some median diameters are nan")
         return self.aggregator(calibers)
+
+    def display_name(self, layer_name: str, key: str = None) -> str:
+        from .base import get_aggregator_prefix, get_grid_field_suffix, get_layer_suffix
+
+        agg = get_aggregator_prefix(self.aggregator, key)
+        field = get_grid_field_suffix(self.grid_field_spec)
+        layer = get_layer_suffix(layer_name)
+        return f"{agg}Caliber{field}{layer}"
 
     def _plot(self, ax, layer: VesselTreeLayer, **kwargs):
         segments = self._get_segments(layer)

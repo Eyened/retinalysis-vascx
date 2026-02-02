@@ -44,11 +44,18 @@ class SplineInterpolation:
         # pixel locations in interval 0-1
         distance_normalized = np.insert(distance, 0, 0) / self.total_distance
 
+        diffs = np.diff(self.points[:, 0])
+        sigma_sq = np.mean(diffs**2) / 2
+        s = sigma_sq * len(self.points)
         self.y_spline = UnivariateSpline(
-            distance_normalized, self.points[:, 0], k=3, s=self.smoothing
+            distance_normalized, self.points[:, 0], k=3, s=s
         )
+
+        diffs = np.diff(self.points[:, 1])
+        sigma_sq = np.mean(diffs**2) / 2
+        s = sigma_sq * len(self.points)
         self.x_spline = UnivariateSpline(
-            distance_normalized, self.points[:, 1], k=3, s=self.smoothing
+            distance_normalized, self.points[:, 1], k=3, s=s
         )
 
         if np.isnan(self.y_spline(distance_normalized)).any():

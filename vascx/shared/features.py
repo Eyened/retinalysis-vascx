@@ -40,6 +40,11 @@ class Feature(ABC):
         pass
 
     @abstractmethod
+    def display_name(self, **kwargs) -> str:
+        """Return the display name for the feature."""
+        pass
+
+    @abstractmethod
     def _plot(self, ax: 'Axes', layer: Any, **kwargs: Any) -> 'Axes':
         """Subclass draws onto ax for the given layer and returns ax."""
 

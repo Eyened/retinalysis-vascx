@@ -295,6 +295,14 @@ class CRE(LayerFeature):
         else:
             return float(np.mean(cres))
 
+    def display_name(self, layer_name: str, key: str = None) -> str:
+        from .base import get_grid_field_suffix, get_layer_suffix
+
+        field = get_grid_field_suffix(self.hemifield_spec)
+        layer = get_layer_suffix(layer_name)
+        mode = self.CREMode.name
+        return f"{mode} CRE{field}{layer}"
+
     def _plot(self, ax, layer: VesselTreeLayer, **kwargs):
         """This plot shows the circles used to compute CRE,
         the segments used in the CRE computation and the CRE next to each circle

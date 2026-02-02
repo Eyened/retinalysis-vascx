@@ -157,6 +157,15 @@ class Sparsity(VesselsLayerFeature):
 
             return float(np.nanmean(dt))
 
+    def display_name(self, layer_name: str, key: str = None) -> str:
+        from .base import get_grid_field_suffix, get_layer_suffix
+
+        field = get_grid_field_suffix(self.grid_field_spec)
+        layer = get_layer_suffix(layer_name)
+        # Capitalize only first letter of Enum name
+        mode = self.mode.name.title()
+        return f"{mode} Sparsity{field}{layer}"
+
     def _plot(self, ax, layer: FundusVesselsLayer, **kwargs):
         layer.plot(ax=ax, image=True)
         dt = layer.distance_transform

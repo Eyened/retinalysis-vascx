@@ -106,6 +106,13 @@ class VascularDensity(LayerFeature):
         mask[~layer.retina.mask] = 0
         return self.compute_for_mask(layer, mask)
 
+    def display_name(self, layer_name: str, key: str = None) -> str:
+        from .base import get_grid_field_suffix, get_layer_suffix
+
+        field = get_grid_field_suffix(self.grid_field_spec)
+        layer = get_layer_suffix(layer_name)
+        return f"Vessel Density{field}{layer}"
+
     def _plot(self, ax, layer: VesselTreeLayer, **kwargs):
         field = self._get_grid_field(layer)
         ax = layer.plot(

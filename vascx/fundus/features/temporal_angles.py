@@ -151,6 +151,12 @@ class TemporalAngle(LayerFeature):
             warnings.warn("Couldn't find valid angles for any circle.")
             return None
 
+    def display_name(self, layer_name: str, key: str = None) -> str:
+        from .base import get_layer_suffix
+
+        layer = get_layer_suffix(layer_name)
+        return f"Median Temporal Angle{layer}"
+
     def _plot(self, ax, layer, **kwargs):
         pairs, segments, circles = [], [], []
 

@@ -1,5 +1,5 @@
 from pathlib import Path
-from typing import Any, Callable, Optional, Tuple, Union
+from typing import Any, Callable, Dict, Optional, Tuple, Union
 
 import cv2
 import numpy as np
@@ -61,7 +61,7 @@ class Retina(Fundus):
         return res
 
     def calc_features(
-        self, feature_set: FeatureSet, plots_folder: Optional[str] = None
+        self, feature_set: FeatureSet, plots_folder: Optional[str] = None, raise_on_error: bool = False
     ):
         all_features = {}
         for feature_name, feature in feature_set.items():
@@ -82,7 +82,15 @@ class Retina(Fundus):
                 print(f"No targets found on which to compute feature {feature_name}.")
 
             for target_name, target in targets:
-                res = feature.compute(target)
+                try:
+                    res = feature.compute(target)
+                except Exception as e:
+                    if raise_on_error:
+                        raise RuntimeError(f"Error computing feature {feature_name} on target {target_name} for retina {self.id}") from e
+                    else:
+                        print(f"Error computing feature {feature_name} on target {target_name} for retina {self.id}: {e}")
+                        continue
+
                 if isinstance(res, dict):
                     for k, v in res.items():
                         all_features[f"{feature_name}_{target.name}_{k}"] = v
@@ -102,6 +110,42 @@ class Retina(Fundus):
                     plt.close(fig)
 
         return all_features
+
+    @classmethod
+    def make_feature_display_names(cls, feature_set: FeatureSet) -> Dict[str, str]:
+        from vascx.fundus.features.base import (
+            LayerFeature,
+            RetinaFeature,
+            VesselsLayerFeature,
+            get_aggregator_keys,
+        )
+
+        mapping = {}
+        for feature_name, feature in feature_set.items():
+            targets = []
+            if isinstance(feature, RetinaFeature):
+                targets = ["retina"]
+            elif isinstance(feature, LayerFeature):
+                targets = ["arteries", "veins"]
+            elif isinstance(feature, VesselsLayerFeature):
+                targets = ["vessels"]
+            else:
+                continue
+
+            keys = get_aggregator_keys(getattr(feature, "aggregator", None))
+
+            for target_name in targets:
+                if keys:
+                    for k in keys:
+                        full_key = f"{feature_name}_{target_name}_{k}"
+                        display = feature.display_name(layer_name=target_name, key=k)
+                        mapping[full_key] = display
+                else:
+                    full_key = f"{feature_name}_{target_name}"
+                    display = feature.display_name(layer_name=target_name)
+                    mapping[full_key] = display
+
+        return mapping
 
     def plot(
         self,

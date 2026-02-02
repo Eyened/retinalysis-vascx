@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from abc import abstractmethod
-from typing import TYPE_CHECKING, Optional, Tuple
+from typing import TYPE_CHECKING, List, Optional, Tuple
 
 import numpy as np
 from rtnls_enface.grids.base import GridField
@@ -97,6 +97,78 @@ class VesselsLayerFeature(Feature):
 
     def plot(self, ax: "Axes", layer: "FundusVesselsLayer", **kwargs) -> "Axes":
         return super().plot(ax=ax, layer=layer, **kwargs)
+
+
+def get_layer_suffix(layer_name: str) -> str:
+    if layer_name == "arteries":
+        return " - A"
+    elif layer_name == "veins":
+        return " - V"
+    elif layer_name == "vessels":
+        return " - VSL"
+    elif layer_name == "retina":
+        return " - IM"
+    return f" - {layer_name}"
+
+
+def get_grid_field_suffix(spec: Optional[BaseGridFieldSpecification]) -> str:
+    if spec is None:
+        return ""
+    
+    from rtnls_enface.grids.hemifields import HemifieldField
+    from rtnls_enface.grids.specifications import GridFieldSpecification, HemifieldGridSpecification
+    from rtnls_enface.grids.disc_centered import DiscCenteredRing
+    from rtnls_enface.grids.etdrs import ETDRSRing
+    from rtnls_enface.grids.ellipse import EllipseField
+
+    if isinstance(spec, GridFieldSpecification):
+        if isinstance(spec.grid_spec, HemifieldGridSpecification):
+            if spec.field == HemifieldField.Superior:
+                return " [Sup]"
+            if spec.field == HemifieldField.Inferior:
+                return " [Inf]"
+        
+        if spec.field == DiscCenteredRing.FullGrid:
+            return " [Disc]"
+        
+        if spec.field == ETDRSRing.FullGrid:
+            return " [ETDRS]"
+            
+        if spec.field == EllipseField.FullGrid:
+            return " [Ellipse]"
+
+    return ""
+
+
+def get_aggregator_prefix(aggregator=None, key: str = None) -> str:
+    if key:
+        return f"{key.capitalize()} "
+    
+    if aggregator is None:
+        return ""
+        
+    if callable(aggregator):
+        name = getattr(aggregator, "__name__", "")
+        if name == "mean": return "Mean "
+        if name == "median": return "Median "
+        if name == "sum": return "Sum "
+        if name == "std": return "Std "
+        if name == "max": return "Max "
+        if name == "min": return "Min "
+        
+    return ""
+
+
+def get_aggregator_keys(aggregator) -> Optional[List[str]]:
+    if aggregator is None:
+        return None
+    if callable(aggregator):
+        name = getattr(aggregator, "__name__", "")
+        if name == "mean_std": return ["mean", "std"]
+        if name == "median_std": return ["median", "std"]
+        if name == "mean_median": return ["mean", "median"]
+        if name == "mean_median_std": return ["mean", "median", "std"]
+    return None
 
 
 def grid_field_masks_and_fraction(

@@ -30,5 +30,8 @@ class DiscFoveaDistance(RetinaFeature):
     def compute(self, retina: Retina):
         return retina.disc_fovea_distance
 
+    def display_name(self, key: str = None, **kwargs) -> str:
+        return "Disc-Fovea Distance - IM"
+
     def _plot(self, ax, retina: Retina, **kwargs):
         return ax

@@ -76,7 +76,6 @@ class BifurcationAngles(LayerFeature):
         if self.grid_field_spec is not None:
             frac = grid_field_fraction_in_bounds(layer.retina, self.grid_field_spec)
             if frac < 0.5:
-                print(f"BifurcationAngles: grid field fraction in bounds is less than 0.5: {frac}")
                 return None
         bifurcations = self._get_bifurcation_points(layer)
         return self.aggregator([bif.angle(self.delta) for bif in bifurcations])

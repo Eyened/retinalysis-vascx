@@ -1,3 +1,4 @@
+import warnings
 from pathlib import Path
 from typing import Any, Callable, Dict, Optional, Tuple, Union
 
@@ -61,7 +62,10 @@ class Retina(Fundus):
         return res
 
     def calc_features(
-        self, feature_set: FeatureSet, plots_folder: Optional[str] = None, raise_on_error: bool = False
+        self,
+        feature_set: FeatureSet,
+        plots_folder: Optional[str] = None,
+        raise_on_error: bool = False,
     ):
         all_features = {}
         for feature_name, feature in feature_set.items():
@@ -86,9 +90,13 @@ class Retina(Fundus):
                     res = feature.compute(target)
                 except Exception as e:
                     if raise_on_error:
-                        raise RuntimeError(f"Error computing feature {feature_name} on target {target_name} for retina {self.id}") from e
+                        raise RuntimeError(
+                            f"Error computing feature {feature_name} on target {target_name} for retina {self.id}"
+                        ) from e
                     else:
-                        print(f"Error computing feature {feature_name} on target {target_name} for retina {self.id}: {e}")
+                        warnings.warn(
+                            f"Error computing feature {feature_name} on target {target_name}: {e}"
+                        )
                         continue
 
                 if isinstance(res, dict):

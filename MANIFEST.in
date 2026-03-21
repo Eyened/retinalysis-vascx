@@ -1,0 +1,4 @@
+include README.md
+include development.md
+recursive-include samples/fundus *.csv *.png
+recursive-include tests/reference *.json *.yaml *.parquet

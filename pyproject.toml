@@ -18,12 +18,13 @@ dependencies = [
   "matplotlib==3.*",
   "joblib==1.*",
   "tqdm == 4.*",
+  "typing_extensions == 4.*",
   "Pillow == 11.*",
   "click==8.*",
   "sknw==0.14",
   "sortedcontainers==2.4.0",
   "scikit-image == 0.24.0",
-  "retinalysis-enface",
+  "retinalysis-enface >= 1.0.0",
   "retinalysis-fundusprep"
 ]
 

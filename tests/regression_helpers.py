@@ -26,7 +26,7 @@ DEFAULT_REL_TOL = 1e-3
 MAX_FAILURE_LINES = 25
 
 
-@dataclass(slots=True)
+@dataclass
 class RegressionConfig:
     """Store comparison overrides for a feature set."""
 

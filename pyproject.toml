@@ -8,24 +8,24 @@ dynamic = ["version"]
 description = "Retinal analysis toolbox for Python"
 readme = { file = "README.md", content-type = "text/markdown" }
 authors = [{ name = "Jose Vargas", email = "j.vargasquiros@erasmusmc.nl" }]
-requires-python = ">=3.10, <3.13"
+requires-python = ">=3.8, <3.15"
 dependencies = [
-  "numpy == 2.*",
-  "pandas == 2.*",
-  "scikit-learn==1.*",
-  "scipy == 1.*",
-  "opencv-python == 4.*",
-  "matplotlib==3.*",
-  "joblib==1.*",
-  "tqdm == 4.*",
+  "numpy>=1.24,<3",
+  "pandas>=2.0,<3",
+  "scikit-learn>=1.3,<2",
+  "scipy>=1.10,<2",
+  "opencv-python>=4,<5",
+  "matplotlib>=3.7,<4",
+  "joblib>=1,<2",
+  "tqdm>=4,<5",
   "typing_extensions == 4.*",
-  "Pillow == 11.*",
-  "click==8.*",
+  "Pillow>=10,<12",
+  "click>=8,<9",
   "sknw==0.14",
   "sortedcontainers==2.4.0",
-  "scikit-image == 0.24.0",
-  "retinalysis-enface >= 1.0.0",
-  "retinalysis-fundusprep"
+  "scikit-image>=0.21,<1",
+  "retinalysis-enface >= 1.0.1",
+  "retinalysis-fundusprep >= 0.6.1"
 ]
 
 [project.scripts]
@@ -34,7 +34,7 @@ vascx = "vascx.cli:cli"
 [project.optional-dependencies]
 test = [
   "pytest == 8.*",
-  "pyarrow == 22.*",
+  "pyarrow >= 14",
   "PyYAML == 6.*"
 ]
 

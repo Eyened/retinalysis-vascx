@@ -1,5 +1,7 @@
+from __future__ import annotations
+
 from pathlib import Path
-from typing import Any
+from typing import Any, Optional, Union
 
 import numpy as np
 from vascx.faz.features.base import FAZLayerFeature
@@ -42,10 +44,10 @@ class FAZRetina(FAZEnface):
     @classmethod
     def from_file(
         cls,
-        av_path: str | Path = None,
-        vessels_path: str | Path = None,
-        faz_path: str | Path = None,
-        image_path: str | Path = None,
+        av_path: Optional[Union[str, Path]] = None,
+        vessels_path: Optional[Union[str, Path]] = None,
+        faz_path: Optional[Union[str, Path]] = None,
+        image_path: Optional[Union[str, Path]] = None,
         threshold=0.5,
         id: Any = None,
         av_loader=load_av_segmentation,

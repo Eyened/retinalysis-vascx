@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import warnings
 from enum import Enum
-from typing import TYPE_CHECKING, List, Tuple
+from typing import TYPE_CHECKING, List, Optional, Tuple
 
 import numpy as np
 from matplotlib import pyplot as plt
@@ -80,7 +80,7 @@ class CRE(LayerFeature):
         self,
         CREMode: CREMode = CREMode.Temporal,
         max_vessels: int = 6,
-        hemifield: HemifieldField | None = None,
+        hemifield: Optional[HemifieldField] = None,
         min_circles: int = 6,
     ):
         self.CREMode = CREMode

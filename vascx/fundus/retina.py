@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import warnings
 from functools import cached_property
 from pathlib import Path
@@ -234,10 +236,10 @@ class Retina(Fundus):
     @classmethod
     def from_file(
         cls,
-        av_path: str | Path = None,
-        vessels_path: str | Path = None,
-        disc_path: str | Path = None,
-        fundus_path: str | Path = None,
+        av_path: Optional[Union[str, Path]] = None,
+        vessels_path: Optional[Union[str, Path]] = None,
+        disc_path: Optional[Union[str, Path]] = None,
+        fundus_path: Optional[Union[str, Path]] = None,
         fovea_location: Tuple[float, float] = None,
         bounds=None,
         threshold=0.5,

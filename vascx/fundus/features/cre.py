@@ -9,7 +9,6 @@ from matplotlib import pyplot as plt
 from rtnls_enface.base import Circle
 from rtnls_enface.grids.hemifields import HemifieldField
 from rtnls_enface.grids.specifications import (
-    BaseGridFieldSpecification,
     GridFieldSpecification,
     HemifieldGridSpecification,
 )
@@ -81,42 +80,22 @@ class CRE(LayerFeature):
         self,
         CREMode: CREMode = CREMode.Temporal,
         max_vessels: int = 6,
-        hemifield: HemifieldField | BaseGridFieldSpecification | None = None,
+        hemifield: HemifieldField | None = None,
         min_circles: int = 6,
     ):
         self.CREMode = CREMode
         self.max_vessels = max_vessels
-        if isinstance(hemifield, BaseGridFieldSpecification) or hemifield is None:
-            self.hemifield_spec: BaseGridFieldSpecification | None = hemifield
+        self.min_intersections = 4
+        if self.CREMode in [CREMode.Nasal, CREMode.Temporal]:
+            self.min_intersections = 2
+        if hemifield is None:
+            self.hemifield_spec = None
         else:
             self.hemifield_spec = GridFieldSpecification(
-                HemifieldGridSpecification(),
-                hemifield,
+                HemifieldGridSpecification(), hemifield
             )
+            self.min_intersections //= 2
         self.min_circles: int = int(min_circles)
-
-    def __repr__(self) -> str:
-        def fmt(v):
-            from enum import Enum
-
-            import numpy as np
-
-            if v is None:
-                return "None"
-            if isinstance(v, Enum):
-                return f"{v.__class__.__name__}.{v.name}"
-            if callable(v):
-                return getattr(v, "__name__", v.__class__.__name__)
-            if isinstance(v, np.generic):
-                return repr(v.item())
-            return repr(v)
-
-        return (
-            f"CRE(mode={fmt(self.CREMode)}, "
-            f"max_vessels={fmt(self.max_vessels)}, "
-            f"hemifield_spec={fmt(self.hemifield_spec)}, "
-            f"min_circles={fmt(self.min_circles)})"
-        )
 
     def get_circle(self, layer: VesselTreeLayer, od_multiple=0.5):
         disc = layer.retina.disc
@@ -128,48 +107,64 @@ class CRE(LayerFeature):
         circle = Circle(center=disc_center, r=radius)
         return circle
 
+    def _binary_mask_cache_key(self, circle: Circle) -> tuple:
+        """Build a stable cache key for a CRE binary mask."""
+        cy, cx = circle.center.tuple
+        hemifield = (
+            None
+            if self.hemifield_spec is None
+            else getattr(self.hemifield_spec.field, "name", str(self.hemifield_spec.field))
+        )
+        return (
+            round(float(cy), 6),
+            round(float(cx), 6),
+            round(float(circle.r), 6),
+            self.CREMode.value,
+            hemifield,
+        )
+
     def __get_binary_mask(self, layer: "VesselTreeLayer", circle: Circle) -> np.ndarray:
         """Boolean mask of circle ∧ FOD-angle constraint ∧ hemifield (if set)."""
+        cache_key = self._binary_mask_cache_key(circle)
+        cached_mask = layer._cre_binary_mask_cache.get(cache_key)
+        if cached_mask is not None:
+            return cached_mask
+
         retina = layer.retina
-        h, w = retina.resolution
-
         cy, cx = circle.center.tuple
-        yy = np.arange(h)[:, None]
-        xx = np.arange(w)[None, :]
-        circle_mask = (xx - cx) ** 2 + (yy - cy) ** 2 <= circle.r**2
+        disc_center = None if retina.disc is None else retina.disc.center_of_mass
 
-        # FOD per-pixel angle mask
+        # Retina caches store reusable per-image geometry shared by CRE variants.
         if (
-            getattr(retina, "fovea_location", None) is None
-            or getattr(retina, "disc", None) is None
+            disc_center is not None
+            and np.isclose(cy, disc_center.y)
+            and np.isclose(cx, disc_center.x)
+            and retina.disc_center_dist_sq is not None
         ):
+            circle_mask = retina.disc_center_dist_sq <= circle.r**2
+        else:
+            yy, xx = retina.yy_xx
+            circle_mask = (xx - cx) ** 2 + (yy - cy) ** 2 <= circle.r**2
+
+        angle_deg = retina.disc_fovea_angle_deg
+        if angle_deg is None:
             fod_mask = np.ones_like(circle_mask, dtype=bool)
         else:
-            od = retina.disc.center_of_mass
-            fy, fx = retina.fovea_location.tuple
-            vy, vx = fy - od.y, fx - od.x
-            norm_v = np.hypot(vx, vy) + 1e-6
-            dy = yy - od.y
-            dx = xx - od.x
-            norm_p = np.hypot(dx, dy) + 1e-6
-            cosang = (dx * vx + dy * vy) / (norm_p * norm_v)
-            cosang = np.clip(cosang, -1.0, 1.0)
-            ang = np.degrees(np.arccos(cosang))
-
             if self.CREMode == CREMode.Temporal:
-                fod_mask = ang < 100.0
+                fod_mask = angle_deg < 100.0
             elif self.CREMode == CREMode.Nasal:
-                fod_mask = ang > 80.0
+                fod_mask = angle_deg > 80.0
             else:
                 fod_mask = np.ones_like(circle_mask, dtype=bool)
 
         mask = circle_mask & fod_mask
 
-        # Optional hemifield filtering
+        # The per-layer mask cache remains mode- and hemifield-specific.
         if self.hemifield_spec is not None:
             hemi_field = retina.get_grid_field(self.hemifield_spec)
             mask &= hemi_field.mask.astype(bool)
 
+        layer._cre_binary_mask_cache[cache_key] = mask
         return mask
 
     def get_filtered_segments(self, layer: VesselTreeLayer, circle: Circle):
@@ -204,16 +199,12 @@ class CRE(LayerFeature):
     def get_intersections(
         self, layer: VesselTreeLayer, circle: Circle
     ) -> List[Tuple[Segment, float]]:
-        filtered_segments = self.get_filtered_segments(layer, circle)
-
-        # for now we measure on the segments directly
-        pairs = []
-        for segment in filtered_segments:
-            _, intersection_ts = segment.intersections_with_circle(circle)
-            if intersection_ts is not None:
-                for t in intersection_ts:
-                    pairs.append((segment, t))
-        return pairs
+        filtered_segments = set(self.get_filtered_segments(layer, circle))
+        return [
+            (segment, t)
+            for segment, t in layer.get_circle_intersections(circle)
+            if segment in filtered_segments
+        ]
 
     def plot_filtered_segments(self, layer: VesselTreeLayer, **kwargs):
         circle = self.get_circle(layer, 2 / 3)
@@ -270,8 +261,8 @@ class CRE(LayerFeature):
             return None, []
         # Deduplicate segments that may intersect circle multiple times
         segments = list(set([p[0] for p in intersections]))
-        if len(segments) == 0:
-            warnings.warn("Could not find intersecting segments for CRE circle.")
+        if len(segments) < self.min_intersections:
+            warnings.warn("Could not find enough intersecting segments for CRE circle.")
             return None, []
 
         # Keep up to the largest N segments by median diameter
@@ -303,6 +294,31 @@ class CRE(LayerFeature):
         mode = self.CREMode.name
         return f"{mode} CRE{field}{layer}"
 
+    def name_prefix_tokens(self) -> list[str]:
+        return [self.CREMode.value]
+
+    def feature_name_tokens(self) -> list[str]:
+        return ["cre"]
+
+    def parameter_name_tokens(self) -> list[str]:
+        tokens: list[str] = []
+        if self.max_vessels != 6:
+            tokens.extend(["max_vessels", str(self.max_vessels)])
+        if self.min_circles != 6:
+            tokens.extend(["min_circles", str(self.min_circles)])
+        return tokens
+
+    def name_tokens(self, layer_name: str, **kwargs) -> list[str]:
+        from .base import get_grid_field_tokens, get_layer_tokens
+
+        return [
+            *self.name_prefix_tokens(),
+            *self.feature_name_tokens(),
+            *self.parameter_name_tokens(),
+            *get_grid_field_tokens(self.hemifield_spec),
+            *get_layer_tokens(layer_name),
+        ]
+
     def _plot(self, ax, layer: VesselTreeLayer, **kwargs):
         """This plot shows the circles used to compute CRE,
         the segments used in the CRE computation and the CRE next to each circle
@@ -332,7 +348,7 @@ class CRE(LayerFeature):
                 "cmap": "tab20",
                 "ax": ax,
                 "text": lambda s: f"{s.orientation():.2f}",
-                "plot_endpoints": True,
+                "segments": True,
                 **kwargs,
             },
         )
@@ -344,11 +360,19 @@ class CRE(LayerFeature):
                 )
             )
 
-        # for i, cre in enumerate(reversed(cres)):
-        #     ax.text(10, 20 + 30 * i, f"{cre:.2f}", color="white", fontsize=6)
-
         for p in points:
             ax.scatter(x=p[1], y=p[0], c="white", s=2, marker="x")
+
+        ax.text(
+            0.05,
+            0.95,
+            f"min_intersections={self.min_intersections}",
+            transform=ax.transAxes,
+            fontsize=6,
+            color="white",
+            ha="left",
+            va="top",
+        )
 
         # Overlay largest circle's mask as a transparent layer
         try:

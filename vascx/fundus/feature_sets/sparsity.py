@@ -24,29 +24,28 @@ ETDRS_FULL = GridFieldSpecification(
 
 fs_sparsity = FeatureSet(
     "sparsity",
-    {
+    [
         # Sparsity features
-        "sparsity_full_mean": Sparsity(mode=SparsityMode.MEAN),
-        "sparsity_full_max": Sparsity(mode=SparsityMode.MAX),
-        "sparsity_ellipse_mean": Sparsity(
+        Sparsity(mode=SparsityMode.MEAN),
+        Sparsity(mode=SparsityMode.MAX),
+        Sparsity(
             mode=SparsityMode.MEAN, grid_field=ELLIPSE_FULL
         ),
-        "sparsity_ellipse_max": Sparsity(
+        Sparsity(
             mode=SparsityMode.MAX, grid_field=ELLIPSE_FULL
         ),
-        "sparsity_disc_mean": Sparsity(grid_field=DISC_FULL, mode=SparsityMode.MEAN),
-        "sparsity_disc_max": Sparsity(grid_field=DISC_FULL, mode=SparsityMode.MAX),
-        "sparsity_fovea_mean": Sparsity(grid_field=ETDRS_FULL, mode=SparsityMode.MEAN),
-        "sparsity_fovea_max": Sparsity(grid_field=ETDRS_FULL, mode=SparsityMode.MAX),
+        Sparsity(grid_field=DISC_FULL, mode=SparsityMode.MEAN),
+        Sparsity(grid_field=DISC_FULL, mode=SparsityMode.MAX),
+        Sparsity(grid_field=ETDRS_FULL, mode=SparsityMode.MEAN),
+        Sparsity(grid_field=ETDRS_FULL, mode=SparsityMode.MAX),
         # Laplacian features (matching sparsity grid fields and naming)
-        "lapl_full": VarianceOfLaplacian(),
-        "lapl_ellipse": VarianceOfLaplacian(grid_field=ELLIPSE_FULL),
-        "lapl_disc": VarianceOfLaplacian(grid_field=DISC_FULL),
-        "lapl_fovea": VarianceOfLaplacian(grid_field=ETDRS_FULL),
-        # Vascular density features (matching sparsity grid fields and naming)
-        "vd_full": VascularDensity(),
-        "vd_ellipse": VascularDensity(grid_field=ELLIPSE_FULL),
-        "vd_disc": VascularDensity(grid_field=DISC_FULL),
-        "vd_fovea": VascularDensity(grid_field=ETDRS_FULL),
-    },
+        VarianceOfLaplacian(),
+        VarianceOfLaplacian(grid_field=ELLIPSE_FULL),
+        VarianceOfLaplacian(grid_field=DISC_FULL),
+        VarianceOfLaplacian(grid_field=ETDRS_FULL),
+        # VascularDensity() already uses the ellipse grid by default, so keep only one ellipse entry.
+        VascularDensity(grid_field=ELLIPSE_FULL),
+        VascularDensity(grid_field=DISC_FULL),
+        VascularDensity(grid_field=ETDRS_FULL),
+    ],
 )

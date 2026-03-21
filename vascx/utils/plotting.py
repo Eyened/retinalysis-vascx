@@ -28,7 +28,17 @@ def plot_digraph(ax: plt.Axes, graph: DiGraph):
 
         dx = end[1] - start[1]
         dy = end[0] - start[0]
-        ax.arrow(start[1], start[0], dx, dy, color="white", head_width=12, linewidth=1.1, length_includes_head=True, overhang=0)
+        ax.arrow(
+            start[1],
+            start[0],
+            dx,
+            dy,
+            color="red",
+            head_width=12,
+            linewidth=1.1,
+            length_includes_head=True,
+            overhang=0,
+        )
 
 
 def find_bounding_box(points, padding=10):

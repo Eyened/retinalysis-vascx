@@ -16,7 +16,11 @@ from vascx.fundus.features.temporal_angles import TemporalAngle
 from vascx.fundus.features.tortuosity import LengthMeasure, Tortuosity, TortuosityMode
 from vascx.fundus.features.variance_of_laplacian import VarianceOfLaplacian
 from vascx.fundus.features.vascular_densities import VascularDensity
-from vascx.shared.aggregators import mean_median, median, median_std, sum
+from vascx.shared.aggregators import (
+    LengthWeightedAggregator,
+    median,
+    std,
+)
 from vascx.shared.features import FeatureSet
 
 ETDRS_FULL_FIELD = GridFieldSpecification(
@@ -26,43 +30,44 @@ ETDRS_FULL_FIELD = GridFieldSpecification(
 
 fs_full = FeatureSet(
     "full",
-    {
+    [
         # temporal angles
-        "ta": TemporalAngle(),
+        TemporalAngle(),
 
         # CREs and diameters
-        "cre": CRE(),
-        "diam": Caliber(aggregator=median_std),
+        CRE(),
+        Caliber(aggregator=median),
+        Caliber(aggregator=std),
 
         # vascular densities
-        "vd": VascularDensity(),
-        "vd_total": VascularDensity(ETDRS_FULL_FIELD),
+        VascularDensity(),
+        VascularDensity(ETDRS_FULL_FIELD),
 
         # tortuosity on segments
-        "tort_segments_skl": Tortuosity(length_measure=LengthMeasure.Skeleton, aggregator=median),
-        "tort_segments_spl": Tortuosity(length_measure=LengthMeasure.Splines, aggregator=median),
-        "tort_segments_curv": Tortuosity(measure=TortuosityMeasure.Curvature, aggregator=median),
-        "tort_segments_infl": Tortuosity(measure=TortuosityMeasure.Inflections, aggregator=median),
+        Tortuosity(length_measure=LengthMeasure.Skeleton, aggregator=median),
+        Tortuosity(length_measure=LengthMeasure.Splines, aggregator=median),
+        Tortuosity(measure=TortuosityMeasure.Curvature, aggregator=median),
+        Tortuosity(measure=TortuosityMeasure.Inflections, aggregator=median),
 
         # normalized tortuosity on segments
-        "norm_tort_segments_skl": Tortuosity(length_measure=LengthMeasure.Skeleton, norm_measure=LengthMeasure.Skeleton, aggregator=sum),
-        "norm_tort_segments_spl": Tortuosity(length_measure=LengthMeasure.Splines, norm_measure=LengthMeasure.Splines, aggregator=sum),
-        "norm_tort_segments_curv": Tortuosity(measure=TortuosityMeasure.Curvature, norm_measure=LengthMeasure.Skeleton, aggregator=sum),
-        "norm_tort_segments_infl": Tortuosity(measure=TortuosityMeasure.Inflections, norm_measure=LengthMeasure.Skeleton, aggregator=sum),
+        Tortuosity(length_measure=LengthMeasure.Skeleton, aggregator=LengthWeightedAggregator()),
+        Tortuosity(length_measure=LengthMeasure.Splines, aggregator=LengthWeightedAggregator()),
+        Tortuosity(measure=TortuosityMeasure.Curvature, aggregator=LengthWeightedAggregator()),
+        Tortuosity(measure=TortuosityMeasure.Inflections, aggregator=LengthWeightedAggregator()),
         
         # tortuosity on vessels
-        "tort_vessels_skl": Tortuosity(mode=TortuosityMode.Vessels, length_measure=LengthMeasure.Skeleton, aggregator=median),
-        "tort_vessels_spl": Tortuosity(mode=TortuosityMode.Vessels, length_measure=LengthMeasure.Splines, aggregator=median),
-        "tort_vessels_curv": Tortuosity(mode=TortuosityMode.Vessels, measure=TortuosityMeasure.Curvature, aggregator=median),
-        "tort_vessels_infl": Tortuosity(mode=TortuosityMode.Vessels, measure=TortuosityMeasure.Inflections, aggregator=median),
+        Tortuosity(mode=TortuosityMode.Vessels, length_measure=LengthMeasure.Skeleton, aggregator=median),
+        Tortuosity(mode=TortuosityMode.Vessels, length_measure=LengthMeasure.Splines, aggregator=median),
+        Tortuosity(mode=TortuosityMode.Vessels, measure=TortuosityMeasure.Curvature, aggregator=median),
+        Tortuosity(mode=TortuosityMode.Vessels, measure=TortuosityMeasure.Inflections, aggregator=median),
 
         # bifurcation angles        
-        "bif_angles": BifurcationAngles(aggregator=median),
-        "bif": BifurcationCount(),
+        BifurcationAngles(aggregator=median),
+        BifurcationCount(),
 
         # general and retina-level features
-        "coverage": Sparsity(),
-        "lapl": VarianceOfLaplacian(),
-        "odfd": DiscFoveaDistance(),
-    },
+        Sparsity(),
+        VarianceOfLaplacian(),
+        DiscFoveaDistance(),
+    ],
 )

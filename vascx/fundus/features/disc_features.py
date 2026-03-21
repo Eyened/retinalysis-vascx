@@ -22,10 +22,7 @@ class DiscFoveaDistance(RetinaFeature):
     """
     
     def __init__(self):
-        pass
-
-    def __repr__(self) -> str:
-        return "DiscFoveaDistance()"
+        super().__init__()
 
     def compute(self, retina: Retina):
         return retina.disc_fovea_distance
@@ -33,5 +30,9 @@ class DiscFoveaDistance(RetinaFeature):
     def display_name(self, key: str = None, **kwargs) -> str:
         return "Disc-Fovea Distance - IM"
 
+    def feature_name_tokens(self) -> list[str]:
+        return ["disc", "fovea", "distance"]
+
     def _plot(self, ax, retina: Retina, **kwargs):
+        retina.plot(ax=ax, image=True, disc=True, fovea=True)
         return ax

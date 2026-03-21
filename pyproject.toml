@@ -30,12 +30,27 @@ dependencies = [
 [project.scripts]
 vascx = "vascx.cli:cli"
 
+[project.optional-dependencies]
+test = [
+  "pytest == 8.*",
+  "pyarrow == 22.*",
+  "PyYAML == 6.*"
+]
+
 [tool.setuptools]
 include-package-data = true
 zip-safe = false
 
 [tool.setuptools.packages.find]
 include = ["vascx*"]
+
+[tool.pytest.ini_options]
+markers = [
+  "reference: regression tests for stored biomarker baselines",
+  "profile: runtime profiling guards for the sample extraction pipeline",
+  "plotting: smoke tests for feature plotting methods"
+]
+testpaths = ["tests"]
 
 [tool.setuptools_scm]
 # can be empty if no extra settings are needed, presence enables setuptools-scm

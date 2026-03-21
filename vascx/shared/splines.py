@@ -1,14 +1,11 @@
 from __future__ import annotations
 
-import warnings
 from typing import TYPE_CHECKING, List, Tuple
 
 import numpy as np
-from scipy.interpolate import UnivariateSpline
-from scipy.optimize import fsolve
-from scipy.spatial.distance import euclidean as distance_2p
-
 from rtnls_enface.base import Circle, Point
+from scipy.interpolate import UnivariateSpline
+
 from vascx.shared.diameters import DiameterMeasurement, find_vessel_edge
 from vascx.utils import linear_interpolate
 
@@ -187,43 +184,57 @@ class SplineInterpolation:
         pass
 
     def intersections_with_circle(self, circle: Circle):
-        """return all intersections of the spline with the given circle"""
+        """Approximate circle intersections using the segment polyline."""
+        points = self.points
+        if len(points) < 2:
+            return None, None
 
-        def distance_to_circle_center(t):
-            x, y = self.x_spline(t).item(), self.y_spline(t).item()
-            point_on_curve = np.array([x, y])  # Point on the curve
-            dist = distance_2p(point_on_curve, circle.center.tuple_xy)
+        center = np.array(circle.center.tuple, dtype=float)
+        radius_sq = float(circle.r) ** 2
+        distances = np.sum((points - center) ** 2, axis=1) - radius_sq
 
-            return dist - circle.r
-
-        initial_t_guesses = np.linspace(0, 1, 10)
-
-        # solve for each initial guess
+        seg_lengths = np.sqrt(np.sum(np.diff(points, axis=0) ** 2, axis=1))
+        cumulative = np.concatenate(([0.0], np.cumsum(seg_lengths)))
+        total_length = cumulative[-1]
+        if total_length <= 0:
+            return None, None
 
         t_intersection = []
-        with warnings.catch_warnings():
-            warnings.filterwarnings("error", category=RuntimeWarning)
-            for t_guess in initial_t_guesses:
-                try:
-                    t_intersection.append(fsolve(distance_to_circle_center, t_guess)[0])
-                except RuntimeWarning:
-                    continue  # skip warnings when fsolve gets stuck
+        intersection_points = []
+        tol = 1e-9
 
-        # check that the solutions are roots of distance_to_circle_center
-        # fsolve may return non-roots if it gets stuck in minima, maxima
-        t_intersection = np.array(
-            [t for t in t_intersection if np.isclose(distance_to_circle_center(t), 0)]
-        )
+        for i in range(len(points) - 1):
+            p0 = points[i]
+            p1 = points[i + 1]
+            d0 = distances[i]
+            d1 = distances[i + 1]
+            segment_length = seg_lengths[i]
 
-        # remove t-values outside of [0,1]
-        t_intersection = t_intersection[(t_intersection >= 0) & (t_intersection <= 1)]
+            if abs(d0) <= tol:
+                t_intersection.append(cumulative[i] / total_length)
+                intersection_points.append(Point(*p0))
+
+            if abs(d1) <= tol:
+                t_intersection.append(cumulative[i + 1] / total_length)
+                intersection_points.append(Point(*p1))
+                continue
+
+            if d0 * d1 > 0 or segment_length <= 0:
+                continue
+
+            alpha = abs(d0) / (abs(d0) + abs(d1))
+            point = p0 + alpha * (p1 - p0)
+            t = (cumulative[i] + alpha * segment_length) / total_length
+            t_intersection.append(t)
+            intersection_points.append(Point(*point))
 
         if len(t_intersection) == 0:
             return None, None
 
-        t_intersection = np.unique(np.round(t_intersection, 5))
+        rounded_t = np.round(np.asarray(t_intersection), 5)
+        _, unique_indices = np.unique(rounded_t, return_index=True)
+        unique_indices = np.sort(unique_indices)
+        t_intersection = rounded_t[unique_indices]
+        intersection_points = [intersection_points[i] for i in unique_indices]
 
-        intersection_points = [
-            Point(self.y_spline(t), self.x_spline(t)) for t in t_intersection
-        ]
         return intersection_points, t_intersection

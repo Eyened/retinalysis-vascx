@@ -7,14 +7,16 @@ from matplotlib import pyplot as plt
 
 from vascx.shared.segment import Segment
 
+
 def get_value(text: Union[Callable, str], segment: Segment) -> Union[str, float, int]:
     """Helper function to get value from text parameter.
-    
+
     If text is callable, calls it with segment. Otherwise returns text as-is.
     """
     if callable(text):
         return text(segment)
     return text
+
 
 class Vessels:
     def __init__(self, layer, segments: List[Segment]):
@@ -80,7 +82,7 @@ class Vessels:
             # Plot gaps
             for i in range(len(skel) - 1):
                 p1 = skel[i]
-                p2 = skel[i+1]
+                p2 = skel[i + 1]
                 if abs(p1[0] - p2[0]) > 1 or abs(p1[1] - p2[1]) > 1:
                     ax.plot([p1[1], p2[1]], [p1[0], p2[0]], color="green", linewidth=1)
 
@@ -121,8 +123,6 @@ class Vessels:
 
         ax.imshow(img)
         return ax
-
-
 
     def plot_text(
         self,
@@ -190,6 +190,22 @@ class Vessels:
             )
         return ax
 
+    def plot_arcs(self, ax, segments: List[Segment]):
+        for segment in segments:
+            if len(segment.skeleton) == 0:
+                continue
+            ys = [point[0] for point in segment.skeleton]
+            xs = [point[1] for point in segment.skeleton]
+            ax.plot(
+                xs,
+                ys,
+                linestyle="None",
+                marker=".",
+                markersize=0.4,
+                color="white",
+            )
+        return ax
+
     def plot(
         self,
         text: Union[Callable, str] = None,
@@ -198,7 +214,8 @@ class Vessels:
         image=True,
         segments=False,
         endpoints=False,
-        chord=False,
+        chords=False,
+        arcs=False,
         splines=False,
         spline_points=False,
         gaps=False,
@@ -251,8 +268,11 @@ class Vessels:
         if endpoints:
             self.plot_endpoints(ax, segments_to_plot)
 
-        if chord:
+        if chords:
             self.plot_chords(ax, segments_to_plot)
+
+        if arcs:
+            self.plot_arcs(ax, segments_to_plot)
 
         if splines:
             print("plotting splines")

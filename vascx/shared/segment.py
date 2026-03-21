@@ -7,10 +7,10 @@ from typing import TYPE_CHECKING, List, Tuple, Union
 
 import matplotlib.pyplot as plt
 import numpy as np
+from rtnls_enface.base import Line, Point, TuplePoint
 from scipy.spatial.distance import euclidean as distance_2p
 from sklearn.linear_model import TheilSenRegressor
 
-from rtnls_enface.base import Line, Point, TuplePoint
 from vascx.shared.diameters import DiameterMeasurement, retipy_vessel_diameters
 from vascx.shared.splines import SplineInterpolation
 from vascx.utils.plotting import find_bounding_box
@@ -149,7 +149,7 @@ class Segment:
 
     def calc_diameters_using_splines(self, n_points=None):
         if n_points is None:
-            n_points = max(10, round(100 * self.length / 1024))
+            n_points = max(10, round(self.length / 10))
 
         measurements = self.spline.diameters(n_points)
 

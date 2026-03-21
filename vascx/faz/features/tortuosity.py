@@ -5,7 +5,7 @@ from enum import Enum
 from typing import TYPE_CHECKING
 
 import numpy as np
-from vascx.shared.aggregators import mean_median_std
+from vascx.shared.aggregators import median
 from vascx.shared.segment import Segment, SplineInterpolation
 from vascx.shared.vessels import Vessels
 
@@ -32,7 +32,7 @@ class Tortuosity(FAZLayerFeature):
         measure: TortuosityMeasure = TortuosityMeasure.Distance,
         length_measure: LengthMeasure = LengthMeasure.Splines,
         min_numpoints: int = 10,
-        aggregator=mean_median_std,
+        aggregator=median,
         **kwargs,
     ):
         self.measure = measure

@@ -2,89 +2,96 @@ from __future__ import annotations
 
 import warnings
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, Callable, List, Tuple, Union
+from typing import ClassVar, List, Tuple
 
 import numpy as np
 
-if TYPE_CHECKING:
-    from vascx import Segment
-# FeatureType = Union[Layer, Segment, Node, Bifurcation, Crossing]
 
+class Aggregator:
+    name: ClassVar[str]
+    display_name: ClassVar[str] = ""
 
-def mean(X):
-    return np.nanmean(X)
+    def __call__(self, X):
+        raise NotImplementedError
 
-def sum(X):
-    return np.nansum(X)
-
-def median(X):
-    return np.nanmedian(X)
-
-
-def std(X):
-    return np.nanstd(X)
 
 def check_and_warn(X):
     if np.sum(np.isnan(X)) > len(X) * 0.2:
-        warnings.warn(f'More than 20% nans received by aggregator')
-
-def mean_std(X):
-    check_and_warn(X)
-    return {"mean": mean(X), "std": std(X)}
+        warnings.warn("More than 20% nans received by aggregator")
 
 
-def median_std(X):
-    check_and_warn(X)
-    return {"median": median(X), "std": std(X)}
+class Mean(Aggregator):
+    name = "mn"
+    display_name = "Mean"
 
-def mean_median(X):
-    check_and_warn(X)
-    if len(X) == 0:
-        return {"mean": None, "median": None}
-    else:
-        return {"mean": mean(X), "median": median(X)}
-
-
-def mean_median_std(X):
-    check_and_warn(X)
-    if len(X) == 0:
-        return {"mean": None, "median": None, "std": None}
-    else:
-        return {"mean": mean(X), "median": median(X), "std": std(X)}
+    def __call__(self, X):
+        if len(X) == 0:
+            return None
+        check_and_warn(X)
+        return np.nanmean(X)
 
 
-class SegmentAggregator:
-    pass
+class Sum(Aggregator):
+    name = "sum"
+    display_name = "Sum"
+
+    def __call__(self, X):
+        if len(X) == 0:
+            return None
+        check_and_warn(X)
+        return np.nansum(X)
+
+
+class Median(Aggregator):
+    name = "md"
+    display_name = "Median"
+
+    def __call__(self, X):
+        if len(X) == 0:
+            return None
+        check_and_warn(X)
+        return np.nanmedian(X)
+
+
+class Std(Aggregator):
+    name = "std"
+    display_name = "Std"
+
+    def __call__(self, X):
+        if len(X) == 0:
+            return None
+        check_and_warn(X)
+        return np.nanstd(X)
+
+
+mean = Mean()
+sum = Sum()
+median = Median()
+std = Std()
 
 
 @dataclass
-class BinnedSegmentAggregator(SegmentAggregator):
-    """Aggregates measurements into bins of vessel diameter"""
+class LengthWeightedAggregator(Aggregator):
+    """Aggregate `(weight, value)` pairs with normalized weights."""
 
-    bins: Union[int, List[int]]
-    fn: Callable
+    name: ClassVar[str] = "lw"
+    display_name: ClassVar[str] = "Length-Weighted"
 
-    def __call__(self, X: List[Tuple[float, Segment]]):
-        X = [x for x in X if x[1].mean_diameter is not None]
+    def __call__(self, X: List[Tuple[float, float]]):
+        if len(X) == 0:
+            return None
 
-        sorted_X = sorted(X, key=lambda x: x[1].mean_diameter)
+        weights = np.asarray([weight for weight, _ in X], dtype=float)
+        values = np.asarray([value for _, value in X], dtype=float)
 
-        bins = self.bins
-        if isinstance(bins, int):
-            bins = np.linspace(0, 1, bins + 1)
+        valid = np.isfinite(weights) & np.isfinite(values)
+        if not np.any(valid):
+            return None
 
-        # X does not have enough segments.
-        # return None to indicate invalid feature
-        if len(X) < len(bins):
-            return [None] * len(bins - 1)
+        weights = weights[valid]
+        values = values[valid]
+        total_weight = np.sum(weights)
+        if total_weight <= 0:
+            return None
 
-        # list of quantiles passed, eg [0.25, 0.50, 0.75]
-        values = []
-        for i in range(len(bins) - 1):
-            first = round(bins[i] * len(X))
-            last = round(bins[i + 1] * len(X))
-
-            data = sorted_X[first:last]
-            data = [d[0] for d in data]
-            values.append(self.fn(data))
-        return values
+        return float(np.sum(weights * values) / total_weight)

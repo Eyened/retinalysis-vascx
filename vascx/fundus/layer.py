@@ -9,6 +9,7 @@ import matplotlib.pyplot as plt
 import networkx as nx
 import numpy as np
 from networkx import DiGraph, Graph, connected_components, get_node_attributes
+from rtnls_enface.base import Circle
 from rtnls_enface.disc import OpticDisc
 from rtnls_enface.grids.base import GridField
 from scipy.ndimage import distance_transform_edt
@@ -53,6 +54,7 @@ class VesselTreeLayer(VesselLayer):
         self.retina: Retina = retina
         self.name = name
         self.color = color
+        self._cre_binary_mask_cache: Dict[tuple, np.ndarray] = {}
 
     @property
     def disc(self) -> OpticDisc:
@@ -73,9 +75,6 @@ class VesselTreeLayer(VesselLayer):
     @cached_property
     def skeleton(self) -> np.ndarray:
         skeleton = skimage_skeletonize(self.binary)[:, :]
-        if self.disc is not None:
-            # mask out the skeletonization using the disc
-            skeleton = skeleton & ~self.disc.mask
         return skeleton
 
     # STAGE 2: graph and undirected segments
@@ -83,13 +82,26 @@ class VesselTreeLayer(VesselLayer):
     def graph(self) -> Graph:
         graph = make_graph(self.skeleton)
         segments = []
-        for s, e in graph.edges():
+        edges_to_remove = []
+        for s, e in list(graph.edges()):
             skl = graph[s][e]["pts"]
 
+            if self.disc is not None:
+                keep = ~self.disc.mask[skl[:, 0], skl[:, 1]].astype(bool)
+                skl = skl[keep]
+
+            if len(skl) == 0:
+                edges_to_remove.append((s, e))
+                continue
+
+            graph[s][e]["pts"] = skl
             seg = Segment(skl, edge=(s, e))
             graph[s][e]["segment"] = seg
             seg.id = frozenset([s, e])
             segments.append(seg)
+
+        graph.remove_edges_from(edges_to_remove)
+        graph.remove_nodes_from([n for n in graph.nodes() if graph.degree(n) == 0])
 
         for index, s in enumerate(segments):
             s.layer = self
@@ -125,6 +137,35 @@ class VesselTreeLayer(VesselLayer):
     @cached_property
     def segments(self) -> List[Segment]:
         return [self.digraph.edges[e]["segment"] for e in self.digraph.edges()]
+
+    @cached_property
+    def circle_intersection_cache(self) -> Dict[tuple, List[Tuple[Segment, float]]]:
+        # Cache raw segment-circle crossings so CRE variants can reuse them.
+        return {}
+
+    def _circle_intersection_cache_key(self, circle: Circle) -> tuple:
+        cy, cx = circle.center.tuple
+        return (
+            round(float(cy), 6),
+            round(float(cx), 6),
+            round(float(circle.r), 6),
+        )
+
+    def get_circle_intersections(self, circle: Circle) -> List[Tuple[Segment, float]]:
+        cache_key = self._circle_intersection_cache_key(circle)
+        cached_pairs = self.circle_intersection_cache.get(cache_key)
+        if cached_pairs is not None:
+            return cached_pairs
+
+        pairs: List[Tuple[Segment, float]] = []
+        for segment in self.segments:
+            _, intersection_ts = segment.intersections_with_circle(circle)
+            if intersection_ts is not None:
+                for t in intersection_ts:
+                    pairs.append((segment, t))
+
+        self.circle_intersection_cache[cache_key] = pairs
+        return pairs
 
     def filter_segments(self, field: GridField, field_threshold=0.75) -> List[Segment]:
         """Filters the segments of the graph based on some criteria."""
@@ -326,8 +367,6 @@ class VesselTreeLayer(VesselLayer):
                 img[p[0], p[1], :] = [255, 0, 0]
         return img
 
-    
-
     def get_segment(self, id: int):
         for seg in self.segments:
             if seg.id == id:
@@ -348,6 +387,9 @@ class VesselTreeLayer(VesselLayer):
         nodes=False,
         digraph=False,
         vessels=False,
+        chords=False,
+        arcs=False,
+        endpoints: bool = False,
         grid_field: GridField = None,
         **kwargs,
     ):
@@ -366,16 +408,30 @@ class VesselTreeLayer(VesselLayer):
             self.plot_skeleton(ax, color=(1, 1, 1), grid_field=grid_field)
 
         if segments:
-            self.plot_segments(ax, grid_field=grid_field, **kwargs)
+            self.plot_segments(
+                ax,
+                grid_field=grid_field,
+                chords=chords,
+                arcs=arcs,
+                endpoints=endpoints,
+                **kwargs,
+            )
 
         if nodes:
             self.plot_nodes(ax, grid_field=grid_field)
 
         if digraph:
+            if not (image or mask):
+                h, w = self.binary.shape
+                ax.set_xlim(-0.5, w - 0.5)
+                ax.set_ylim(h - 0.5, -0.5)  # y decreases upward, matching imshow
             self.plot_digraph(ax, grid_field=grid_field)
 
         if vessels:
-            self.plot_vessels(ax, grid_field=grid_field)
+            self.plot_vessels(
+                ax,
+                grid_field=grid_field,
+            )
 
         # plot ETDRS region
         if grid_field is not None:
@@ -386,11 +442,8 @@ class VesselTreeLayer(VesselLayer):
     def _get_base_axes(self, ax):
         if ax is None:
             fig, ax = plt.subplots(1, 1, figsize=(8, 8), dpi=150)
-            ax.imshow(np.zeros(self.binary.shape))
+            # ax.imshow(np.zeros(self.binary.shape))
             ax.set_axis_off()
-
-            if self.retina.image is not None:
-                ax.imshow(self.retina.image)
         return ax
 
     def plot_mask(self, ax, grid_field: GridField = None, **kwargs):
@@ -421,8 +474,12 @@ class VesselTreeLayer(VesselLayer):
         plot_digraph(ax, g, **kwargs)
 
     def plot_vessels(self, ax, grid_field: GridField = None, **kwargs):
-        
-        return vessels.plot(ax=ax, show_index=False, **kwargs)
+        """Plot resolved vessel segments; pass ``chords`` / ``arcs`` / ``endpoints`` like ``Vessels.plot``."""
+        if grid_field is not None:
+            v = Vessels(self, self.filter_segments(grid_field))
+        else:
+            v = self.vessels_object
+        return v.plot(ax=ax, show_index=False, **kwargs)
 
     def plot_tree_roots(self, ax, **kwargs):
         g = Graph(self.trees)
@@ -442,9 +499,8 @@ class VesselTreeLayer(VesselLayer):
                 else self.segments
             )
         vessels = Vessels(self, segments)
-        return vessels.plot(ax=ax, show_index=False, **kwargs)
+        return vessels.plot(ax=ax, segments=True, show_index=False, **kwargs)
 
-    
     def plot_nodes(self, ax, fig=None, grid_field: GridField = None):
         nodes = self.filter_nodes(grid_field) if grid_field is not None else self.nodes
         for node in nodes:

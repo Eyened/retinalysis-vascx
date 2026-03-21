@@ -12,9 +12,9 @@ def write_feature_descriptions(feature_set: str, desc_file: Union[str, Path]) ->
 
     fs = FeatureSet.get_by_name(feature_set)
     lines = []
-    for key, feat in fs.items():
+    for idx, feat in enumerate(fs, start=1):
         doc = inspect.getdoc(feat.__class__) or "No description available."
-        lines.extend([f"[{key}]", repr(feat), doc.strip(), ""])  # blank line between entries
+        lines.extend([f"[feature_{idx:03d}]", repr(feat), doc.strip(), ""])
 
     desc_path.write_text("\n".join(lines), encoding="utf-8")
     return desc_path

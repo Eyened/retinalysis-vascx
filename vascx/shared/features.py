@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from typing import TYPE_CHECKING, Any, Dict, List, Tuple
+from typing import TYPE_CHECKING, Any, Iterable, List
 
 import numpy as np
 
@@ -12,13 +12,16 @@ if TYPE_CHECKING:
 class FeatureSet:
     _registry = {}
 
-    def __init__(self, name: str, features: Dict[str, Feature]):
+    def __init__(self, name: str, features: Iterable["Feature"]):
         self.name = name
-        self.features = features
+        self.features = list(features)
         self.__class__._register_instance(self)
 
-    def items(self):
-        return self.features.items()
+    def __iter__(self):
+        return iter(self.features)
+
+    def __len__(self) -> int:
+        return len(self.features)
 
     @classmethod
     def _register_instance(cls, instance: FeatureSet):
@@ -43,6 +46,16 @@ class Feature(ABC):
     def display_name(self, **kwargs) -> str:
         """Return the display name for the feature."""
         pass
+
+    def name_tokens(self, **kwargs: Any) -> List[str]:
+        """Return semantic tokens used to build the canonical machine name."""
+        raise NotImplementedError(
+            f"{self.__class__.__name__} does not implement canonical naming tokens"
+        )
+
+    def canonical_name(self, **kwargs: Any) -> str:
+        """Return the canonical machine-readable feature name."""
+        return "_".join(token for token in self.name_tokens(**kwargs) if token)
 
     @abstractmethod
     def _plot(self, ax: 'Axes', layer: Any, **kwargs: Any) -> 'Axes':
@@ -69,16 +82,7 @@ class Feature(ABC):
 
         # Display values starting from top-left, going down
         y_start = 0.99
-        line_height = 0.04
-        
-        if isinstance(value, dict):
-            for i, (key, val) in enumerate(value.items()):
-                formatted_value = self._format_value(val)
-                text = f"{key}: {formatted_value}"
-                y_pos = y_start - i * line_height
-                ax.text(0.01, y_pos, text, transform=ax.transAxes, ha='left', va='top', color='white', fontsize=8)
-        else:
-            formatted_value = self._format_value(value)
-            ax.text(0.01, y_start, formatted_value, transform=ax.transAxes, ha='left', va='top', color='white', fontsize=8)
+        formatted_value = self._format_value(value)
+        ax.text(0.01, y_start, formatted_value, transform=ax.transAxes, ha='left', va='top', color='white', fontsize=8)
             
         return ax

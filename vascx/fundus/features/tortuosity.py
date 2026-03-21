@@ -1,12 +1,12 @@
 from __future__ import annotations
 
 from enum import Enum
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING, Callable, Optional
 
 import numpy as np
 from rtnls_enface.grids.specifications import BaseGridFieldSpecification
 
-from vascx.shared.aggregators import mean_median_std
+from vascx.shared.aggregators import LengthWeightedAggregator, median
 from vascx.shared.segment import Segment, SplineInterpolation
 from vascx.shared.vessels import Vessels
 
@@ -22,25 +22,25 @@ class TortuosityMode(str, Enum):
 
 
 class LengthMeasure(str, Enum):
-    Splines = "splines"
-    Skeleton = "skeleton"
+    Splines = "spl"
+    Skeleton = "skl"
 
 
 class TortuosityMeasure(str, Enum):
-    Distance = "distance"
-    Curvature = "curvature"
-    Inflections = "inflections"
+    Distance = "dist"
+    Curvature = "curv"
+    Inflections = "infl"
 
 
 class Tortuosity(LayerFeature):
     """Segment- or vessel-level tortuosity by distance ratio, curvature, or inflection counts.
 
     Representation: Uses segments or resolved_segments; for curvature uses Segment spline;
-    optionally length-normalized. Operates on either individual segments or merged vessel trees.
+    optionally length-weighted. Operates on either individual segments or merged vessel trees.
 
     Computation: Measures vessel tortuosity using three methods: distance ratio (arc length / chord length),
     curvature (mean curvature along spline), or inflection counts (number of direction changes).
-    Can be computed per-segment or per-vessel (resolved segments), with optional length normalization.
+    Can be computed per-segment or per-vessel (resolved segments), with optional spline-length weighting.
 
     Args (constructor):
     - mode: `TortuosityMode` selecting per-segment or per-vessel computation.
@@ -48,8 +48,7 @@ class Tortuosity(LayerFeature):
     - length_measure: length source (splines or skeleton) for distance-based measure.
     - min_numpoints: minimum skeleton points required for inclusion.
     - grid_field: optional `GridFieldEnum` restricting segments to a region.
-    - norm_measure: if set, length-weighted aggregation using the chosen length source.
-    - aggregator: function to aggregate per-entity values (e.g., mean/median/std tuple).
+    - aggregator: callable aggregator returning a single scalar over per-entity values.
     """
 
     # Ideas
@@ -64,8 +63,7 @@ class Tortuosity(LayerFeature):
         length_measure: LengthMeasure = LengthMeasure.Splines,
         min_numpoints: int = 25,
         grid_field: Optional[BaseGridFieldSpecification] = None,
-        norm_measure: LengthMeasure = None,
-        aggregator=mean_median_std,
+        aggregator: Callable = median,
         **kwargs,
     ):
         self.mode = mode
@@ -73,34 +71,7 @@ class Tortuosity(LayerFeature):
         self.length_measure = length_measure
         self.min_numpoints = min_numpoints
         super().__init__(grid_field_spec=grid_field)
-        self.norm_measure = norm_measure
         self.aggregator = aggregator
-
-    def __repr__(self) -> str:
-        def fmt(v):
-            from enum import Enum
-
-            import numpy as np
-
-            if v is None:
-                return "None"
-            if isinstance(v, Enum):
-                return f"{v.__class__.__name__}.{v.name}"
-            if callable(v):
-                return getattr(v, "__name__", v.__class__.__name__)
-            if isinstance(v, np.generic):
-                return repr(v.item())
-            return repr(v)
-
-        return (
-            f"Tortuosity(mode={fmt(self.mode)}, "
-            f"measure={fmt(self.measure)}, "
-            f"length_measure={fmt(self.length_measure)}, "
-            f"min_numpoints={fmt(self.min_numpoints)}, "
-            f"grid_field_spec={fmt(self.grid_field_spec)}, "
-            f"norm_measure={fmt(self.norm_measure)}, "
-            f"aggregator={fmt(self.aggregator)})"
-        )
 
     def _compute_for_segment(self, segment: Segment, scale: float):
         if self.measure == TortuosityMeasure.Distance:
@@ -123,13 +94,8 @@ class Tortuosity(LayerFeature):
         else:
             raise NotImplementedError()
 
-    def _compute_norm_measure_for_segment(self, segment: Segment):
-        if self.norm_measure == LengthMeasure.Splines:
-            return segment.spline.length() if segment.spline is not None else np.nan
-        elif self.norm_measure == LengthMeasure.Skeleton:
-            return segment.length
-        else:
-            raise NotImplementedError()
+    def _compute_weight_for_segment(self, segment: Segment) -> float:
+        return segment.spline.length() if segment.spline is not None else np.nan
 
     def get_segments(self, layer: VesselTreeLayer):
         if self.mode == TortuosityMode.Segments:
@@ -150,22 +116,19 @@ class Tortuosity(LayerFeature):
 
     def raw(self, layer: VesselTreeLayer):
         segments = self.get_segments(layer)
+        if isinstance(self.aggregator, LengthWeightedAggregator) and len(segments) < 5:
+            return None
 
-        vals = np.array(
-            [
-                self._compute_for_segment(
-                    vessel, scale=layer.retina.disc_fovea_distance
-                )
-                for vessel in segments
-            ]
-        )
+        vals = [
+            self._compute_for_segment(vessel, scale=layer.retina.disc_fovea_distance)
+            for vessel in segments
+        ]
 
-        if self.norm_measure is not None:
-            norm_vals = np.array(
-                [self._compute_norm_measure_for_segment(seg) for seg in segments]
-            )
-            vals = vals * norm_vals / np.nansum(norm_vals)
-        return vals
+        if isinstance(self.aggregator, LengthWeightedAggregator):
+            weights = [self._compute_weight_for_segment(seg) for seg in segments]
+            return list(zip(weights, vals))
+
+        return np.asarray(vals)
 
     def compute(self, layer: VesselTreeLayer):
         if self.grid_field_spec is not None:
@@ -173,38 +136,57 @@ class Tortuosity(LayerFeature):
             if frac < 0.5:
                 return None
         tortuosities = self.raw(layer)
+        if tortuosities is None:
+            return None
         return self.aggregator(tortuosities)
 
     def display_name(self, layer_name: str, key: str = None) -> str:
         from .base import get_aggregator_prefix, get_grid_field_suffix, get_layer_suffix
 
-        agg = get_aggregator_prefix(self.aggregator, key)
-        if self.norm_measure is not None:
-            agg = "Normalized "
+        agg = get_aggregator_prefix(self.aggregator)
+        if isinstance(self.aggregator, LengthWeightedAggregator):
+            agg = "Length-Weighted "
 
         field = get_grid_field_suffix(self.grid_field_spec)
         layer = get_layer_suffix(layer_name)
         measure = self.measure.name.title()
         return f"{agg}{measure} Tortuosity{field}{layer}"
 
+    def name_prefix_tokens(self) -> list[str]:
+        from .base import get_aggregator_tokens
+
+        if isinstance(self.aggregator, LengthWeightedAggregator):
+            return ["lw"]
+        return get_aggregator_tokens(self.aggregator)
+
+    def feature_name_tokens(self) -> list[str]:
+        return ["tort"]
+
+    def parameter_name_tokens(self) -> list[str]:
+        tokens = [self.measure.value]
+        if self.mode != TortuosityMode.Segments:
+            tokens.append(self.mode.value)
+        if self.length_measure != LengthMeasure.Splines:
+            tokens.extend(["length", self.length_measure.value])
+        if self.min_numpoints != 25:
+            tokens.extend(["min_numpoints", str(self.min_numpoints)])
+        return tokens
+
     def _plot(self, ax, layer: VesselTreeLayer, **kwargs):
         segments = self.get_segments(layer)
 
         vessels = Vessels(layer, segments)
-        if self.measure == TortuosityMeasure.Inflections:
-            format = "{:d}"
-        else:
-            format = "{:.4f}"
-
         ax = vessels.plot(
             ax=ax,
             show_index=False,
-            text=lambda x: f"{100 * (self._compute_for_segment(x, scale=layer.retina.disc_fovea_distance) - 1):.2f}",
+            text=lambda x: (
+                f"{100 * (self._compute_for_segment(x, scale=layer.retina.disc_fovea_distance) - 1):.2f}"
+            ),
             cmap="tab20",
             min_numpoints=0,
             min_numpoints_caliber=self.min_numpoints,
-            plot_endpoints=True,
-            plot_chord=True,
+            endpoints=True,
+            chords=True,
             **kwargs,
         )
 

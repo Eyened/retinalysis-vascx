@@ -1,7 +1,9 @@
 from __future__ import annotations
 
+import re
 from abc import abstractmethod
-from typing import TYPE_CHECKING, List, Optional, Tuple
+from enum import Enum
+from typing import TYPE_CHECKING, Any, List, Optional, Tuple
 
 import numpy as np
 from rtnls_enface.grids.base import GridField
@@ -15,6 +17,121 @@ if TYPE_CHECKING:
     from vascx.fundus.layer import VesselTreeLayer
     from vascx.fundus.retina import Retina
     from vascx.fundus.vessels_layer import FundusVesselsLayer
+
+
+_MISSING = object()
+
+
+def normalize_name_token(value: str) -> str:
+    text = re.sub(r"([a-z0-9])([A-Z])", r"\1_\2", value)
+    text = re.sub(r"[^0-9A-Za-z]+", "_", text)
+    text = text.strip("_").lower()
+    return re.sub(r"_+", "_", text)
+
+
+def format_name_value(value: Any) -> str:
+    if isinstance(value, Enum):
+        return normalize_name_token(value.value if isinstance(value.value, str) else value.name)
+    if isinstance(value, bool):
+        return "true" if value else "false"
+    if isinstance(value, (np.integer, int)):
+        return str(int(value))
+    if isinstance(value, (np.floating, float)):
+        text = format(float(value), ".12g")
+        text = text.replace("-", "neg_").replace(".", "p")
+        return normalize_name_token(text)
+    if callable(value):
+        return normalize_name_token(
+            getattr(value, "name", getattr(value, "__name__", value.__class__.__name__))
+        )
+    return normalize_name_token(str(value))
+
+
+def get_layer_token(layer_name: str) -> str:
+    return normalize_name_token(layer_name)
+
+
+def get_layer_tokens(layer_name: str) -> List[str]:
+    return [get_layer_token(layer_name)]
+
+
+def get_aggregator_token(aggregator=None) -> Optional[str]:
+    if aggregator is None:
+        return None
+    return format_name_value(aggregator)
+
+
+def get_aggregator_tokens(aggregator=None) -> List[str]:
+    token = get_aggregator_token(aggregator=aggregator)
+    return [token] if token else []
+
+
+def get_grid_spec_token(grid_spec: Any) -> str:
+    name = getattr(grid_spec, "name", None)
+    if not name:
+        raise AttributeError(
+            f"{grid_spec.__class__.__name__} must define a non-empty 'name' attribute"
+        )
+    return normalize_name_token(name)
+
+
+def get_grid_spec_display_name(grid_spec: Any) -> str:
+    display_name = getattr(grid_spec, "display_name", "")
+    if display_name:
+        return str(display_name)
+    return str(getattr(grid_spec, "name", ""))
+
+
+def _field_name_token(field: Any) -> Optional[str]:
+    if field is None:
+        return None
+
+    raw = field.name if isinstance(field, Enum) else str(field)
+    token = normalize_name_token(raw)
+    if token.endswith("_full_grid"):
+        return token[: -len("_full_grid")] or "full"
+    if token == "full_grid":
+        return "full"
+    return token
+
+
+def _nondefault_object_parameter_tokens(obj: Any) -> List[str]:
+    if obj is None or not hasattr(obj, "__dict__"):
+        return []
+
+    try:
+        default_obj = obj.__class__()
+        default_values = getattr(default_obj, "__dict__", {})
+    except Exception:
+        default_values = {}
+
+    tokens: List[str] = []
+    for attr, value in vars(obj).items():
+        if attr.startswith("_"):
+            continue
+        default_value = default_values.get(attr, _MISSING)
+        if default_value is _MISSING or value != default_value:
+            tokens.extend([normalize_name_token(attr), format_name_value(value)])
+    return tokens
+
+
+def get_grid_field_tokens(spec: Optional[BaseGridFieldSpecification]) -> List[str]:
+    if spec is None:
+        return []
+
+    from rtnls_enface.grids.specifications import GridFieldSpecification
+
+    if isinstance(spec, GridFieldSpecification):
+        tokens = [get_grid_spec_token(spec.grid_spec)]
+        tokens.extend(_nondefault_object_parameter_tokens(spec.grid_spec))
+        field_token = _field_name_token(spec.field)
+        if field_token:
+            tokens.append(field_token)
+        return tokens
+
+    tokens = [get_grid_spec_token(spec)]
+    tokens.extend(_nondefault_object_parameter_tokens(spec))
+    return tokens
 
 
 class RetinaFeature(Feature):
@@ -41,6 +158,26 @@ class RetinaFeature(Feature):
 
     def plot(self, ax: "Axes", retina: "Retina", **kwargs) -> "Axes":
         return super().plot(ax=ax, layer=retina, **kwargs)
+
+    def name_prefix_tokens(self) -> List[str]:
+        return get_aggregator_tokens(getattr(self, "aggregator", None))
+
+    def feature_name_tokens(self) -> List[str]:
+        raise NotImplementedError(
+            f"{self.__class__.__name__} does not implement canonical feature tokens"
+        )
+
+    def parameter_name_tokens(self) -> List[str]:
+        return []
+
+    def name_tokens(self, layer_name: str = "retina", **kwargs) -> List[str]:
+        return [
+            *self.name_prefix_tokens(),
+            *self.feature_name_tokens(),
+            *self.parameter_name_tokens(),
+            *get_grid_field_tokens(self.grid_field_spec),
+            *get_layer_tokens(layer_name),
+        ]
 
 
 class LayerFeature(Feature):
@@ -70,6 +207,26 @@ class LayerFeature(Feature):
     def plot(self, ax: "Axes", layer: "VesselTreeLayer", **kwargs) -> "Axes":
         return super().plot(ax=ax, layer=layer, **kwargs)
 
+    def name_prefix_tokens(self) -> List[str]:
+        return get_aggregator_tokens(getattr(self, "aggregator", None))
+
+    def feature_name_tokens(self) -> List[str]:
+        raise NotImplementedError(
+            f"{self.__class__.__name__} does not implement canonical feature tokens"
+        )
+
+    def parameter_name_tokens(self) -> List[str]:
+        return []
+
+    def name_tokens(self, layer_name: str, **kwargs) -> List[str]:
+        return [
+            *self.name_prefix_tokens(),
+            *self.feature_name_tokens(),
+            *self.parameter_name_tokens(),
+            *get_grid_field_tokens(self.grid_field_spec),
+            *get_layer_tokens(layer_name),
+        ]
+
 
 class VesselsLayerFeature(Feature):
     def __init__(
@@ -98,6 +255,26 @@ class VesselsLayerFeature(Feature):
     def plot(self, ax: "Axes", layer: "FundusVesselsLayer", **kwargs) -> "Axes":
         return super().plot(ax=ax, layer=layer, **kwargs)
 
+    def name_prefix_tokens(self) -> List[str]:
+        return get_aggregator_tokens(getattr(self, "aggregator", None))
+
+    def feature_name_tokens(self) -> List[str]:
+        raise NotImplementedError(
+            f"{self.__class__.__name__} does not implement canonical feature tokens"
+        )
+
+    def parameter_name_tokens(self) -> List[str]:
+        return []
+
+    def name_tokens(self, layer_name: str, **kwargs) -> List[str]:
+        return [
+            *self.name_prefix_tokens(),
+            *self.feature_name_tokens(),
+            *self.parameter_name_tokens(),
+            *get_grid_field_tokens(self.grid_field_spec),
+            *get_layer_tokens(layer_name),
+        ]
+
 
 def get_layer_suffix(layer_name: str) -> str:
     if layer_name == "arteries":
@@ -114,12 +291,9 @@ def get_layer_suffix(layer_name: str) -> str:
 def get_grid_field_suffix(spec: Optional[BaseGridFieldSpecification]) -> str:
     if spec is None:
         return ""
-    
+
     from rtnls_enface.grids.hemifields import HemifieldField
     from rtnls_enface.grids.specifications import GridFieldSpecification, HemifieldGridSpecification
-    from rtnls_enface.grids.disc_centered import DiscCenteredRing
-    from rtnls_enface.grids.etdrs import ETDRSRing
-    from rtnls_enface.grids.ellipse import EllipseField
 
     if isinstance(spec, GridFieldSpecification):
         if isinstance(spec.grid_spec, HemifieldGridSpecification):
@@ -127,48 +301,38 @@ def get_grid_field_suffix(spec: Optional[BaseGridFieldSpecification]) -> str:
                 return " [Sup]"
             if spec.field == HemifieldField.Inferior:
                 return " [Inf]"
-        
-        if spec.field == DiscCenteredRing.FullGrid:
-            return " [Disc]"
-        
-        if spec.field == ETDRSRing.FullGrid:
-            return " [ETDRS]"
-            
-        if spec.field == EllipseField.FullGrid:
-            return " [Ellipse]"
+
+        if _field_name_token(spec.field) == "full":
+            display_name = get_grid_spec_display_name(spec.grid_spec)
+            if display_name:
+                return f" [{display_name}]"
 
     return ""
 
 
-def get_aggregator_prefix(aggregator=None, key: str = None) -> str:
-    if key:
-        return f"{key.capitalize()} "
-    
+def get_aggregator_prefix(aggregator=None) -> str:
     if aggregator is None:
         return ""
-        
+
     if callable(aggregator):
-        name = getattr(aggregator, "__name__", "")
-        if name == "mean": return "Mean "
-        if name == "median": return "Median "
-        if name == "sum": return "Sum "
-        if name == "std": return "Std "
-        if name == "max": return "Max "
-        if name == "min": return "Min "
-        
+        display_name = getattr(aggregator, "display_name", "")
+        if display_name:
+            return f"{display_name} "
+
+        name = getattr(aggregator, "name", getattr(aggregator, "__name__", ""))
+        if name == "mean":
+            return "Mean "
+        if name == "median":
+            return "Median "
+        if name == "sum":
+            return "Sum "
+        if name == "std":
+            return "Std "
+        if name == "max":
+            return "Max "
+        if name == "min":
+            return "Min "
     return ""
-
-
-def get_aggregator_keys(aggregator) -> Optional[List[str]]:
-    if aggregator is None:
-        return None
-    if callable(aggregator):
-        name = getattr(aggregator, "__name__", "")
-        if name == "mean_std": return ["mean", "std"]
-        if name == "median_std": return ["median", "std"]
-        if name == "mean_median": return ["mean", "median"]
-        if name == "mean_median_std": return ["mean", "median", "std"]
-    return None
 
 
 def grid_field_masks_and_fraction(

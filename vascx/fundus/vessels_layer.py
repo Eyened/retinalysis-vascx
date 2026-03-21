@@ -36,8 +36,7 @@ class FundusVesselsLayer(JointVesselsLayer):
     def disc(self) -> OpticDisc:
         return self.retina.disc
 
-    # @cached_property
-    @property
+    @cached_property
     def binary(self) -> np.ndarray:
         return binarize_and_fill(self.mask)
 

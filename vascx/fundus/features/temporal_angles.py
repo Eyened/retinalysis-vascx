@@ -38,29 +38,9 @@ class TemporalAngle(LayerFeature):
 
     def __init__(self, od_to_fovea_fraction: float = 2 / 3, increment: float = 0.03):
         """Configure starting fraction of OD–fovea distance and concentric circle spacing."""
+        super().__init__(grid_field_spec=None)
         self.od_to_fovea_fraction = float(od_to_fovea_fraction)
         self.increment = float(increment)
-
-    def __repr__(self) -> str:
-        def fmt(v):
-            from enum import Enum
-
-            import numpy as np
-
-            if v is None:
-                return "None"
-            if isinstance(v, Enum):
-                return f"{v.__class__.__name__}.{v.name}"
-            if callable(v):
-                return getattr(v, "__name__", v.__class__.__name__)
-            if isinstance(v, np.generic):
-                return repr(v.item())
-            return repr(v)
-
-        return (
-            f"TemporalAngle(od_to_fovea_fraction={fmt(self.od_to_fovea_fraction)}, "
-            f"increment={fmt(self.increment)})"
-        )
 
     def get_circle(self, layer: VesselTreeLayer, fractional_distance=0.5):
         disc = layer.retina.disc
@@ -156,6 +136,24 @@ class TemporalAngle(LayerFeature):
 
         layer = get_layer_suffix(layer_name)
         return f"Median Temporal Angle{layer}"
+
+    def name_prefix_tokens(self) -> list[str]:
+        return ["median"]
+
+    def feature_name_tokens(self) -> list[str]:
+        return ["temporal", "angle"]
+
+    def parameter_name_tokens(self) -> list[str]:
+        from .base import format_name_value
+
+        tokens: list[str] = []
+        if self.od_to_fovea_fraction != 2 / 3:
+            tokens.extend(
+                ["od_to_fovea_fraction", format_name_value(self.od_to_fovea_fraction)]
+            )
+        if self.increment != 0.03:
+            tokens.extend(["increment", format_name_value(self.increment)])
+        return tokens
 
     def _plot(self, ax, layer, **kwargs):
         pairs, segments, circles = [], [], []

@@ -28,19 +28,14 @@ class FAZRetina(FAZEnface):
         self.retina = retina
 
     def calc_features(self, feature_set: FeatureSet):
-        layer_features = {
-            p: fn for p, fn in feature_set.items() if isinstance(fn, FAZLayerFeature)
-        }
-
         all_features = {}
-        for feature_name, feature in layer_features.items():
+        for feature in feature_set:
+            if not isinstance(feature, FAZLayerFeature):
+                continue
             for layer_name, layer in self.layers.items():
                 res = feature.compute(layer)
-                if isinstance(res, dict):
-                    for k, v in res.items():
-                        all_features[f"{feature_name}_{layer_name}_{k}"] = v
-                else:
-                    all_features[f"{feature_name}_{layer_name}"] = res
+                feature_name = feature.canonical_name(layer_name=layer_name)
+                all_features[feature_name] = res
 
         return all_features
 

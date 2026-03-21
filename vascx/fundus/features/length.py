@@ -46,27 +46,6 @@ class Length(LayerFeature):
         self.min_numpoints = min_numpoints
         super().__init__(grid_field_spec=grid_field)
 
-    def __repr__(self) -> str:
-        def fmt(v):
-            from enum import Enum
-
-            import numpy as np
-
-            if v is None:
-                return "None"
-            if isinstance(v, Enum):
-                return f"{v.__class__.__name__}.{v.name}"
-            if callable(v):
-                return getattr(v, "__name__", v.__class__.__name__)
-            if isinstance(v, np.generic):
-                return repr(v.item())
-            return repr(v)
-
-        return (
-            f"Length(min_numpoints={fmt(self.min_numpoints)}, "
-            f"grid_field_spec={fmt(self.grid_field_spec)})"
-        )
-
     def compute_with_spline(self, layer: VesselTreeLayer):
         field = None
         if self.grid_field_spec is not None:
@@ -101,6 +80,17 @@ class Length(LayerFeature):
         field = get_grid_field_suffix(self.grid_field_spec)
         layer = get_layer_suffix(layer_name)
         return f"Mean Segment Length{field}{layer}"
+
+    def name_prefix_tokens(self) -> list[str]:
+        return ["mean"]
+
+    def feature_name_tokens(self) -> list[str]:
+        return ["segment", "length"]
+
+    def parameter_name_tokens(self) -> list[str]:
+        if self.min_numpoints == 25:
+            return []
+        return ["min_numpoints", str(self.min_numpoints)]
 
     def calc_auxiliary(self, parameters):
         pass

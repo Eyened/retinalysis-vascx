@@ -35,24 +35,6 @@ class VarianceOfLaplacian(RetinaFeature):
         """
         super().__init__(grid_field_spec=grid_field)
 
-    def __repr__(self) -> str:
-        def fmt(v):
-            from enum import Enum
-
-            import numpy as np
-
-            if v is None:
-                return "None"
-            if isinstance(v, Enum):
-                return f"{v.__class__.__name__}.{v.name}"
-            if callable(v):
-                return getattr(v, "__name__", v.__class__.__name__)
-            if isinstance(v, np.generic):
-                return repr(v.item())
-            return repr(v)
-
-        return f"VarianceOfLaplacian(grid_field_spec={fmt(self.grid_field_spec)})"
-
     def compute(self, retina: "Retina"):
         if self.grid_field_spec is None:
             return float(np.nanvar(retina.laplacian))
@@ -73,6 +55,9 @@ class VarianceOfLaplacian(RetinaFeature):
 
         field = get_grid_field_suffix(self.grid_field_spec)
         return f"Laplacian Variance{field} - IM"
+
+    def feature_name_tokens(self) -> list[str]:
+        return ["lapl"]
 
     def _plot(self, ax, retina: "Retina", **kwargs):
         L = retina.laplacian.astype(np.float32)  # may contain NaNs outside mask

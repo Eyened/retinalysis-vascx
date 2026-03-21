@@ -5,7 +5,7 @@ from typing import TYPE_CHECKING, Optional
 from matplotlib import patches
 from rtnls_enface.grids.specifications import BaseGridFieldSpecification
 
-from vascx.shared.aggregators import mean_median
+from vascx.shared.aggregators import mean
 
 from .base import LayerFeature, grid_field_fraction_in_bounds
 
@@ -27,6 +27,8 @@ class BifurcationAngles(LayerFeature):
     Args (constructor):
     - delta: pixel distance from the bifurcation where branch directions are sampled.
     - grid_field: optional `GridFieldEnum` to restrict bifurcations to a region.
+    - max_angle: angles above this (degrees) are excluded before aggregation.
+    - min_bifurcations: if fewer valid angles remain, compute returns None.
     - aggregator: function to aggregate per-bifurcation angles (e.g., mean/median).
     """
 
@@ -34,35 +36,16 @@ class BifurcationAngles(LayerFeature):
         self,
         delta: int = 20,
         grid_field: Optional[BaseGridFieldSpecification] = None,
-        aggregator=mean_median,
+        max_angle: int = 135,
+        min_bifurcations: int = 3,
+        aggregator=mean,
     ):
         """Configure sampling distance, optional grid field and aggregation function."""
         self.delta = delta
-        self.max_angle = 160
+        self.max_angle = max_angle
+        self.min_bifurcations = min_bifurcations
         super().__init__(grid_field_spec=grid_field)
         self.aggregator = aggregator
-
-    def __repr__(self) -> str:
-        def fmt(v):
-            from enum import Enum
-
-            import numpy as np
-
-            if v is None:
-                return "None"
-            if isinstance(v, Enum):
-                return f"{v.__class__.__name__}.{v.name}"
-            if callable(v):
-                return getattr(v, "__name__", v.__class__.__name__)
-            if isinstance(v, np.generic):
-                return repr(v.item())
-            return repr(v)
-
-        return (
-            f"BifurcationAngles(delta={fmt(self.delta)}, "
-            f"grid_field_spec={fmt(self.grid_field_spec)}, "
-            f"aggregator={fmt(self.aggregator)})"
-        )
 
     def _get_bifurcation_points(self, layer: VesselTreeLayer):
         field = self._get_grid_field(layer)
@@ -78,15 +61,35 @@ class BifurcationAngles(LayerFeature):
             if frac < 0.5:
                 return None
         bifurcations = self._get_bifurcation_points(layer)
-        return self.aggregator([bif.angle(self.delta) for bif in bifurcations])
+        angles: list[float] = []
+        for bif in bifurcations:
+            angle = bif.angle(self.delta)
+            if angle <= self.max_angle:
+                angles.append(angle)
+        if len(angles) < self.min_bifurcations:
+            return None
+        return self.aggregator(angles)
 
     def display_name(self, layer_name: str, key: str = None) -> str:
         from .base import get_aggregator_prefix, get_grid_field_suffix, get_layer_suffix
 
-        agg = get_aggregator_prefix(self.aggregator, key)
+        agg = get_aggregator_prefix(self.aggregator)
         field = get_grid_field_suffix(self.grid_field_spec)
         layer = get_layer_suffix(layer_name)
         return f"{agg}Bifurcation Angle{field}{layer}"
+
+    def feature_name_tokens(self) -> list[str]:
+        return ["bifangle"]
+
+    def parameter_name_tokens(self) -> list[str]:
+        tokens: list[str] = []
+        if self.delta != 20:
+            tokens.extend(["delta", str(self.delta)])
+        if self.max_angle != 135:
+            tokens.extend(["max_angle", str(self.max_angle)])
+        if self.min_bifurcations != 3:
+            tokens.extend(["min_bifurcations", str(self.min_bifurcations)])
+        return tokens
 
     def _plot(self, ax, layer: VesselTreeLayer, **kwargs):
         field = self._get_grid_field(layer)

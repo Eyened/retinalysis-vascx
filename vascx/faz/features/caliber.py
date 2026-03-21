@@ -4,7 +4,7 @@ from typing import TYPE_CHECKING
 
 import numpy as np
 from vascx.faz.features.base import FAZLayerFeature
-from vascx.shared.aggregators import mean_median_std
+from vascx.shared.aggregators import median
 from vascx.shared.vessels import Vessels
 
 if TYPE_CHECKING:
@@ -12,7 +12,7 @@ if TYPE_CHECKING:
 
 
 class Caliber(FAZLayerFeature):
-    def __init__(self, min_numpoints=10, aggregator=mean_median_std):
+    def __init__(self, min_numpoints=10, aggregator=median):
         self.min_numpoints = min_numpoints
         self.aggregator = aggregator
 

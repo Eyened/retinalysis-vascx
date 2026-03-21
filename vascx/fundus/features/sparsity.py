@@ -56,24 +56,6 @@ class Sparsity(VesselsLayerFeature):
         self.mode = mode
         self.maxima_smoothing_sigma = maxima_smoothing_sigma
 
-    def __repr__(self) -> str:
-        def fmt(v):
-            from enum import Enum
-
-            import numpy as np
-
-            if v is None:
-                return "None"
-            if isinstance(v, Enum):
-                return f"{v.__class__.__name__}.{v.name}"
-            if callable(v):
-                return getattr(v, "__name__", v.__class__.__name__)
-            if isinstance(v, np.generic):
-                return repr(v.item())
-            return repr(v)
-
-        return f"Sparsity(grid_field_spec={fmt(self.grid_field_spec)}, mode={fmt(self.mode)})"
-
     def _smooth_distance_transform(self, dt: np.ndarray) -> np.ndarray:
         return ndi.gaussian_filter(dt, sigma=self.maxima_smoothing_sigma)
 
@@ -104,17 +86,26 @@ class Sparsity(VesselsLayerFeature):
 
         labels, num_labels = ndi.label(background)
         maxima_mask = np.zeros_like(background, dtype=bool)
+        if num_labels == 0:
+            return maxima_mask
 
-        for label_id in range(1, num_labels + 1):
-            region_coords = np.argwhere(labels == label_id)
-            if region_coords.size == 0:
-                continue
-            region_vals = dt[region_coords[:, 0], region_coords[:, 1]]
-            if np.all(np.isnan(region_vals)):
+        dt_peak = np.where(np.isnan(dt), -np.inf, dt)
+        label_slices = ndi.find_objects(labels)
+
+        for label_id, label_slice in enumerate(label_slices, start=1):
+            if label_slice is None:
                 continue
 
-            peak_idx = int(np.nanargmax(region_vals))
-            y, x = region_coords[peak_idx]
+            component_mask = labels[label_slice] == label_id
+            component_dt = np.where(component_mask, dt_peak[label_slice], -np.inf)
+            flat_idx = int(np.argmax(component_dt))
+            peak_val = component_dt.flat[flat_idx]
+            if not np.isfinite(peak_val):
+                continue
+
+            y_local, x_local = np.unravel_index(flat_idx, component_dt.shape)
+            y = label_slice[0].start + y_local
+            x = label_slice[1].start + x_local
             maxima_mask[y, x] = True
 
         if self.grid_field_spec is not None:
@@ -124,17 +115,8 @@ class Sparsity(VesselsLayerFeature):
         return maxima_mask
 
     def get_fovea_mask(self, layer: FundusVesselsLayer) -> np.ndarray:
-        """Compute a circular binary mask centered at the fovea with radius relative to the distance between fovea and optic disc."""
-        retina = layer.retina
-        h, w = retina.resolution
-        fovea = retina.fovea_location
-        radius = retina.disc_fovea_distance / 6
-
-        yy = np.arange(h)[:, None]
-        xx = np.arange(w)[None, :]
-        mask = (xx - fovea.x) ** 2 + (yy - fovea.y) ** 2 <= radius**2
-
-        return mask.astype(bool)
+        """Return the cached fovea exclusion mask for this retina."""
+        return layer.retina.sparsity_fovea_mask
 
     def compute(self, layer: FundusVesselsLayer):
         if self.grid_field_spec is not None:
@@ -165,6 +147,22 @@ class Sparsity(VesselsLayerFeature):
         # Capitalize only first letter of Enum name
         mode = self.mode.name.title()
         return f"{mode} Sparsity{field}{layer}"
+
+    def name_prefix_tokens(self) -> list[str]:
+        return [self.mode.value]
+
+    def feature_name_tokens(self) -> list[str]:
+        return ["sparsity"]
+
+    def parameter_name_tokens(self) -> list[str]:
+        from .base import format_name_value
+
+        if self.maxima_smoothing_sigma == 1.0:
+            return []
+        return [
+            "maxima_smoothing_sigma",
+            format_name_value(self.maxima_smoothing_sigma),
+        ]
 
     def _plot(self, ax, layer: FundusVesselsLayer, **kwargs):
         layer.plot(ax=ax, image=True)

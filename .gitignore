@@ -18,3 +18,4 @@ __pycache__
 !/samples/figures
 !/samples/fundus/original
 /paper/
+/dist/

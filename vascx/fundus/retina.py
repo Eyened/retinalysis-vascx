@@ -250,6 +250,7 @@ class Retina(Fundus):
         # assert av_path is not None or vessels_path is not None, (
         #     "Either av_path or vessels_path must be provided"
         # )
+        roi_mask = kwargs.pop("roi_mask", kwargs.pop("mask", None))
 
         layers = {}
         if av_path is not None:
@@ -278,6 +279,7 @@ class Retina(Fundus):
             fovea_location=fovea_location,
             scaling_factor=scaling_factor,
             bounds=bounds,
+            roi_mask=roi_mask,
             id=id,
         )
 

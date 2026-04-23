@@ -66,7 +66,7 @@ class FundusVesselsLayer(JointVesselsLayer):
         dt_skeleton[self.retina.disc.mask.astype(bool)] = np.nan
         dt_skeleton[self.binary] = np.nan
 
-        return dt_skeleton / self.retina.disc_fovea_distance
+        return dt_skeleton
 
     @cached_property
     def mean_distance_to_vessel(self) -> float:
@@ -81,6 +81,7 @@ class FundusVesselsLayer(JointVesselsLayer):
         self,
         ax=None,
         image=False,
+        bounds=False,
         mask=False,
         color=None,
         skeleton=True,
@@ -91,7 +92,7 @@ class FundusVesselsLayer(JointVesselsLayer):
 
         if image:
             if self.retina.image is not None:
-                ax.imshow(self.retina.image)
+                self.retina.plot(ax=ax, image=True, bounds=bounds, av=False)
 
         if mask:
             self.plot_mask(ax, color=color)

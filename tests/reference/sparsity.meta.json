@@ -9,8 +9,8 @@
     "HRF_04_g",
     "HRF_07_dr"
   ],
-  "feature_count": 18,
-  "accepted_at": "2026-03-21T15:20:24.274290+00:00",
+  "feature_count": 20,
+  "accepted_at": "2026-04-23T09:32:18.211382+00:00",
   "accept_reason": "accepted via --accept-vascx-reference",
   "python_version": "3.12.12"
 }

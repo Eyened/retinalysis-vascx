@@ -93,6 +93,7 @@ class Vessels:
         ax,
         color: Tuple[int, int, int] = (0, 255, 0),
         thickness: int = 1,
+        spline_error_fraction: float = 0.05,
     ):
         """Iterates the segments and for each evaluates the spline and plots it using cv2.polylines."""
         import cv2
@@ -106,15 +107,16 @@ class Vessels:
         color = tuple(int(c) for c in color)
 
         for segment in self.segments:
-            if segment.spline is None:
+            spline = segment.get_spline(error_fraction=spline_error_fraction)
+            if spline is None:
                 continue
 
             n_points = max(2, int(segment.length))
             t = np.linspace(0, 1, n_points)
 
             # cv2 uses (x, y) coordinates
-            x = segment.spline.x_spline(t)
-            y = segment.spline.y_spline(t)
+            x = spline.x_spline(t)
+            y = spline.y_spline(t)
 
             pts = np.stack([x, y], axis=1).astype(np.int32)
             pts = pts.reshape((-1, 1, 2))
@@ -141,7 +143,7 @@ class Vessels:
                 segment.mean_xy[1],
                 segment.mean_xy[0],
                 seg_text,
-                fontsize=3.6,
+                fontsize=5.4,
                 color="white",
             )
         return ax
@@ -185,8 +187,8 @@ class Vessels:
                 [segment.skeleton[0][1], segment.skeleton[-1][1]],
                 [segment.skeleton[0][0], segment.skeleton[-1][0]],
                 marker=None,
-                linewidth=0.2,
-                color="white",
+                linewidth=0.3,
+                color="green",
             )
         return ax
 
@@ -199,9 +201,7 @@ class Vessels:
             ax.plot(
                 xs,
                 ys,
-                linestyle="None",
-                marker=".",
-                markersize=0.4,
+                linewidth=0.3,
                 color="white",
             )
         return ax
@@ -224,6 +224,8 @@ class Vessels:
         min_numpoints=4,
         min_numpoints_caliber=25,
         mask: np.ndarray = None,
+        spline_error_fraction: float = 0.05,
+        bounds: bool = False,
     ):
         ax = self.layer._get_base_axes(ax)
         # if ax is None:
@@ -232,7 +234,7 @@ class Vessels:
         #     ax.imshow(np.zeros_like(self.layer.binary), cmap="binary")
 
         if image and self.layer.retina is not None:
-            self.layer.retina.plot_image(ax=ax)
+            self.layer.retina.plot(ax=ax, image=True, bounds=bounds, av=False)
 
         segments_to_plot = self.filter_segments_by_numpoints(min_numpoints)
 
@@ -276,17 +278,23 @@ class Vessels:
 
         if splines:
             print("plotting splines")
-            self.plot_splines(ax=ax, color=(255, 255, 255))
+            self.plot_splines(
+                ax=ax,
+                color=(255, 255, 255),
+                spline_error_fraction=spline_error_fraction,
+            )
 
         if spline_points:
             for segment in self.filter_segments_by_numpoints(min_numpoints_caliber):
-                for diam in segment.diameter_measurements:
+                for diam in segment.get_diameter_measurements(
+                    error_fraction=spline_error_fraction
+                ):
                     edge1, edge2 = diam.edge_0, diam.edge_1
                     ax.plot(
                         [edge1[1], edge2[1]],
                         [edge1[0], edge2[0]],
-                        linewidth=0.2,
-                        color="black",
+                        linewidth=0.3,
+                        color="white",
                     )
 
         if gaps:

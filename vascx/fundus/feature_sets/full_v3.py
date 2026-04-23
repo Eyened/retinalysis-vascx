@@ -16,6 +16,7 @@ from vascx.fundus.features.caliber import Caliber
 from vascx.fundus.features.cre import CRE, CREMode
 from vascx.fundus.features.disc_features import DiscFoveaDistance
 from vascx.fundus.features.sparsity import Sparsity, SparsityMode
+from vascx.fundus.features.temporal_angles import TemporalAngle
 from vascx.fundus.features.tortuosity import (
     LengthMeasure,
     Tortuosity,
@@ -35,6 +36,8 @@ ETDRS_FULL = GridFieldSpecification(ETDRSGridSpecification(), ETDRSRing.FullGrid
 fs_full_v3 = FeatureSet(
     "full_v3",
     [
+        TemporalAngle(),
+
         # bifurcation angles (full, superior, inferior)
         BifurcationAngles(aggregator=mean),
         BifurcationAngles(grid_field=HMF_SUP, aggregator=mean),
@@ -49,6 +52,7 @@ fs_full_v3 = FeatureSet(
         Caliber(aggregator=LengthWeightedAggregator()),
         Caliber(grid_field=HMF_SUP, aggregator=LengthWeightedAggregator()),
         Caliber(grid_field=HMF_INF, aggregator=LengthWeightedAggregator()),
+        Caliber(grid_field=DISC_FULL, aggregator=LengthWeightedAggregator()),
 
         # CRE: temporal variants in sup/inf/full; nasal and full variants on full grid
         CRE(CREMode.Temporal),
@@ -71,6 +75,8 @@ fs_full_v3 = FeatureSet(
             length_measure=LengthMeasure.Splines,
             aggregator=median,
         ),
+        # vessels tortuosity
+        Tortuosity(mode=TortuosityMode.Vessels, aggregator=LengthWeightedAggregator()),
         # whole image (length-weighted normalized)
         Tortuosity(
             mode=TortuosityMode.Segments,
@@ -80,24 +86,16 @@ fs_full_v3 = FeatureSet(
         ),
         Tortuosity(
             mode=TortuosityMode.Segments,
-            measure=TortuosityMeasure.Curvature,
+            max_segment_len=0.2,
+            measure=TortuosityMeasure.Distance,
             length_measure=LengthMeasure.Splines,
             aggregator=LengthWeightedAggregator(),
         ),
-        # ETDRS total (non-normalized median)
-        Tortuosity(
-            mode=TortuosityMode.Segments,
-            measure=TortuosityMeasure.Distance,
-            length_measure=LengthMeasure.Splines,
-            grid_field=ETDRS_FULL,
-            aggregator=median,
-        ),
         Tortuosity(
             mode=TortuosityMode.Segments,
             measure=TortuosityMeasure.Curvature,
             length_measure=LengthMeasure.Splines,
-            grid_field=ETDRS_FULL,
-            aggregator=median,
+            aggregator=LengthWeightedAggregator(),
         ),
         # ETDRS total (length-weighted normalized)
         Tortuosity(
@@ -109,9 +107,41 @@ fs_full_v3 = FeatureSet(
         ),
         Tortuosity(
             mode=TortuosityMode.Segments,
+            max_segment_len=0.2,
+            measure=TortuosityMeasure.Distance,
+            length_measure=LengthMeasure.Splines,
+            grid_field=ETDRS_FULL,
+            aggregator=LengthWeightedAggregator(),
+        ),
+        Tortuosity(
+            mode=TortuosityMode.Segments,
             measure=TortuosityMeasure.Curvature,
             length_measure=LengthMeasure.Splines,
             grid_field=ETDRS_FULL,
+            aggregator=LengthWeightedAggregator(),
+        ),
+
+        # Disc region (length-weighted normalized)
+        Tortuosity(
+            mode=TortuosityMode.Segments,
+            measure=TortuosityMeasure.Distance,
+            length_measure=LengthMeasure.Splines,
+            grid_field=DISC_FULL,
+            aggregator=LengthWeightedAggregator(),
+        ),
+        Tortuosity(
+            mode=TortuosityMode.Segments,
+            max_segment_len=0.2,
+            measure=TortuosityMeasure.Distance,
+            length_measure=LengthMeasure.Splines,
+            grid_field=DISC_FULL,
+            aggregator=LengthWeightedAggregator(),
+        ),
+        Tortuosity(
+            mode=TortuosityMode.Segments,
+            measure=TortuosityMeasure.Curvature,
+            length_measure=LengthMeasure.Splines,
+            grid_field=DISC_FULL,
             aggregator=LengthWeightedAggregator(),
         ),
 

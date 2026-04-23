@@ -1,4 +1,3 @@
-import inspect
 from pathlib import Path
 
 import click
@@ -9,8 +8,6 @@ import numpy as np
 import random
 
 from rtnls_fundusprep.cli import _run_preprocessing
-from vascx.shared.features import FeatureSet
-
 from .inference import (
     run_fovea_detection,
     run_quality_estimation,
@@ -19,7 +16,7 @@ from .inference import (
     batch_create_overlays
 )
 from .utils.analysis import extract_in_parallel
-from .utils.feature_docs import write_feature_descriptions
+from .utils.feature_docs import write_feature_descriptions, write_variable_display_mapping
 
 
 @click.group(name="vascx")
@@ -343,3 +340,12 @@ def write_readme(output_file, feature_set):
     """Write only the feature descriptions to OUTPUT_FILE."""
     write_feature_descriptions(feature_set, Path(output_file))
     click.echo(f"Feature descriptions written to {output_file}")
+
+
+@cli.command("write-mapping")
+@click.argument("output_file", type=click.Path())
+@click.option("--feature_set", required=True, help="Name of the feature set")
+def write_mapping(output_file, feature_set):
+    """Write JSON mapping canonical variable names to display names for FEATURE_SET."""
+    write_variable_display_mapping(feature_set, Path(output_file))
+    click.echo(f"Variable display mapping written to {output_file}")

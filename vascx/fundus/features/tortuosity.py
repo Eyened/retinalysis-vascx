@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import warnings
 from enum import Enum
 from typing import TYPE_CHECKING, Callable, Optional
 
@@ -7,7 +8,7 @@ import numpy as np
 from rtnls_enface.grids.specifications import BaseGridFieldSpecification
 
 from vascx.shared.aggregators import LengthWeightedAggregator, median
-from vascx.shared.segment import Segment, SplineInterpolation
+from vascx.shared.segment import Segment
 from vascx.shared.vessels import Vessels
 
 from .base import LayerFeature, grid_field_fraction_in_bounds
@@ -47,6 +48,9 @@ class Tortuosity(LayerFeature):
     - measure: `TortuosityMeasure` (distance, curvature, inflections).
     - length_measure: length source (splines or skeleton) for distance-based measure.
     - min_numpoints: minimum skeleton points required for inclusion.
+    - max_segment_len: optional maximum segment-piece length as a fraction of OD-fovea
+      distance; only applied for segment-mode distance tortuosity.
+    - max_tortuosity: optional upper bound for distance-based tortuosity; values above it are discarded.
     - grid_field: optional `GridFieldEnum` restricting segments to a region.
     - aggregator: callable aggregator returning a single scalar over per-entity values.
     """
@@ -62,48 +66,118 @@ class Tortuosity(LayerFeature):
         measure: TortuosityMeasure = TortuosityMeasure.Distance,
         length_measure: LengthMeasure = LengthMeasure.Splines,
         min_numpoints: int = 25,
+        max_segment_len: Optional[float] = None,
+        max_tortuosity: Optional[float] = None,
         grid_field: Optional[BaseGridFieldSpecification] = None,
         aggregator: Callable = median,
-        **kwargs,
+        spline_error_fraction: Optional[float] = None,
     ):
+        """Configure tortuosity computation and optional segment filtering."""
         self.mode = mode
         self.measure = measure
         self.length_measure = length_measure
         self.min_numpoints = min_numpoints
+        self.max_segment_len = (
+            None if max_segment_len is None else float(max_segment_len)
+        )
+        self.max_tortuosity = self._default_max_tortuosity(max_tortuosity)
+        self.spline_error_fraction = (
+            None if spline_error_fraction is None else float(spline_error_fraction)
+        )
         super().__init__(grid_field_spec=grid_field)
         self.aggregator = aggregator
 
-    def _compute_for_segment(self, segment: Segment, scale: float):
+    def _default_max_tortuosity(
+        self, max_tortuosity: Optional[float]
+    ) -> Optional[float]:
+        if max_tortuosity is not None:
+            return max_tortuosity
+        if self.measure == TortuosityMeasure.Distance:
+            return 1.5
+        return None
+
+    def _get_curvature_scale(self, layer: VesselTreeLayer):
+        if layer.retina.fovea_location is None:
+            warnings.warn("Fovea location not known, using default scale.")
+            return 1.0
+        return layer.retina.disc_fovea_distance
+
+    def _resolved_spline_error_fraction(self) -> float:
+        if self.spline_error_fraction is not None:
+            return self.spline_error_fraction
+        if self.measure in (
+            TortuosityMeasure.Curvature,
+            TortuosityMeasure.Inflections,
+        ):
+            return 0.25
+        return 0.05
+
+    def _compute_for_segment(self, segment: Segment):
+        spline_error_fraction = self._resolved_spline_error_fraction()
         if self.measure == TortuosityMeasure.Distance:
             if self.length_measure == LengthMeasure.Splines:
-                return (
-                    segment.spline.length() / segment.chord_length
-                    if segment.spline is not None
+                spline = segment.get_spline(error_fraction=spline_error_fraction)
+                tortuosity = (
+                    spline.length() / segment.chord_length
+                    if spline is not None
                     else np.nan
                 )
             elif self.length_measure == LengthMeasure.Skeleton:
-                return np.mean(segment.length / segment.chord_length)
+                tortuosity = np.mean(segment.length / segment.chord_length)
             else:
                 raise NotImplementedError()
+            if self.max_tortuosity is not None and tortuosity > self.max_tortuosity:
+                return np.nan
+            return tortuosity
         elif self.measure == TortuosityMeasure.Curvature:
-            spline = SplineInterpolation(segment, 0.25)
-            return np.mean(spline.curvatures()) * scale
+            spline = segment.get_spline(error_fraction=spline_error_fraction)
+            return np.mean(spline.curvatures()) * self._get_curvature_scale(
+                segment.layer
+            )
         elif self.measure == TortuosityMeasure.Inflections:
-            spline = SplineInterpolation(segment, 0.25)
+            spline = segment.get_spline(error_fraction=spline_error_fraction)
             return len(spline.inflection_points(every=10))
         else:
             raise NotImplementedError()
 
     def _compute_weight_for_segment(self, segment: Segment) -> float:
-        return segment.spline.length() if segment.spline is not None else np.nan
+        spline = segment.get_spline(
+            error_fraction=self._resolved_spline_error_fraction()
+        )
+        return spline.length() if spline is not None else np.nan
+
+    def _resolved_max_segment_len_pixels(
+        self, layer: VesselTreeLayer
+    ) -> Optional[float]:
+        if self.max_segment_len is None:
+            return None
+
+        disc_fovea_distance = getattr(layer.retina, "disc_fovea_distance", None)
+        if disc_fovea_distance is None or not np.isfinite(disc_fovea_distance):
+            warnings.warn(
+                "Disc-fovea distance not known, skipping tortuosity segment splitting."
+            )
+            return None
+        max_segment_len_pixels = self.max_segment_len * float(disc_fovea_distance)
+        if max_segment_len_pixels <= 0:
+            raise ValueError("max_segment_len must resolve to a positive pixel length")
+        return max_segment_len_pixels
+
+    def _should_split_segments(self) -> bool:
+        return (
+            self.mode == TortuosityMode.Segments
+            and self.measure == TortuosityMeasure.Distance
+            and self.max_segment_len is not None
+        )
 
     def get_segments(self, layer: VesselTreeLayer):
         if self.mode == TortuosityMode.Segments:
-            field = self._get_grid_field(layer)
-            segments = layer.filter_segments(field=field, field_threshold=0.5)
-
+            segments = layer.get_region_segments(self.grid_field_spec)
         elif self.mode == TortuosityMode.Vessels:
-            segments = layer.resolved_segments
+            segments = layer.get_region_resolved_segments(
+                field_spec=self.grid_field_spec,
+                spline_error_fraction=self._resolved_spline_error_fraction(),
+            )
         else:
             raise ValueError(f"Unknown mode {self.mode}")
 
@@ -112,6 +186,16 @@ class Tortuosity(LayerFeature):
             for segment in segments
             if len(segment.skeleton) >= self.min_numpoints
         ]
+
+        if self._should_split_segments():
+            max_segment_len_pixels = self._resolved_max_segment_len_pixels(layer)
+            if max_segment_len_pixels is not None:
+                split_segments: list[Segment] = []
+                for segment in segments:
+                    split_segments.extend(
+                        segment.split_equal_length(max_segment_len_pixels)
+                    )
+                segments = split_segments
         return segments
 
     def raw(self, layer: VesselTreeLayer):
@@ -119,10 +203,7 @@ class Tortuosity(LayerFeature):
         if isinstance(self.aggregator, LengthWeightedAggregator) and len(segments) < 5:
             return None
 
-        vals = [
-            self._compute_for_segment(vessel, scale=layer.retina.disc_fovea_distance)
-            for vessel in segments
-        ]
+        vals = [self._compute_for_segment(vessel) for vessel in segments]
 
         if isinstance(self.aggregator, LengthWeightedAggregator):
             weights = [self._compute_weight_for_segment(seg) for seg in segments]
@@ -163,6 +244,8 @@ class Tortuosity(LayerFeature):
         return ["tort"]
 
     def parameter_name_tokens(self) -> list[str]:
+        from .base import format_name_value
+
         tokens = [self.measure.value]
         if self.mode != TortuosityMode.Segments:
             tokens.append(self.mode.value)
@@ -170,6 +253,25 @@ class Tortuosity(LayerFeature):
             tokens.extend(["length", self.length_measure.value])
         if self.min_numpoints != 25:
             tokens.extend(["min_numpoints", str(self.min_numpoints)])
+        if self._should_split_segments():
+            tokens.extend(["max_segment_len", format_name_value(self.max_segment_len)])
+        default_max_tortuosity = (
+            1.5 if self.measure == TortuosityMeasure.Distance else None
+        )
+        if self.max_tortuosity != default_max_tortuosity:
+            tokens.extend(["max_tortuosity", str(self.max_tortuosity)])
+        if self._resolved_spline_error_fraction() != (
+            0.25
+            if self.measure
+            in (TortuosityMeasure.Curvature, TortuosityMeasure.Inflections)
+            else 0.05
+        ):
+            tokens.extend(
+                [
+                    "spline_error_fraction",
+                    format_name_value(self._resolved_spline_error_fraction()),
+                ]
+            )
         return tokens
 
     def _plot(self, ax, layer: VesselTreeLayer, **kwargs):
@@ -179,14 +281,16 @@ class Tortuosity(LayerFeature):
         ax = vessels.plot(
             ax=ax,
             show_index=False,
-            text=lambda x: (
-                f"{100 * (self._compute_for_segment(x, scale=layer.retina.disc_fovea_distance) - 1):.2f}"
-            ),
+            # text=lambda x: f"{100 * (self._compute_for_segment(x) - 1):.2f}",
             cmap="tab20",
+            bounds=True,
             min_numpoints=0,
             min_numpoints_caliber=self.min_numpoints,
             endpoints=True,
+            # segments=True,
+            arcs=True,
             chords=True,
+            spline_error_fraction=self._resolved_spline_error_fraction(),
             **kwargs,
         )
 

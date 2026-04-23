@@ -71,6 +71,9 @@ class CRE(LayerFeature):
     - max_vessels: keep up to this many largest-caliber intersecting segments per circle.
     - hemifield: optional `HemifieldField` to restrict to superior or inferior hemifield.
     - min_circles: minimum number of valid circles required; else returns None.
+    - inner_circle: inner CRE circle radius in optic-disc-diameter multiples.
+    - outer_circle: outer CRE circle radius in optic-disc-diameter multiples.
+    - num_circles: total number of circles sampled between inner and outer radii, inclusive.
 
     Notes: each circle must be fully within the retinal mask; if any part is out-of-bounds, that circle
     is discarded from the aggregation for robustness.
@@ -82,9 +85,21 @@ class CRE(LayerFeature):
         max_vessels: int = 6,
         hemifield: Optional[HemifieldField] = None,
         min_circles: int = 6,
+        inner_circle: float = 1.0,
+        outer_circle: float = 1.5,
+        num_circles: int = 6,
+        spline_error_fraction: float = 0.05,
     ):
         self.CREMode = CREMode
         self.max_vessels = max_vessels
+        self.inner_circle = float(inner_circle)
+        self.outer_circle = float(outer_circle)
+        self.num_circles = int(num_circles)
+        self.spline_error_fraction = float(spline_error_fraction)
+        if self.num_circles < 1:
+            raise ValueError("num_circles must be at least 1")
+        if self.outer_circle < self.inner_circle:
+            raise ValueError("outer_circle must be greater than or equal to inner_circle")
         self.min_intersections = 4
         if self.CREMode in [CREMode.Nasal, CREMode.Temporal]:
             self.min_intersections = 2
@@ -97,15 +112,20 @@ class CRE(LayerFeature):
             self.min_intersections //= 2
         self.min_circles: int = int(min_circles)
 
-    def get_circle(self, layer: VesselTreeLayer, od_multiple=0.5):
+    def get_circle(self, layer: VesselTreeLayer, od_multiple: float = 1.0):
         disc = layer.retina.disc
         assert disc is not None
 
         disc_center = disc.center_of_mass
-        radius = 2 * disc.circle.r * (0.5 + od_multiple)
+        radius = 2 * disc.circle.r * od_multiple
 
         circle = Circle(center=disc_center, r=radius)
         return circle
+
+    def get_circle_multiples(self) -> list[float]:
+        return np.linspace(
+            self.inner_circle, self.outer_circle, num=self.num_circles
+        ).tolist()
 
     def _binary_mask_cache_key(self, circle: Circle) -> tuple:
         """Build a stable cache key for a CRE binary mask."""
@@ -113,7 +133,9 @@ class CRE(LayerFeature):
         hemifield = (
             None
             if self.hemifield_spec is None
-            else getattr(self.hemifield_spec.field, "name", str(self.hemifield_spec.field))
+            else getattr(
+                self.hemifield_spec.field, "name", str(self.hemifield_spec.field)
+            )
         )
         return (
             round(float(cy), 6),
@@ -202,12 +224,14 @@ class CRE(LayerFeature):
         filtered_segments = set(self.get_filtered_segments(layer, circle))
         return [
             (segment, t)
-            for segment, t in layer.get_circle_intersections(circle)
+            for segment, t in layer.get_circle_intersections(
+                circle, spline_error_fraction=self.spline_error_fraction
+            )
             if segment in filtered_segments
         ]
 
     def plot_filtered_segments(self, layer: VesselTreeLayer, **kwargs):
-        circle = self.get_circle(layer, 2 / 3)
+        circle = self.get_circle(layer, 7 / 6)
         segments = self.get_filtered_segments(layer, circle)
         fig, ax = layer.retina.plot_fundus()
         Vessels(layer, segments).plot(
@@ -252,7 +276,7 @@ class CRE(LayerFeature):
         h, w = mask.shape
         filtered_intersections: List[Tuple[Segment, float]] = []
         for seg, t in intersections:
-            y, x = seg.spline.get_point(t)
+            y, x = seg.get_spline(error_fraction=self.spline_error_fraction).get_point(t)
             yi, xi = int(round(y)), int(round(x))
             if 0 <= yi < h and 0 <= xi < w and mask[yi, xi]:
                 filtered_intersections.append((seg, t))
@@ -266,16 +290,19 @@ class CRE(LayerFeature):
             return None, []
 
         # Keep up to the largest N segments by median diameter
-        segments.sort(key=lambda s: s.median_diameter, reverse=True)
+        segments.sort(
+            key=lambda s: s.get_median_diameter(self.spline_error_fraction),
+            reverse=True,
+        )
         segments = segments[: self.max_vessels]
 
-        calibers = [s.median_diameter for s in segments]
+        calibers = [s.get_median_diameter(self.spline_error_fraction) for s in segments]
         return self.recursive_cre(calibers, cte), intersections
 
     def compute(self, layer: VesselTreeLayer):
         cres = []
-        for i in range(0, 6):
-            circle = self.get_circle(layer, 0.5 + 0.1 * i)
+        for od_multiple in self.get_circle_multiples():
+            circle = self.get_circle(layer, od_multiple)
 
             cre, _ = self.compute_cre_for_circle(layer, circle)
             if cre is not None:
@@ -301,11 +328,26 @@ class CRE(LayerFeature):
         return ["cre"]
 
     def parameter_name_tokens(self) -> list[str]:
+        from .base import format_name_value
+
         tokens: list[str] = []
         if self.max_vessels != 6:
             tokens.extend(["max_vessels", str(self.max_vessels)])
         if self.min_circles != 6:
             tokens.extend(["min_circles", str(self.min_circles)])
+        if self.inner_circle != 1.0:
+            tokens.extend(["inner_circle", str(self.inner_circle)])
+        if self.outer_circle != 1.5:
+            tokens.extend(["outer_circle", str(self.outer_circle)])
+        if self.num_circles != 6:
+            tokens.extend(["num_circles", str(self.num_circles)])
+        if self.spline_error_fraction != 0.05:
+            tokens.extend(
+                [
+                    "spline_error_fraction",
+                    format_name_value(self.spline_error_fraction),
+                ]
+            )
         return tokens
 
     def name_tokens(self, layer_name: str, **kwargs) -> list[str]:
@@ -329,26 +371,31 @@ class CRE(LayerFeature):
             retina = layer.retina
             field = retina.get_grid_field(self.hemifield_spec)
             field.plot(ax)
-        for i in range(0, 6):
-            circle = self.get_circle(layer, 0.5 + 0.1 * i)
+        for od_multiple in self.get_circle_multiples():
+            circle = self.get_circle(layer, od_multiple)
 
             cre, intersections = self.compute_cre_for_circle(layer, circle)
             if cre is None:
                 continue
             segments += [p[0] for p in intersections]
-            points += [p[0].spline.get_point(p[1]) for p in intersections]
+            points += [
+                p[0].get_spline(error_fraction=self.spline_error_fraction).get_point(
+                    p[1]
+                )
+                for p in intersections
+            ]
             circles.append(circle)
             cres.append(cre)
 
         segments = list(set(segments))
-        layer.retina.plot(ax=ax, image=True, bounds=True)
+        layer.retina.plot(ax=ax, image=True, bounds=True, av=False)
         Vessels(layer, segments).plot(
             **{
                 "show_index": True,
                 "cmap": "tab20",
                 "ax": ax,
-                "text": lambda s: f"{s.orientation():.2f}",
                 "segments": True,
+                "image": False,
                 **kwargs,
             },
         )
@@ -376,7 +423,7 @@ class CRE(LayerFeature):
 
         # Overlay largest circle's mask as a transparent layer
         try:
-            largest_circle = self.get_circle(layer, 0.5 + 0.1 * 5)
+            largest_circle = self.get_circle(layer, self.outer_circle)
             mask = self.__get_binary_mask(
                 layer, largest_circle.resize(layer.retina.disc.circle.r / 5.0)
             )

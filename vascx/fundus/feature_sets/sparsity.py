@@ -43,7 +43,7 @@ fs_sparsity = FeatureSet(
         VarianceOfLaplacian(grid_field=ELLIPSE_FULL),
         VarianceOfLaplacian(grid_field=DISC_FULL),
         VarianceOfLaplacian(grid_field=ETDRS_FULL),
-        # VascularDensity() already uses the ellipse grid by default, so keep only one ellipse entry.
+        VascularDensity(),
         VascularDensity(grid_field=ELLIPSE_FULL),
         VascularDensity(grid_field=DISC_FULL),
         VascularDensity(grid_field=ETDRS_FULL),

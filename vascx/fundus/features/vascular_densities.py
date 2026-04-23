@@ -4,13 +4,7 @@ from typing import TYPE_CHECKING, Optional
 
 import cv2
 import numpy as np
-from rtnls_enface.base import Circle, Line
-from rtnls_enface.grids.ellipse import EllipseField
-from rtnls_enface.grids.specifications import (
-    BaseGridFieldSpecification,
-    EllipseGridSpecification,
-    GridFieldSpecification,
-)
+from rtnls_enface.grids.specifications import BaseGridFieldSpecification
 
 from .base import LayerFeature, grid_field_masks_and_fraction
 
@@ -18,55 +12,27 @@ if TYPE_CHECKING:
     from vascx.fundus.layer import VesselTreeLayer
 
 
-def _default_ellipse_field_spec() -> GridFieldSpecification:
-    """Return the default ellipse grid field specification."""
-    return GridFieldSpecification(
-        grid_spec=EllipseGridSpecification(),
-        field=EllipseField.FullGrid,
-    )
-
-
 class VascularDensity(LayerFeature):
-    """Fraction of vessel pixels within an OD–fovea-oriented ellipse (or ETDRS GridField) over its area.
+    """Fraction of vessel pixels over a region: full retina mask, or a grid field mask if specified.
 
-    Representation: Uses VesselTreeLayer.binary vessel mask for pixel counting within specified regions.
+    Representation: Uses VesselTreeLayer.binary vessel mask for pixel counting within the region.
 
-    Computation: Calculates the ratio of vessel pixels to total pixels within an elliptical region centered
-    between the optic disc and fovea, or within a specified ETDRS GridField. The ellipse extends from the
-    optic disc with 1.5x aspect ratio along the OD-fovea axis.
+    Computation: Ratio of vessel pixels to valid (masked) pixels. With no `grid_field`, the region is the
+    whole fundus mask (`retina.mask`). With a grid field, counting is restricted to that field’s mask.
 
     Args (constructor):
-    - grid_field: optional `GridFieldEnum` selecting a predefined region; if None, uses an OD–fovea
-      oriented ellipse (`EllipseGrid`).
+    - grid_field: optional grid field specification; if None, density is over the full retina mask.
     """
 
     def __init__(self, grid_field: Optional[BaseGridFieldSpecification] = None):
-        """Configure optional ETDRS/other grid region; default uses an OD–fovea ellipse."""
-        spec = grid_field if grid_field is not None else _default_ellipse_field_spec()
-        super().__init__(grid_field_spec=spec)
-
-    def get_circle(self, layer: VesselTreeLayer):
-        disc = layer.retina.disc
-        assert disc is not None
-
-        od_to_fovea = Line(disc.center_of_mass, layer.retina.fovea_location)
-        center = od_to_fovea.point_at(0.5)
-
-        radius = od_to_fovea.length / 2 + disc.circle.r
-
-        circle = Circle(center=center, r=radius)
-        return circle
-
-    def get_ellipse_mask(self, layer: VesselTreeLayer):
-        grid = layer.retina.get_grid(EllipseGridSpecification())
-        return grid.grid.astype(np.uint8) * 255
+        """Configure optional grid region; default is full retina (no grid field)."""
+        super().__init__(grid_field_spec=grid_field)
 
     def get_mask(self, layer: VesselTreeLayer):
         if self.grid_field_spec is None:
-            return self.get_ellipse_mask(layer)
-        else:
-            field = self._get_grid_field(layer)
-            return field.mask.astype(np.uint8) * 255
+            return layer.retina.mask.astype(np.uint8) * 255
+        field = self._get_grid_field(layer)
+        return field.mask.astype(np.uint8) * 255
 
     def compute_for_mask(self, layer: VesselTreeLayer, mask: np.ndarray):
         # Use the mask to select pixels within the region in the image
@@ -103,6 +69,7 @@ class VascularDensity(LayerFeature):
         ax = layer.plot(
             ax=ax,
             image=True,
+            bounds=True,
             mask=True,
             grid_field=field,
         )

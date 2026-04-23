@@ -34,5 +34,5 @@ class DiscFoveaDistance(RetinaFeature):
         return ["disc", "fovea", "distance"]
 
     def _plot(self, ax, retina: Retina, **kwargs):
-        retina.plot(ax=ax, image=True, disc=True, fovea=True)
+        retina.plot(ax=ax, image=True, disc=True, fovea=True, bounds=True, av=False)
         return ax

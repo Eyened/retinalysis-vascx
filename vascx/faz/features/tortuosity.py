@@ -6,7 +6,7 @@ from typing import TYPE_CHECKING
 
 import numpy as np
 from vascx.shared.aggregators import median
-from vascx.shared.segment import Segment, SplineInterpolation
+from vascx.shared.segment import Segment
 from vascx.shared.vessels import Vessels
 
 from .base import FAZLayerFeature
@@ -33,26 +33,44 @@ class Tortuosity(FAZLayerFeature):
         length_measure: LengthMeasure = LengthMeasure.Splines,
         min_numpoints: int = 10,
         aggregator=median,
+        spline_error_fraction: float | None = None,
         **kwargs,
     ):
         self.measure = measure
         self.length_measure = length_measure
         self.min_numpoints = min_numpoints
         self.aggregator = aggregator
+        self.spline_error_fraction = (
+            None
+            if spline_error_fraction is None
+            else float(spline_error_fraction)
+        )
+
+    def _resolved_spline_error_fraction(self) -> float:
+        if self.spline_error_fraction is not None:
+            return self.spline_error_fraction
+        if self.measure in (
+            TortuosityMeasure.Curvature,
+            TortuosityMeasure.Inflections,
+        ):
+            return 0.25
+        return 0.05
 
     def _compute_for_segment(self, segment: Segment):
+        spline_error_fraction = self._resolved_spline_error_fraction()
         if self.measure == TortuosityMeasure.Distance:
             if self.length_measure == LengthMeasure.Splines:
-                return segment.spline.length() / segment.chord_length
+                spline = segment.get_spline(error_fraction=spline_error_fraction)
+                return spline.length() / segment.chord_length
             elif self.length_measure == LengthMeasure.Skeleton:
                 return np.mean(segment.length / segment.chord_length)
             else:
                 raise NotImplementedError()
         elif self.measure == TortuosityMeasure.Curvature:
-            spline = SplineInterpolation(segment, 0.25)
+            spline = segment.get_spline(error_fraction=spline_error_fraction)
             return np.mean(spline.curvatures())
         elif self.measure == TortuosityMeasure.Inflections:
-            spline = SplineInterpolation(segment, 0.25)
+            spline = segment.get_spline(error_fraction=spline_error_fraction)
             return len(spline.inflection_points(every=10))
         else:
             raise NotImplementedError()

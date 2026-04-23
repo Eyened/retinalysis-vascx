@@ -56,6 +56,7 @@ class BifurcationCount(LayerFeature):
         ax = layer.plot(
             ax=ax,
             image=True,
+            bounds=True,
             grid_field=field,
         )
 

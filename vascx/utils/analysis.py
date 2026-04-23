@@ -22,16 +22,18 @@ def extract_one(
     feature_set = FeatureSet.get_by_name(feature_set_name)
     if feature_set is None:
         raise ValueError(f"Feature set '{feature_set_name}' not found.")
+    ex = dict(ex)
     # try:
     with warnings.catch_warnings(record=True) as caught_warnings:
         warnings.simplefilter("always")
-        if "bounds" in ex:
+        if "bounds" in ex and ex["bounds"] is not None:
             bounds = ex["bounds"]
             if isinstance(bounds, dict):
                 bounds = Bounds(**bounds)
             assert isinstance(bounds, Bounds)
             M = bounds.get_cropping_transform(1024)
-            ex["bounds"] = bounds.warp(M)
+            ex["roi_mask"] = bounds.warp(M).make_binary_mask()
+            ex["bounds"] = None
         retina = retina_cls.from_file(**ex)
         features = retina.calc_features(feature_set, plots_folder)
 

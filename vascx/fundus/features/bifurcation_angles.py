@@ -38,12 +38,14 @@ class BifurcationAngles(LayerFeature):
         grid_field: Optional[BaseGridFieldSpecification] = None,
         max_angle: int = 135,
         min_bifurcations: int = 3,
+        spline_error_fraction: float = 0.05,
         aggregator=mean,
     ):
         """Configure sampling distance, optional grid field and aggregation function."""
         self.delta = delta
         self.max_angle = max_angle
         self.min_bifurcations = min_bifurcations
+        self.spline_error_fraction = float(spline_error_fraction)
         super().__init__(grid_field_spec=grid_field)
         self.aggregator = aggregator
 
@@ -63,7 +65,7 @@ class BifurcationAngles(LayerFeature):
         bifurcations = self._get_bifurcation_points(layer)
         angles: list[float] = []
         for bif in bifurcations:
-            angle = bif.angle(self.delta)
+            angle = bif.angle(self.delta, self.spline_error_fraction)
             if angle <= self.max_angle:
                 angles.append(angle)
         if len(angles) < self.min_bifurcations:
@@ -82,6 +84,8 @@ class BifurcationAngles(LayerFeature):
         return ["bifangle"]
 
     def parameter_name_tokens(self) -> list[str]:
+        from .base import format_name_value
+
         tokens: list[str] = []
         if self.delta != 20:
             tokens.extend(["delta", str(self.delta)])
@@ -89,6 +93,13 @@ class BifurcationAngles(LayerFeature):
             tokens.extend(["max_angle", str(self.max_angle)])
         if self.min_bifurcations != 3:
             tokens.extend(["min_bifurcations", str(self.min_bifurcations)])
+        if self.spline_error_fraction != 0.05:
+            tokens.extend(
+                [
+                    "spline_error_fraction",
+                    format_name_value(self.spline_error_fraction),
+                ]
+            )
         return tokens
 
     def _plot(self, ax, layer: VesselTreeLayer, **kwargs):
@@ -96,14 +107,15 @@ class BifurcationAngles(LayerFeature):
         ax = layer.plot(
             ax=ax,
             segments=True,
+            bounds=True,
             grid_field=field,
         )
 
         bifurcations = self._get_bifurcation_points(layer)
 
         for bif in bifurcations:
-            line1, line2 = bif.lines(self.delta)
-            angle = bif.angle(self.delta)
+            line1, line2 = bif.lines(self.delta, self.spline_error_fraction)
+            angle = bif.angle(self.delta, self.spline_error_fraction)
 
             if angle > self.max_angle:
                 continue

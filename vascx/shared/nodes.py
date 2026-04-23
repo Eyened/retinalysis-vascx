@@ -36,9 +36,17 @@ class Bifurcation(Node):
     def outgoing_min_length(self):
         return min(self.outgoing[0].length, self.outgoing[1].length)
     
-    def lines(self, delta: float):
-        to1 = Point(*self.outgoing[0].spline.get_point_pixels(delta))
-        to2 = Point(*self.outgoing[1].spline.get_point_pixels(delta))
+    def lines(self, delta: float, spline_error_fraction: float = 0.05):
+        to1 = Point(
+            *self.outgoing[0]
+            .get_spline(error_fraction=spline_error_fraction)
+            .get_point_pixels(delta)
+        )
+        to2 = Point(
+            *self.outgoing[1]
+            .get_spline(error_fraction=spline_error_fraction)
+            .get_point_pixels(delta)
+        )
 
         line1 = Line(self.position, to1)
         line2 = Line(self.position, to2)
@@ -50,8 +58,8 @@ class Bifurcation(Node):
 
         return line1, line2
     
-    def angle(self, delta: float):
-        line1, line2 = self.lines(delta)
+    def angle(self, delta: float, spline_error_fraction: float = 0.05):
+        line1, line2 = self.lines(delta, spline_error_fraction=spline_error_fraction)
         return line1.angle_to(line2)
 
 

@@ -39,19 +39,21 @@ class Caliber(LayerFeature):
         min_numpoints=10,
         grid_field: Optional[BaseGridFieldSpecification] = None,
         aggregator: Callable = median,
+        spline_error_fraction: float = 0.05,
     ):
         self.min_numpoints = min_numpoints
         self.aggregator = aggregator
+        self.spline_error_fraction = float(spline_error_fraction)
         super().__init__(grid_field_spec=grid_field)
 
     def _get_segments(self, layer: VesselTreeLayer):
-        field = self._get_grid_field(layer)
-        segments = layer.filter_segments(field=field)
+        segments = layer.get_region_segments(self.grid_field_spec)
         segments = [seg for seg in segments if len(seg.skeleton) > self.min_numpoints]
         return segments
 
     def _compute_weight_for_segment(self, segment: Segment) -> float:
-        return segment.spline.length() if segment.spline is not None else np.nan
+        spline = segment.get_spline(error_fraction=self.spline_error_fraction)
+        return spline.length() if spline is not None else np.nan
 
     def compute(self, layer: VesselTreeLayer):
         # raise NotImplementedError("Caliber is not implemented")
@@ -63,7 +65,10 @@ class Caliber(LayerFeature):
         if isinstance(self.aggregator, LengthWeightedAggregator) and len(segments) < 5:
             return None
 
-        calibers = [s.median_diameter for s in segments]
+        calibers = [
+            s.get_median_diameter(error_fraction=self.spline_error_fraction)
+            for s in segments
+        ]
         # median diameters should never be nan
         if np.isnan(calibers).any():
             raise ValueError("Some median diameters are nan")
@@ -96,21 +101,34 @@ class Caliber(LayerFeature):
         return ["diam"]
 
     def parameter_name_tokens(self) -> list[str]:
-        if self.min_numpoints == 10:
-            return []
-        return ["min_numpoints", str(self.min_numpoints)]
+        from .base import format_name_value
+
+        tokens: list[str] = []
+        if self.min_numpoints != 10:
+            tokens.extend(["min_numpoints", str(self.min_numpoints)])
+        if self.spline_error_fraction != 0.05:
+            tokens.extend(
+                [
+                    "spline_error_fraction",
+                    format_name_value(self.spline_error_fraction),
+                ]
+            )
+        return tokens
 
     def _plot(self, ax, layer: VesselTreeLayer, **kwargs):
         segments = self._get_segments(layer)
         vessels = Vessels(layer, segments)
         ax = vessels.plot(
             ax=ax,
-            text=lambda x: f"{x.median_diameter:.2f}",
+            # text=lambda x: f"{x.get_median_diameter(self.spline_error_fraction):.2f}",
             show_index=False,
             cmap="tab20",
+            bounds=True,
             min_numpoints=0,
             min_numpoints_caliber=self.min_numpoints,
+            arcs=True,
             spline_points=True,
+            spline_error_fraction=self.spline_error_fraction,
             **kwargs,
         )
 

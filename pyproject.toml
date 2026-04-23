@@ -24,7 +24,7 @@ dependencies = [
   "sknw==0.14",
   "sortedcontainers==2.4.0",
   "scikit-image>=0.21,<1",
-  "retinalysis-enface >= 1.0.1",
+  "retinalysis-enface >= 1.0.2",
   "retinalysis-fundusprep >= 0.6.1"
 ]
 

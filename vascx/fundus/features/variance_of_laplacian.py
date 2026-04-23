@@ -71,6 +71,7 @@ class VarianceOfLaplacian(RetinaFeature):
 
         M_eq = equalize_adapthist(M, clip_limit=0.02, nbins=256)
         ax.imshow(M_eq, cmap="gray", vmin=0, vmax=1)
+        retina.plot(ax=ax, image=False, bounds=True, av=False)
 
         field = self._get_grid_field(retina)
         if field is not None:

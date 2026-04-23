@@ -12,16 +12,22 @@ if TYPE_CHECKING:
 
 
 class Caliber(FAZLayerFeature):
-    def __init__(self, min_numpoints=10, aggregator=median):
+    def __init__(
+        self, min_numpoints=10, aggregator=median, spline_error_fraction: float = 0.05
+    ):
         self.min_numpoints = min_numpoints
         self.aggregator = aggregator
+        self.spline_error_fraction = float(spline_error_fraction)
 
     def _get_segments(self, layer: FAZLayer):
         return layer.segments
 
     def compute(self, layer: FAZLayer):
         segments = self._get_segments(layer)
-        calibers = [s.median_diameter for s in segments]
+        calibers = [
+            s.get_median_diameter(error_fraction=self.spline_error_fraction)
+            for s in segments
+        ]
         # median diameters should never be nan
         if np.isnan(calibers).any():
             raise ValueError("Some median diameters are nan")
@@ -31,10 +37,11 @@ class Caliber(FAZLayerFeature):
         vessels = Vessels(layer, self._get_segments(layer))
         return vessels.plot(
             ax=ax,
-            text=lambda x: f"{x.median_diameter:.2f}",
+            text=lambda x: f"{x.get_median_diameter(self.spline_error_fraction):.2f}",
             cmap="tab20",
             min_numpoints=0,
             min_numpoints_caliber=self.min_numpoints,
-            plot_spline_points=True,
+            spline_points=True,
+            spline_error_fraction=self.spline_error_fraction,
             **kwargs,
         )

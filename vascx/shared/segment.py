@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import warnings
-from functools import cached_property
+from functools import cached_property, lru_cache
 from math import ceil
 from typing import TYPE_CHECKING, List, Tuple, Union
 
@@ -43,6 +43,10 @@ class Segment:
         self._depth = None
 
         self.original_segments = None
+        self._get_spline_cached = lru_cache(maxsize=None)(self._build_spline)
+        self._get_diameter_measurements_cached = lru_cache(maxsize=None)(
+            self._build_diameter_measurements
+        )
 
     @cached_property
     def start(self) -> Point:
@@ -60,12 +64,62 @@ class Segment:
             raise ValueError("Segment.layer is not set")
         return self.layer.get_segment_pixels(self)
 
-    @cached_property
-    def spline(self) -> SplineInterpolation:
+    def _build_spline(self, error_fraction: float = 0.05) -> SplineInterpolation | None:
+        """Build a spline for the segment using the requested smoothing."""
         if len(self.skeleton) <= 4:
             return None
-        spline = SplineInterpolation(self)
-        return spline
+        return SplineInterpolation(self, error_fraction=error_fraction)
+
+    def get_spline(self, error_fraction: float = 0.05) -> SplineInterpolation | None:
+        """Return a cached spline for the requested smoothing."""
+        return self._get_spline_cached(float(error_fraction))
+
+    @property
+    def spline(self) -> SplineInterpolation | None:
+        return self.get_spline()
+
+    def _build_diameter_measurements(
+        self, error_fraction: float = 0.05
+    ) -> List[DiameterMeasurement]:
+        assert self.layer is not None
+        if len(self.skeleton) <= 4:
+            # segment is too short for cubic spline, use retipy method.
+            measurements = self.calc_diameters_retipy()
+        else:
+            try:
+                measurements = self.calc_diameters_using_splines(
+                    error_fraction=error_fraction
+                )
+            except Exception:
+                warnings.warn(
+                    "Exception when using splines for diameter calculation, "
+                    "falling back to retipy."
+                )
+                # default to using retipy if there are exceptions when using splines
+                measurements = self.calc_diameters_retipy()
+
+            if len(measurements) == 0:
+                measurements = self.calc_diameters_retipy()
+
+        return measurements
+
+    def get_diameter_measurements(
+        self, error_fraction: float = 0.05
+    ) -> List[DiameterMeasurement]:
+        """Return cached diameter measurements for the requested smoothing."""
+        return self._get_diameter_measurements_cached(float(error_fraction))
+
+    def get_diameters(self, error_fraction: float = 0.05) -> List[float]:
+        """Return per-sample diameters for the requested smoothing."""
+        return [m.diameter for m in self.get_diameter_measurements(error_fraction)]
+
+    def get_mean_diameter(self, error_fraction: float = 0.05) -> float:
+        """Return mean diameter for the requested smoothing."""
+        return np.mean(self.get_diameters(error_fraction))
+
+    def get_median_diameter(self, error_fraction: float = 0.05) -> float:
+        """Return median diameter for the requested smoothing."""
+        return np.median(self.get_diameters(error_fraction))
 
     @cached_property
     def length(self) -> float:
@@ -81,37 +135,19 @@ class Segment:
 
     @cached_property
     def diameter_measurements(self) -> List[DiameterMeasurement]:
-        assert self.layer is not None
-        if len(self.skeleton) <= 4:
-            # segment is too short for cubic spline, use retipy method.
-            measurements = self.calc_diameters_retipy()
-        else:
-            try:
-                measurements = self.calc_diameters_using_splines()
-            except Exception:
-                warnings.warn(
-                    "Exception when using splines for diameter calculation, "
-                    "falling back to retipy."
-                )
-                # default to using retipy if there are exceptions when using splines
-                measurements = self.calc_diameters_retipy()
-
-            if len(measurements) == 0:
-                measurements = self.calc_diameters_retipy()
-
-        return measurements
+        return self.get_diameter_measurements()
 
     @cached_property
     def diameters(self) -> List[float]:
-        return [m.diameter for m in self.diameter_measurements]
+        return self.get_diameters()
 
     @cached_property
     def mean_diameter(self) -> float:
-        return np.mean(self.diameters)
+        return self.get_mean_diameter()
 
     @cached_property
     def median_diameter(self) -> float:
-        return np.median(self.diameters)
+        return self.get_median_diameter()
 
     @cached_property
     def mean_xy(self) -> float:
@@ -131,8 +167,28 @@ class Segment:
             else None
         )
 
+    def _invalidate_geometry_caches(self) -> None:
+        """Clear cached geometry derived from the segment skeleton."""
+        for attr in (
+            "start",
+            "end",
+            "pixels",
+            "length",
+            "chord_length",
+            "diameter_measurements",
+            "diameters",
+            "mean_diameter",
+            "median_diameter",
+            "mean_xy",
+            "profile",
+        ):
+            self.__dict__.pop(attr, None)
+        self._get_spline_cached.cache_clear()
+        self._get_diameter_measurements_cached.cache_clear()
+
     def reverse(self):
         self.skeleton = np.flip(self.skeleton, axis=0)
+        self._invalidate_geometry_caches()
 
     def filter_outliers(self, measurements: List[DiameterMeasurement]):
         diams = np.array([r.diameter for r in measurements])
@@ -147,11 +203,15 @@ class Segment:
         inliers = np.where(residuals < threshold)[0].tolist()
         return [measurements[i] for i in inliers]
 
-    def calc_diameters_using_splines(self, n_points=None):
+    def calc_diameters_using_splines(self, n_points=None, error_fraction: float = 0.05):
         if n_points is None:
             n_points = max(10, round(self.length / 10))
 
-        measurements = self.spline.diameters(n_points)
+        spline = self.get_spline(error_fraction=error_fraction)
+        if spline is None:
+            raise RuntimeError("Segment is too short for spline diameter calculation")
+
+        measurements = spline.diameters(n_points)
 
         # 30 pixels is a safe maximum
         measurements = [d for d in measurements if d.diameter < 30]
@@ -209,10 +269,13 @@ class Segment:
     def __repr__(self):
         return str(self.edge)
 
-    def intersections_with_circle(self, circle) -> Tuple[List[Point], List[float]]:
-        if self.spline is None:
+    def intersections_with_circle(
+        self, circle, error_fraction: float = 0.05
+    ) -> Tuple[List[Point], List[float]]:
+        spline = self.get_spline(error_fraction=error_fraction)
+        if spline is None:
             return None, None
-        return self.spline.intersections_with_circle(circle)
+        return spline.intersections_with_circle(circle)
 
     def plot(
         self,
@@ -285,6 +348,65 @@ class Segment:
         return self.layer.plot_graph(
             xlim=(top_left[1], bottom_right[1]), ylim=(top_left[0], bottom_right[0])
         )
+
+    def split_equal_length(self, max_length: float) -> List["Segment"]:
+        """Split the segment into equal-length contiguous subsegments."""
+        max_length = float(max_length)
+        if not np.isfinite(max_length) or max_length <= 0:
+            raise ValueError("max_length must be positive and finite")
+
+        if len(self.skeleton) < 2 or self.length <= max_length:
+            return [self]
+
+        points = np.asarray(self.skeleton, dtype=float)
+        seg_lengths = np.sqrt(np.sum(np.diff(points, axis=0) ** 2, axis=1))
+        cumulative = np.concatenate(([0.0], np.cumsum(seg_lengths)))
+        n_segments = ceil(self.length / max_length)
+        split_distances = np.linspace(0.0, self.length, n_segments + 1)
+
+        def point_at_distance(distance: float) -> np.ndarray:
+            if distance <= 0:
+                return points[0].copy()
+            if distance >= self.length:
+                return points[-1].copy()
+
+            idx = np.searchsorted(cumulative, distance, side="right") - 1
+            idx = min(max(idx, 0), len(seg_lengths) - 1)
+            segment_length = seg_lengths[idx]
+            if segment_length <= 0:
+                return points[idx].copy()
+
+            alpha = (distance - cumulative[idx]) / segment_length
+            return points[idx] + alpha * (points[idx + 1] - points[idx])
+
+        split_segments: List[Segment] = []
+        for start_distance, end_distance in zip(
+            split_distances[:-1], split_distances[1:]
+        ):
+            piece_points = [point_at_distance(start_distance)]
+            interior_mask = (cumulative > start_distance) & (cumulative < end_distance)
+            piece_points.extend(points[interior_mask])
+            piece_points.append(point_at_distance(end_distance))
+
+            deduplicated_points = [piece_points[0]]
+            for point in piece_points[1:]:
+                if not np.allclose(point, deduplicated_points[-1]):
+                    deduplicated_points.append(point)
+
+            if len(deduplicated_points) < 2:
+                continue
+
+            split_segment = Segment(
+                skeleton=[tuple(point) for point in deduplicated_points],
+                edge=self.edge,
+            )
+            split_segment.layer = self.layer
+            split_segment.original_segments = (
+                self.original_segments if self.original_segments is not None else [self]
+            )
+            split_segments.append(split_segment)
+
+        return split_segments or [self]
 
 
 def concatenate(*lists):

@@ -22,10 +22,11 @@ class SparsityMode(Enum):
 
 
 class Sparsity(VesselsLayerFeature):
-    """Sparsity over distance-to-nearest-vessel normalized by the OD–fovea distance.
+    """Sparsity over distance-to-nearest-vessel.
 
     Representation: uses `FundusVesselsLayer.distance_transform` (DT), where each retinal pixel stores
-    the distance to the nearest vessel pixel, normalized by the OD–fovea distance.
+    the distance to the nearest vessel pixel in pixels. These values can optionally be normalized
+    by the OD-fovea distance during feature computation.
 
     Computation:
     - mode == "mean": S_mean = mean(DT over selected pixels)
@@ -41,7 +42,7 @@ class Sparsity(VesselsLayerFeature):
         self,
         grid_field: Optional[BaseGridFieldSpecification] = None,
         mode: "SparsityMode" = SparsityMode.MEAN,
-        maxima_smoothing_sigma: float = 1.0,
+        normalize: bool = True,
     ):
         """Coverage of distance transform, optionally restricted to an ETDRS grid field.
 
@@ -49,15 +50,12 @@ class Sparsity(VesselsLayerFeature):
         ETDRS field that are also inside the retina mask. If less than 50% of the field
         lies within the retina, a warning is issued and None is returned. Mode controls
         whether the mean is taken over all selected pixels ("mean") or only over blob-wise
-        maxima of the distance transform ("max"). `maxima_smoothing_sigma` controls the
-        Gaussian smoothing applied before peak finding
+        maxima of the distance transform ("max"). If `normalize` is True, sparsity is
+        normalized by the OD-fovea distance.
         """
         super().__init__(grid_field_spec=grid_field)
         self.mode = mode
-        self.maxima_smoothing_sigma = maxima_smoothing_sigma
-
-    def _smooth_distance_transform(self, dt: np.ndarray) -> np.ndarray:
-        return ndi.gaussian_filter(dt, sigma=self.maxima_smoothing_sigma)
+        self.normalize = normalize
 
     def _get_field_mask(self, layer: FundusVesselsLayer) -> Optional[np.ndarray]:
         field = self._get_grid_field(layer)
@@ -114,6 +112,14 @@ class Sparsity(VesselsLayerFeature):
 
         return maxima_mask
 
+    def _normalize_distance_transform(
+        self, dt: np.ndarray, layer: FundusVesselsLayer
+    ) -> np.ndarray:
+        """Optionally normalize distance transform values by disc-fovea distance."""
+        if not self.normalize:
+            return dt
+        return dt / layer.retina.disc_fovea_distance
+
     def get_fovea_mask(self, layer: FundusVesselsLayer) -> np.ndarray:
         """Return the cached fovea exclusion mask for this retina."""
         return layer.retina.sparsity_fovea_mask
@@ -128,10 +134,11 @@ class Sparsity(VesselsLayerFeature):
         if self.mode == SparsityMode.MAX:
             maxima_mask = self._compute_maxima_mask(layer)
             maxima_mask = maxima_mask & ~fovea_mask
-            vals = layer.distance_transform[maxima_mask]
+            dt = self._normalize_distance_transform(layer.distance_transform, layer)
+            vals = dt[maxima_mask]
             return float(np.nanmax(vals)) if vals.size > 0 else np.nan
         else:
-            dt = layer.distance_transform
+            dt = self._normalize_distance_transform(layer.distance_transform, layer)
             dt = np.where(~fovea_mask, dt, np.nan)
             field_mask = self._get_field_mask(layer)
             if field_mask is not None:
@@ -155,18 +162,14 @@ class Sparsity(VesselsLayerFeature):
         return ["sparsity"]
 
     def parameter_name_tokens(self) -> list[str]:
-        from .base import format_name_value
-
-        if self.maxima_smoothing_sigma == 1.0:
-            return []
-        return [
-            "maxima_smoothing_sigma",
-            format_name_value(self.maxima_smoothing_sigma),
-        ]
+        tokens: list[str] = []
+        if not self.normalize:
+            tokens.append("unnormalized")
+        return tokens
 
     def _plot(self, ax, layer: FundusVesselsLayer, **kwargs):
-        layer.plot(ax=ax, image=True)
-        dt = layer.distance_transform
+        layer.plot(ax=ax, image=True, bounds=True)
+        dt = self._normalize_distance_transform(layer.distance_transform, layer)
         fovea_mask = self.get_fovea_mask(layer)
         dt = np.where(~fovea_mask, dt, np.nan)
         field_mask = self._get_field_mask(layer)
@@ -195,5 +198,10 @@ class Sparsity(VesselsLayerFeature):
         if ax is None:
             fig, ax = plt.subplots(1, 1, figsize=(8, 8), dpi=300)
 
-        ax.imshow(layer.invisibility_map, cmap="jet", alpha=0.5, vmin=0, vmax=0.1)
+        heatmap = layer.invisibility_map
+        if self.normalize:
+            heatmap = heatmap / layer.retina.disc_fovea_distance
+            ax.imshow(heatmap, cmap="jet", alpha=0.5, vmin=0, vmax=0.1)
+        else:
+            ax.imshow(heatmap, cmap="jet", alpha=0.5)
         return ax

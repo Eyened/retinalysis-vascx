@@ -1,8 +1,7 @@
 from __future__ import annotations
 
-import copy
 import warnings
-from functools import cached_property
+from functools import cached_property, lru_cache
 from typing import TYPE_CHECKING, Dict, List, Tuple
 
 import matplotlib.pyplot as plt
@@ -12,6 +11,7 @@ from networkx import DiGraph, Graph, connected_components, get_node_attributes
 from rtnls_enface.base import Circle
 from rtnls_enface.disc import OpticDisc
 from rtnls_enface.grids.base import GridField
+from rtnls_enface.grids.specifications import BaseGridFieldSpecification
 from scipy.ndimage import distance_transform_edt
 from skimage.morphology import skeletonize as skimage_skeletonize
 
@@ -40,6 +40,15 @@ class RegionOutOfBoundsError(RuntimeError):
     pass
 
 
+def _true_runs(mask: np.ndarray) -> List[Tuple[int, int]]:
+    """Return half-open index ranges for contiguous True values."""
+    padded = np.concatenate(([False], mask.astype(bool), [False]))
+    changes = np.diff(padded.astype(np.int8))
+    starts = np.flatnonzero(changes == 1)
+    ends = np.flatnonzero(changes == -1)
+    return list(zip(starts, ends))
+
+
 class VesselTreeLayer(VesselLayer):
     """Represents an artery or vein layer with a (probably imperfect) tree structure for the vessel graph."""
 
@@ -55,6 +64,9 @@ class VesselTreeLayer(VesselLayer):
         self.name = name
         self.color = color
         self._cre_binary_mask_cache: Dict[tuple, np.ndarray] = {}
+        self._region_segments_cache: Dict[BaseGridFieldSpecification, List[Segment]] = {}
+        self._region_resolved_segments_cache: Dict[tuple, List[Segment]] = {}
+        self._get_vessels_cached = lru_cache(maxsize=None)(self._build_vessels)
 
     @property
     def disc(self) -> OpticDisc:
@@ -81,26 +93,56 @@ class VesselTreeLayer(VesselLayer):
     @cached_property
     def graph(self) -> Graph:
         graph = make_graph(self.skeleton)
+
+        next_node_id = max(graph.nodes(), default=-1) + 1
         segments = []
+        nodes_to_add = []
+        edges_to_add = []
         edges_to_remove = []
+
+        def make_boundary_node(point: np.ndarray) -> int:
+            nonlocal next_node_id
+            node_id = next_node_id
+            next_node_id += 1
+            point = np.asarray(point, dtype=np.int32)
+            # Boundary nodes mark where a valid segment is cut by the disc mask.
+            nodes_to_add.append(
+                (node_id, {"o": point, "pts": point[None, :], "disc_boundary": True})
+            )
+            return node_id
+
         for s, e in list(graph.edges()):
-            skl = graph[s][e]["pts"]
+            pts = np.asarray(graph[s][e]["pts"])
+            keep = np.ones(len(pts), dtype=bool)
 
             if self.disc is not None:
-                keep = ~self.disc.mask[skl[:, 0], skl[:, 1]].astype(bool)
-                skl = skl[keep]
+                # Keep only the skeleton pixels that lie outside the invalid disc region.
+                keep = ~self.disc.mask[pts[:, 0], pts[:, 1]].astype(bool)
 
-            if len(skl) == 0:
-                edges_to_remove.append((s, e))
-                continue
+            edges_to_remove.append((s, e))
 
-            graph[s][e]["pts"] = skl
+            # Split a clipped edge into contiguous outside-disc fragments.
+            for start, end in _true_runs(keep):
+                skl = pts[start:end]
+
+                # Ignore degenerate fragments that cannot form a meaningful segment.
+                if len(skl) < 2:
+                    continue
+
+                start_node = s if start == 0 else make_boundary_node(skl[0])
+                end_node = e if end == len(pts) else make_boundary_node(skl[-1])
+                edges_to_add.append((start_node, end_node, skl))
+
+        graph.remove_edges_from(edges_to_remove)
+        graph.add_nodes_from(nodes_to_add)
+
+        for s, e, skl in edges_to_add:
+            graph.add_edge(s, e, pts=skl)
             seg = Segment(skl, edge=(s, e))
             graph[s][e]["segment"] = seg
             seg.id = frozenset([s, e])
             segments.append(seg)
 
-        graph.remove_edges_from(edges_to_remove)
         graph.remove_nodes_from([n for n in graph.nodes() if graph.degree(n) == 0])
 
         for index, s in enumerate(segments):
@@ -151,21 +193,103 @@ class VesselTreeLayer(VesselLayer):
             round(float(circle.r), 6),
         )
 
-    def get_circle_intersections(self, circle: Circle) -> List[Tuple[Segment, float]]:
-        cache_key = self._circle_intersection_cache_key(circle)
+    def get_circle_intersections(
+        self, circle: Circle, spline_error_fraction: float = 0.05
+    ) -> List[Tuple[Segment, float]]:
+        cache_key = (
+            *self._circle_intersection_cache_key(circle),
+            round(float(spline_error_fraction), 6),
+        )
         cached_pairs = self.circle_intersection_cache.get(cache_key)
         if cached_pairs is not None:
             return cached_pairs
 
         pairs: List[Tuple[Segment, float]] = []
         for segment in self.segments:
-            _, intersection_ts = segment.intersections_with_circle(circle)
+            _, intersection_ts = segment.intersections_with_circle(
+                circle, error_fraction=spline_error_fraction
+            )
             if intersection_ts is not None:
                 for t in intersection_ts:
                     pairs.append((segment, t))
 
         self.circle_intersection_cache[cache_key] = pairs
         return pairs
+
+    def _clip_segments_to_mask(
+        self, segments: List[Segment], mask: np.ndarray
+    ) -> List[Segment]:
+        """Clip segments to contiguous runs inside a binary mask."""
+        clipped_segments: List[Segment] = []
+        mask = mask.astype(bool, copy=False)
+
+        for segment in segments:
+            skeleton = np.asarray(segment.skeleton, dtype=np.int32)
+            keep = mask[skeleton[:, 0], skeleton[:, 1]]
+            runs = [
+                (start, end)
+                for start, end in _true_runs(keep)
+                if end - start >= 2
+            ]
+
+            if len(runs) == 0:
+                continue
+
+            if len(runs) == 1 and runs[0] == (0, len(skeleton)):
+                clipped_segments.append(segment)
+                continue
+
+            for start, end in runs:
+                piece = Segment(skeleton=skeleton[start:end].copy(), edge=segment.edge)
+                piece.layer = self
+                piece.id = segment.id
+                piece.index = segment.index
+                piece.original_segments = (
+                    segment.original_segments
+                    if segment.original_segments is not None
+                    else [segment]
+                )
+                clipped_segments.append(piece)
+
+        return clipped_segments
+
+    def get_region_segments(
+        self, field_spec: BaseGridFieldSpecification = None
+    ) -> List[Segment]:
+        """Return directed segments clipped to a grid field."""
+        if field_spec is None:
+            return self.segments
+
+        cached_segments = self._region_segments_cache.get(field_spec)
+        if cached_segments is not None:
+            return cached_segments
+
+        field = self.retina.get_grid_field(field_spec)
+        clipped_segments = self._clip_segments_to_mask(self.segments, field.mask)
+        self._region_segments_cache[field_spec] = clipped_segments
+        return clipped_segments
+
+    def get_region_resolved_segments(
+        self,
+        field_spec: BaseGridFieldSpecification = None,
+        spline_error_fraction: float = 0.05,
+    ) -> List[Segment]:
+        """Return resolved vessel segments clipped to a grid field."""
+        if field_spec is None:
+            return self.get_resolved_segments(spline_error_fraction=spline_error_fraction)
+
+        cache_key = (field_spec, float(spline_error_fraction))
+        cached_segments = self._region_resolved_segments_cache.get(cache_key)
+        if cached_segments is not None:
+            return cached_segments
+
+        field = self.retina.get_grid_field(field_spec)
+        resolved_segments = self.get_resolved_segments(
+            spline_error_fraction=spline_error_fraction
+        )
+        clipped_segments = self._clip_segments_to_mask(resolved_segments, field.mask)
+        self._region_resolved_segments_cache[cache_key] = clipped_segments
+        return clipped_segments
 
     def filter_segments(self, field: GridField, field_threshold=0.75) -> List[Segment]:
         """Filters the segments of the graph based on some criteria."""
@@ -240,16 +364,19 @@ class VesselTreeLayer(VesselLayer):
         return [n for n in self.bifurcations if grid.point_in_field(n.position, field)]
 
     # STAGE 4: vessels
-    @cached_property
-    def vessels(self):
+    def _build_vessels(self, spline_error_fraction: float = 0.05):
         """Resolved vessels (segments) of the vasculature, after running a vessel resolving algorithm on the trees."""
-        G = copy.copy(self.digraph)
+        # Work on an isolated graph copy so resolved-vessel merging does not mutate
+        # the original digraph that later features use for bifurcation detection.
+        G = self.digraph.copy()
 
         def recursive_set_prop_values(edge):
             u, v = edge
             length, median_diameter = (
                 G[u][v]["segment"].length,
-                G[u][v]["segment"].median_diameter,
+                G[u][v]["segment"].get_median_diameter(
+                    error_fraction=spline_error_fraction
+                ),
             )
 
             outgoing_edges = G.out_edges(v)
@@ -324,9 +451,20 @@ class VesselTreeLayer(VesselLayer):
 
         return G
 
-    @cached_property
+    def get_vessels(self, spline_error_fraction: float = 0.05):
+        return self._get_vessels_cached(float(spline_error_fraction))
+
+    @property
+    def vessels(self):
+        return self.get_vessels()
+
+    def get_resolved_segments(self, spline_error_fraction: float = 0.05) -> List[Segment]:
+        vessels = self.get_vessels(spline_error_fraction=spline_error_fraction)
+        return [vessels.edges[e]["segment"] for e in vessels.edges()]
+
+    @property
     def resolved_segments(self) -> List[Segment]:
-        return [self.vessels.edges[e]["segment"] for e in self.vessels.edges()]
+        return self.get_resolved_segments()
 
     @cached_property
     def vessels_object(self) -> Vessels:
@@ -380,6 +518,7 @@ class VesselTreeLayer(VesselLayer):
         self,
         ax=None,
         image=False,
+        bounds=False,
         mask=False,
         color=None,
         skeleton=False,
@@ -399,7 +538,7 @@ class VesselTreeLayer(VesselLayer):
 
         if image:
             if self.retina.image is not None:
-                ax.imshow(self.retina.image)
+                self.retina.plot(ax=ax, image=True, bounds=bounds, av=False)
 
         if mask:
             self.plot_mask(ax, color=color, grid_field=grid_field)
@@ -414,6 +553,7 @@ class VesselTreeLayer(VesselLayer):
                 chords=chords,
                 arcs=arcs,
                 endpoints=endpoints,
+                bounds=bounds,
                 **kwargs,
             )
 

@@ -31,7 +31,9 @@ def normalize_name_token(value: str) -> str:
 
 def format_name_value(value: Any) -> str:
     if isinstance(value, Enum):
-        return normalize_name_token(value.value if isinstance(value.value, str) else value.name)
+        return normalize_name_token(
+            value.value if isinstance(value.value, str) else value.name
+        )
     if isinstance(value, bool):
         return "true" if value else "false"
     if isinstance(value, (np.integer, int)):
@@ -293,7 +295,10 @@ def get_grid_field_suffix(spec: Optional[BaseGridFieldSpecification]) -> str:
         return ""
 
     from rtnls_enface.grids.hemifields import HemifieldField
-    from rtnls_enface.grids.specifications import GridFieldSpecification, HemifieldGridSpecification
+    from rtnls_enface.grids.specifications import (
+        GridFieldSpecification,
+        HemifieldGridSpecification,
+    )
 
     if isinstance(spec, GridFieldSpecification):
         if isinstance(spec.grid_spec, HemifieldGridSpecification):

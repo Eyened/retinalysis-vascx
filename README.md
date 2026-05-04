@@ -1,10 +1,15 @@
 ## VascX retinal vascular analysis
 
-VascX was created for the extraction of vascular features from fundus image segmentations.
+VascX was created to facilitate the extraction of retinal vascular biomarkers from color fundus image (CFI) segmentations. The instructions in this repository explain how to run the entire pipeline, which has two main parts:
+- **CFI Segmentation.** Extraction of optic disc, vessels and artery vein segmentation and fovea locations. The code for model inference and model weights are in the [models repository](https://github.com/Eyened/rtnls_vascx_models).
+- **Biomarker computation.** Extraction of biomarkers from the segmentations. The code for biomarker computation is in this repository.
 
-**Important!** This repository contains the feature extraction part of the VascX pipeline.
+If you use VascX, please consider citing our open access papers / preprints:
+- [VascX Models: Deep Ensembles for Retinal Vascular Analysis From Color Fundus Images](https://tvst.arvojournals.org/article.aspx?articleid=2810436)
+Vargas Quiros, J. D., Liefers, B., van Garderen, K. A., Vermeulen, J. P., & Klaver, C. C. W. (2025). VascX Models: Deep Ensembles for Retinal Vascular Analysis From Color Fundus Images. Translational Vision Science & Technology, 14(7), 19-19.
 
-For details about our segmentation models please refer our [models repository](https://github.com/Eyened/rtnls_vascx_models) an its related open access paper [VascX Models: Deep Ensembles for Retinal Vascular Analysis From Color Fundus Images](https://tvst.arvojournals.org/article.aspx?articleid=2810436)
+- [retinalysis-vascx: An explainable software toolbox for the extraction of retinal vascular biomarkers](https://arxiv.org/abs/2602.08580)
+Vargas Quiros, J. V., Beyeler, M. J., Vela, S. O., Center, E. R., Bergmann, S., Klaver, C. C. W., & Liefers, B. (2026). retinalysis-vascx: An explainable software toolbox for the extraction of retinal vascular biomarkers. arXiv preprint arXiv:2602.08580.
 
 ### Installation
 
@@ -236,8 +241,3 @@ df = extract_in_parallel(examples, "full", n_jobs=8, descriptions_output_path="f
 ```
 
 
-## Citation
-
-If you use VascX, please cite our paper:
-
-Jose Vargas Quiros, Bart Liefers, Karin A. van Garderen, Jeroen P. Vermeulen, Caroline Klaver; VascX Models: Deep Ensembles for Retinal Vascular Analysis From Color Fundus Images. Trans. Vis. Sci. Tech. 2025;14(7):19. https://doi.org/10.1167/tvst.14.7.19.

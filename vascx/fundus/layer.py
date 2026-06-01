@@ -530,6 +530,8 @@ class VesselTreeLayer(VesselLayer):
         arcs=False,
         endpoints: bool = False,
         grid_field: GridField = None,
+        skeleton_dilate: int | None = None,
+        digraph_color: str | None = None,
         **kwargs,
     ):
         ax = self._get_base_axes(ax)
@@ -544,7 +546,12 @@ class VesselTreeLayer(VesselLayer):
             self.plot_mask(ax, color=color, grid_field=grid_field)
 
         if skeleton:
-            self.plot_skeleton(ax, color=(1, 1, 1), grid_field=grid_field)
+            self.plot_skeleton(
+                ax,
+                color=(1, 1, 1),
+                grid_field=grid_field,
+                dilate=skeleton_dilate,
+            )
 
         if segments:
             self.plot_segments(
@@ -565,12 +572,16 @@ class VesselTreeLayer(VesselLayer):
                 h, w = self.binary.shape
                 ax.set_xlim(-0.5, w - 0.5)
                 ax.set_ylim(h - 0.5, -0.5)  # y decreases upward, matching imshow
-            self.plot_digraph(ax, grid_field=grid_field)
+            digraph_kwargs = {}
+            if digraph_color is not None:
+                digraph_kwargs["color"] = digraph_color
+            self.plot_digraph(ax, grid_field=grid_field, **digraph_kwargs)
 
         if vessels:
             self.plot_vessels(
                 ax,
                 grid_field=grid_field,
+                **kwargs,
             )
 
         # plot ETDRS region
@@ -619,6 +630,7 @@ class VesselTreeLayer(VesselLayer):
             v = Vessels(self, self.filter_segments(grid_field))
         else:
             v = self.vessels_object
+        kwargs.setdefault("segments", True)
         return v.plot(ax=ax, show_index=False, **kwargs)
 
     def plot_tree_roots(self, ax, **kwargs):

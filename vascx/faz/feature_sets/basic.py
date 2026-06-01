@@ -36,6 +36,7 @@ basic_features = FeatureSet(
         Tortuosity(
             length_measure=LengthMeasure.Splines, min_numpoints=5, aggregator=median
         ),
+        # Note: we have deprecated BifurcationCount due to low reproducibility scores.
         BifurcationCount(),
     ],
 )

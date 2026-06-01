@@ -2,19 +2,10 @@ from pathlib import Path
 
 import click
 import pandas as pd
-import torch
 import logging
 import numpy as np
 import random
 
-from rtnls_fundusprep.cli import _run_preprocessing
-from .inference import (
-    run_fovea_detection,
-    run_quality_estimation,
-    run_segmentation_disc,
-    run_segmentation_vessels_and_av,
-    batch_create_overlays
-)
 from .utils.analysis import extract_in_parallel
 from .utils.feature_docs import write_feature_descriptions, write_variable_display_mapping
 
@@ -52,6 +43,21 @@ def run_models(
     DATA_PATH is either a directory containing images or a CSV file with 'path' column.
     OUTPUT_PATH is the directory where results will be stored.
     """
+    try:
+        import torch
+    except ImportError as e:
+        raise click.ClickException(
+            "run-models requires PyTorch. Install torch for your platform."
+        ) from e
+
+    from rtnls_fundusprep.cli import _run_preprocessing
+    from vascx.inference.inference import (
+        run_fovea_detection,
+        run_quality_estimation,
+        run_segmentation_disc,
+        run_segmentation_vessels_and_av,
+    )
+    from vascx.inference.utils import batch_create_overlays
 
     output_path = Path(output_path)
     output_path.mkdir(exist_ok=True, parents=True)

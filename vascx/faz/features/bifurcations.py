@@ -1,3 +1,4 @@
+# Note: we have deprecated BifurcationCount due to low reproducibility scores.
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -12,6 +13,8 @@ if TYPE_CHECKING:
 
 
 class BifurcationCount(FAZLayerFeature):
+    """Note: we have deprecated BifurcationCount due to low reproducibility scores."""
+
     def _get_bifurcation_points(self, layer: FAZLayer):
         bifurcations = []
 

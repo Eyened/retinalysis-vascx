@@ -61,8 +61,9 @@ fs_full = FeatureSet(
         Tortuosity(mode=TortuosityMode.Vessels, measure=TortuosityMeasure.Curvature, aggregator=median),
         Tortuosity(mode=TortuosityMode.Vessels, measure=TortuosityMeasure.Inflections, aggregator=median),
 
-        # bifurcation angles        
+        # bifurcation angles
         BifurcationAngles(aggregator=median),
+        # Note: we have deprecated BifurcationCount due to low reproducibility scores.
         BifurcationCount(),
 
         # general and retina-level features

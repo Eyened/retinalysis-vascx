@@ -16,6 +16,7 @@ fs_bergmann = FeatureSet(
         Caliber(aggregator=median),
         Caliber(aggregator=std),
         Tortuosity(length_measure=LengthMeasure.Skeleton, aggregator=median),
+        # Note: we have deprecated BifurcationCount due to low reproducibility scores.
         BifurcationCount(),
     ],
 )

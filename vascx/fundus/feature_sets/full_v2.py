@@ -43,6 +43,7 @@ fs_full_v2 = FeatureSet(
         BifurcationAngles(grid_field=HMF_INF, aggregator=median),
 
         # bifurcation counts (full, superior, inferior)
+        # Note: we have deprecated BifurcationCount due to low reproducibility scores.
         BifurcationCount(),
         BifurcationCount(grid_field=HMF_SUP),
         BifurcationCount(grid_field=HMF_INF),

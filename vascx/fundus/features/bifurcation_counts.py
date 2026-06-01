@@ -1,3 +1,4 @@
+# Note: we have deprecated BifurcationCount due to low reproducibility scores.
 from __future__ import annotations
 
 from typing import TYPE_CHECKING, Optional
@@ -12,6 +13,8 @@ if TYPE_CHECKING:
 
 class BifurcationCount(LayerFeature):
     """Count of Bifurcation nodes in layer.nodes, optionally within a GridField.
+
+    Note: we have deprecated BifurcationCount due to low reproducibility scores.
 
     Representation: Uses Bifurcation nodes from layer.nodes in the directed graph representation.
 

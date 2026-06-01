@@ -7,7 +7,11 @@ from networkx import DiGraph, Graph
 
 def plot_mask(ax: plt.Axes, mask, color=(1, 1, 1, 1), dilate=None):
     if dilate is not None:
-        mask = cv2.dilate(mask, np.ones((3, 3)), iterations=dilate)
+        mask = cv2.dilate(
+            mask.astype(np.uint8),
+            np.ones((3, 3), np.uint8),
+            iterations=dilate,
+        ).astype(bool)
     colors = [(0, 0, 0, 0), color]
     cmap = LinearSegmentedColormap.from_list("binary", colors, N=2)
     ax.imshow(mask, cmap=cmap, interpolation="nearest")
@@ -21,7 +25,14 @@ def plot_graph(ax: plt.Axes, graph: Graph):
         ax.plot([start[1], end[1]], [start[0], end[0]], color="white", markersize=2)
 
 
-def plot_digraph(ax: plt.Axes, graph: DiGraph):
+def plot_digraph(
+    ax: plt.Axes,
+    graph: DiGraph,
+    color: str = "red",
+    head_width: float = 12,
+    linewidth: float = 1.1,
+):
+    """Plot directed graph edges as arrows on ``ax``."""
     for s, e in graph.edges():
         start = graph.nodes[s]["o"].astype(np.int32)
         end = graph.nodes[e]["o"].astype(np.int32)
@@ -33,9 +44,9 @@ def plot_digraph(ax: plt.Axes, graph: DiGraph):
             start[0],
             dx,
             dy,
-            color="red",
-            head_width=12,
-            linewidth=1.1,
+            color=color,
+            head_width=head_width,
+            linewidth=linewidth,
             length_includes_head=True,
             overhang=0,
         )

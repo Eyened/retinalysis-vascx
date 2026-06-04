@@ -4,6 +4,9 @@ VascX was created to facilitate the extraction of retinal vascular biomarkers fr
 - **CFI Segmentation.** Extraction of optic disc, vessels and artery vein segmentation and fovea locations. The code for model inference and model weights are in the [models repository](https://github.com/Eyened/rtnls_vascx_models).
 - **Biomarker computation.** Extraction of biomarkers from the segmentations. The code for biomarker computation is in this repository.
 
+## Updates
+- 04/06/2026: We have fixed some remaining missing dependencies that meant run-models was not working correctly with vascx.
+
 If you use VascX, please consider citing our open access papers / preprints:
 - [VascX Models: Deep Ensembles for Retinal Vascular Analysis From Color Fundus Images](https://tvst.arvojournals.org/article.aspx?articleid=2810436)
 Vargas Quiros, J. D., Liefers, B., van Garderen, K. A., Vermeulen, J. P., & Klaver, C. C. W. (2025). VascX Models: Deep Ensembles for Retinal Vascular Analysis From Color Fundus Images. Translational Vision Science & Technology, 14(7), 19-19.
@@ -17,10 +20,18 @@ To install the entire fundus analysis pipeline including fundus preprocessing, m
 
 1. Create a virtual environment, or otherwise ensure a clean environment.
 
-2. Install VascX:
+2. Install torch and torchvision that match your cuda environment. For example:
+```
+pip install torch torchvision torchaudio  # pip and CUDA 12
+conda install pytorch torchvision torchaudio pytorch-cuda=12.1 -c pytorch -c nvidia # conda and CUDA 12
+pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu118 # pip and CUDA 11
+conda install pytorch torchvision torchaudio pytorch-cuda=11.8 -c pytorch -c nvidia # conda and CUDA 11
+```
+
+3. Install VascX and retinalysis-inference (for model inference):
 
 ```
-pip install retinalysis-vascx
+pip install retinalysis-vascx retinalysis-inference
 ```
 
 ### Usage

@@ -35,8 +35,16 @@ def cli():
     "--overlay/--no-overlay", default=True, help="Create visualization overlays"
 )
 @click.option("--n_jobs", type=int, default=4, help="Number of preprocessing workers")
+@click.option(
+    "--device",
+    default=None,
+    help=(
+        "PyTorch device for model inference (e.g. cuda:0, mps, cpu). "
+        "When omitted, uses the first available CUDA GPU, Apple MPS, or CPU."
+    ),
+)
 def run_models(
-    data_path, output_path, preprocess, vessels, disc, quality, fovea, overlay, n_jobs
+    data_path, output_path, preprocess, vessels, disc, quality, fovea, overlay, n_jobs, device
 ):
     """Run the complete inference pipeline on fundus images.
 
@@ -44,13 +52,17 @@ def run_models(
     OUTPUT_PATH is the directory where results will be stored.
     """
     try:
-        import torch
+        import importlib.util
+
+        if importlib.util.find_spec("torch") is None:
+            raise ImportError
     except ImportError as e:
         raise click.ClickException(
             "run-models requires PyTorch. Install torch for your platform."
         ) from e
 
     from rtnls_fundusprep.cli import _run_preprocessing
+    from vascx.inference.device import resolve_device
     from vascx.inference.inference import (
         run_fovea_detection,
         run_quality_estimation,
@@ -136,15 +148,15 @@ def run_models(
     preprocessed_files = list(preprocess_rgb_path.glob("*.png"))
     ids = [f.stem for f in preprocessed_files]
 
-    # Set up GPU device
-    device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-    click.echo(f"Using device: {device}")
+    # Set up inference device
+    inference_device = resolve_device(device)
+    click.echo(f"Using device: {inference_device}")
 
     # Step 2: Run quality estimation if requested
     if quality:
         click.echo("Running quality estimation...")
         df_quality = run_quality_estimation(
-            fpaths=preprocessed_files, ids=ids, device=device
+            fpaths=preprocessed_files, ids=ids, device=inference_device
         )
         df_quality.to_csv(quality_path)
         click.echo(f"Quality results saved to {quality_path}")
@@ -157,7 +169,7 @@ def run_models(
             ids=ids,
             av_path=av_path,
             vessels_path=vessels_path,
-            device=device,
+            device=inference_device,
         )
         click.echo(f"Vessel segmentation saved to {vessels_path}")
         click.echo(f"AV segmentation saved to {av_path}")
@@ -166,7 +178,7 @@ def run_models(
     if disc:
         click.echo("Running optic disc segmentation...")
         run_segmentation_disc(
-            rgb_paths=preprocessed_files, ids=ids, output_path=disc_path, device=device
+            rgb_paths=preprocessed_files, ids=ids, output_path=disc_path, device=inference_device
         )
         click.echo(f"Disc segmentation saved to {disc_path}")
 
@@ -175,7 +187,7 @@ def run_models(
     if fovea:
         click.echo("Running fovea detection...")
         df_fovea = run_fovea_detection(
-            rgb_paths=preprocessed_files, ids=ids, device=device
+            rgb_paths=preprocessed_files, ids=ids, device=inference_device
         )
         df_fovea.to_csv(fovea_path)
         click.echo(f"Fovea detection results saved to {fovea_path}")

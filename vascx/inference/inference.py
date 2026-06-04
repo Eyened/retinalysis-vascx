@@ -14,6 +14,8 @@ from rtnls_inference.ensembles.ensemble_heatmap_regression import (
 from rtnls_inference.ensembles.ensemble_segmentation import SegmentationEnsemble
 from tqdm import tqdm
 
+from vascx.inference.device import resolve_device
+
 
 def _create_dtos(
     rgb_paths: List[Path],
@@ -45,11 +47,10 @@ def _create_dtos(
 
 def iterate_quality_estimation(
     data: List[ModelInputDTO],
-    device: torch.device = torch.device(
-        "cuda:0" if torch.cuda.is_available() else "cpu"
-    ),
+    device: torch.device | None = None,
 ) -> Iterator[Dict[str, Any]]:
     """Yield quality ensemble inference items."""
+    device = resolve_device(device)
     ensemble_quality = ClassificationEnsemble.from_huggingface(
         "Eyened/vascx:quality/quality.pt"
     ).to(device)
@@ -76,10 +77,9 @@ def iterate_quality_estimation(
 def run_quality_estimation(
     fpaths,
     ids: Optional[List[str]] = None,
-    device: torch.device = torch.device(
-        "cuda:0" if torch.cuda.is_available() else "cpu"
-    ),
+    device: torch.device | None = None,
 ):
+    device = resolve_device(device)
     data = _create_dtos(fpaths, ids=ids)
     output_ids, outputs = [], []
 
@@ -96,13 +96,12 @@ def run_quality_estimation(
 
 def iterate_segmentation_vessels_and_av(
     data: List[ModelInputDTO],
-    device: torch.device = torch.device(
-        "cuda:0" if torch.cuda.is_available() else "cpu"
-    ),
+    device: torch.device | None = None,
     predict_av: bool = True,
     predict_vessels: bool = True,
 ) -> Iterator[Dict[str, Any]]:
     """Yield raw segmentation items for AV and vessels."""
+    device = resolve_device(device)
     if not predict_av and not predict_vessels:
         return
 
@@ -173,9 +172,7 @@ def run_segmentation_vessels_and_av(
     ids: Optional[List[str]] = None,
     av_path: Optional[Path] = None,
     vessels_path: Optional[Path] = None,
-    device: torch.device = torch.device(
-        "cuda:0" if torch.cuda.is_available() else "cpu"
-    ),
+    device: torch.device | None = None,
     callback: Optional[Callable[[Dict[str, Any]], None]] = None,
     predict_av: bool = False,
     predict_vessels: bool = False,
@@ -202,6 +199,7 @@ def run_segmentation_vessels_and_av(
     should_predict_av = (av_path is not None) or predict_av
     should_predict_vessels = (vessels_path is not None) or predict_vessels
 
+    device = resolve_device(device)
     data = _create_dtos(rgb_paths, ce_paths=ce_paths, ids=ids)
 
     for result in iterate_segmentation_vessels_and_av(
@@ -226,11 +224,10 @@ def run_segmentation_vessels_and_av(
 
 def iterate_segmentation_disc(
     data: List[ModelInputDTO],
-    device: torch.device = torch.device(
-        "cuda:0" if torch.cuda.is_available() else "cpu"
-    ),
+    device: torch.device | None = None,
 ) -> Iterator[Dict[str, Any]]:
     """Yield disc segmentation inference items."""
+    device = resolve_device(device)
     ensemble_disc = (
         SegmentationEnsemble.from_huggingface("Eyened/vascx:disc/disc_july24.pt")
         .to(device)
@@ -262,11 +259,10 @@ def run_segmentation_disc(
     ce_paths: Optional[List[Path]] = None,
     ids: Optional[List[str]] = None,
     output_path: Optional[Path] = None,
-    device: torch.device = torch.device(
-        "cuda:0" if torch.cuda.is_available() else "cpu"
-    ),
+    device: torch.device | None = None,
     callback: Optional[Callable[[Dict[str, Any]], None]] = None,
 ) -> None:
+    device = resolve_device(device)
     if output_path is None and callback is None:
         raise ValueError(
             "Either output_path or callback must be provided for disc segmentation"
@@ -288,11 +284,10 @@ def run_segmentation_disc(
 
 def iterate_fovea_detection(
     data: List[ModelInputDTO],
-    device: torch.device = torch.device(
-        "cuda:0" if torch.cuda.is_available() else "cpu"
-    ),
+    device: torch.device | None = None,
 ) -> Iterator[Dict[str, Any]]:
     """Yield fovea detection inference items."""
+    device = resolve_device(device)
     ensemble_fovea = HeatmapRegressionEnsemble.from_huggingface(
         "Eyened/vascx:fovea/fovea_july24.pt"
     ).to(device)
@@ -321,10 +316,9 @@ def run_fovea_detection(
     rgb_paths: List[Path],
     ce_paths: Optional[List[Path]] = None,
     ids: Optional[List[str]] = None,
-    device: torch.device = torch.device(
-        "cuda:0" if torch.cuda.is_available() else "cpu"
-    ),
+    device: torch.device | None = None,
 ) -> pd.DataFrame:
+    device = resolve_device(device)
     data = _create_dtos(rgb_paths, ce_paths=ce_paths, ids=ids)
     output_ids, outputs = [], []
 

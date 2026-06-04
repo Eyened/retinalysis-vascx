@@ -33,8 +33,11 @@ To run on the provided samples folder in our git repository:
 git clone git@github.com:Eyened/retinalysis-vascx.git rtnls_vascx
 cd rtnls_vascx
 vascx run-models ./samples/fundus/original/ /path/to/segmentations
+vascx run-models ./samples/fundus/original/ /path/to/segmentations --device cuda:1
 vascx calc-biomarkers /path/to/segmentations /path/to/features.csv --feature_set full --n-jobs 8 --logfile /path/to/logfile.txt
 ```
+
+By default, `run-models` picks the first available CUDA GPU, Apple MPS acceleration, or CPU. Override this with `--device`, passing any string accepted by `torch.device` (for example `cuda:0`, `mps`, or `cpu`).
 
 Note that `vascx run-models` will write segmentations and other model predictions to `/path/to/segmentations`, which will have the following structure:
 

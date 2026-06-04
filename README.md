@@ -17,10 +17,18 @@ To install the entire fundus analysis pipeline including fundus preprocessing, m
 
 1. Create a virtual environment, or otherwise ensure a clean environment.
 
-2. Install VascX:
+2. Install torch and torchvision that match your cuda environment. For example:
+```
+pip install torch torchvision torchaudio  # pip and CUDA 12
+conda install pytorch torchvision torchaudio pytorch-cuda=12.1 -c pytorch -c nvidia # conda and CUDA 12
+pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu118 # pip and CUDA 11
+conda install pytorch torchvision torchaudio pytorch-cuda=11.8 -c pytorch -c nvidia # conda and CUDA 11
+```
+
+3. Install VascX and retinalysis-inference (for model inference):
 
 ```
-pip install retinalysis-vascx
+pip install retinalysis-vascx retinalysis-inference
 ```
 
 ### Usage

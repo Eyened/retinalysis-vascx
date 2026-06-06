@@ -21,21 +21,25 @@ dependencies = [
   "typing_extensions == 4.*",
   "Pillow>=10,<12",
   "click>=8,<9",
-  "sknw==0.14",
   "sortedcontainers==2.4.0",
   "scikit-image>=0.21,<1",
-  "retinalysis-enface >= 1.0.2",
-  "retinalysis-fundusprep >= 0.6.1"
+  "retinalysis-enface >= 1.0.4",
+  "networkx>=3,<4",
+  "numba>=0.58,<1; sys_platform != 'emscripten'"
 ]
 
 [project.scripts]
 vascx = "vascx.cli:cli"
 
 [project.optional-dependencies]
+fundusprep = [
+  "retinalysis-fundusprep >= 0.6.1",
+]
 test = [
   "pytest == 8.*",
   "pyarrow >= 14",
-  "PyYAML == 6.*"
+  "PyYAML == 6.*",
+  "retinalysis-fundusprep >= 0.6.1",
 ]
 
 [tool.setuptools]

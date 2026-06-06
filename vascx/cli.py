@@ -61,7 +61,6 @@ def run_models(
             "run-models requires PyTorch. Install torch for your platform."
         ) from e
 
-    from rtnls_fundusprep.cli import _run_preprocessing
     from vascx.inference.device import resolve_device
     from vascx.inference.inference import (
         run_fovea_detection,
@@ -135,6 +134,15 @@ def run_models(
 
     # Step 1: Preprocess images if requested
     if preprocess:
+        try:
+            from rtnls_fundusprep.cli import _run_preprocessing
+        except ImportError as exc:
+            raise click.ClickException(
+                "run-models --preprocess requires retinalysis-fundusprep. "
+                "Install it with pip install 'retinalysis-vascx[fundusprep]' "
+                "or run with --no-preprocess."
+            ) from exc
+
         click.echo("Running preprocessing...")
         _run_preprocessing(
             files=files,

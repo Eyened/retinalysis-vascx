@@ -6,8 +6,8 @@ import pstats
 import time
 
 import pytest
-import sknw
 from vascx.fundus.loader import RetinaLoader
+from vascx.shared.sknw import sknw
 from vascx.utils.analysis import extract_one
 
 from tests.regression_helpers import SAMPLES_DIR

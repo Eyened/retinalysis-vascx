@@ -1,16 +1,17 @@
 from __future__ import annotations
 
 import warnings
+
 import networkx as nx
 import numpy as np
-import sknw
 from networkx import DiGraph
+from rtnls_enface.base import Point
 from scipy.spatial.distance import euclidean as distance_2p
 from sortedcontainers import SortedListWithKey
 
-from rtnls_enface.base import Point
 from vascx.shared.nodes import Bifurcation, Endpoint, Node
 from vascx.shared.segment import Segment, merge_segments
+from vascx.shared.sknw import sknw
 
 
 def make_graph(skeleton: np.array):
@@ -144,7 +145,7 @@ def correct_digraph(digraph: nx.DiGraph, threshold=10):
         if digraph.out_degree(e[1]) == 0
     ]
     if len(segments) == 0:
-        warnings.warn(f'No segments for digraph')
+        warnings.warn("No segments for digraph")
         return digraph
 
     def get_value(obj: Segment):

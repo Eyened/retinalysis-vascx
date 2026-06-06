@@ -5,7 +5,7 @@ from typing import Dict, List, Optional
 import pandas as pd
 from joblib import Parallel, delayed
 from rtnls_enface.base import EnfaceImage
-from rtnls_fundusprep.cfi_bounds import CFIBounds as Bounds
+from rtnls_enface.bounds import make_roi_mask_from_bounds
 
 from vascx.fundus.feature_sets import *
 from vascx.fundus.retina import Retina
@@ -27,13 +27,14 @@ def extract_one(
     with warnings.catch_warnings(record=True) as caught_warnings:
         warnings.simplefilter("always")
         if "bounds" in ex and ex["bounds"] is not None:
-            bounds = ex["bounds"]
-            if isinstance(bounds, dict):
-                bounds = Bounds(**bounds)
-            assert isinstance(bounds, Bounds)
-            M = bounds.get_cropping_transform(1024)
-            ex["roi_mask"] = bounds.warp(M).make_binary_mask()
-            ex["bounds"] = None
+            roi_mask = make_roi_mask_from_bounds(
+                ex["bounds"],
+                target_diameter=1024,
+                install_hint="pip install 'retinalysis-vascx[fundusprep]'",
+            )
+            if roi_mask is not None:
+                ex["roi_mask"] = roi_mask
+                ex["bounds"] = None
         retina = retina_cls.from_file(**ex)
         features = retina.calc_features(feature_set, plots_folder)
 

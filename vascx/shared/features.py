@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from typing import TYPE_CHECKING, Any, Iterable, List
+from typing import TYPE_CHECKING, Any, Iterable, List, Tuple
 
 import numpy as np
 
@@ -84,5 +84,70 @@ class Feature(ABC):
         y_start = 0.99
         formatted_value = self._format_value(value)
         ax.text(0.01, y_start, formatted_value, transform=ax.transAxes, ha='left', va='top', color='white', fontsize=8)
-            
+
         return ax
+
+    def plot_figure(
+        self,
+        layer: Any,
+        figsize: Tuple[float, float] = (8, 8),
+        dpi: int = 128,
+        axis_off: bool = True,
+        **kwargs: Any,
+    ):
+        """Render this feature plot into a Matplotlib figure."""
+        import matplotlib
+
+        matplotlib.use("Agg", force=True)
+        from matplotlib import pyplot as plt
+
+        fig, ax = plt.subplots(1, 1, figsize=figsize, dpi=dpi)
+        self.plot(ax=ax, layer=layer, **kwargs)
+        if axis_off:
+            ax.set_axis_off()
+        return fig
+
+    def plot_png_bytes(
+        self,
+        layer: Any,
+        figsize: Tuple[float, float] = (8, 8),
+        dpi: int = 128,
+        axis_off: bool = True,
+        bbox_inches: str = "tight",
+        pad_inches: float = 0.0,
+        close: bool = True,
+        **kwargs: Any,
+    ) -> bytes:
+        """Render this feature plot to PNG bytes using a non-interactive backend."""
+        import io
+
+        fig = self.plot_figure(
+            layer=layer,
+            figsize=figsize,
+            dpi=dpi,
+            axis_off=axis_off,
+            **kwargs,
+        )
+        from matplotlib import pyplot as plt
+        buf = io.BytesIO()
+        fig.savefig(
+            buf,
+            format="png",
+            dpi=dpi,
+            bbox_inches=bbox_inches,
+            pad_inches=pad_inches,
+        )
+        if close:
+            plt.close(fig)
+        return buf.getvalue()
+
+    def plot_base64_png(self, layer: Any, **kwargs: Any) -> str:
+        """Render this feature plot to a base64-encoded PNG string."""
+        import base64
+
+        png = self.plot_png_bytes(layer=layer, **kwargs)
+        return base64.b64encode(png).decode("ascii")
+
+    def plot_data_uri(self, layer: Any, **kwargs: Any) -> str:
+        """Render this feature plot to a browser-ready PNG data URI."""
+        return f"data:image/png;base64,{self.plot_base64_png(layer=layer, **kwargs)}"

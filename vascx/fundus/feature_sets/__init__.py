@@ -1,5 +1,4 @@
 from .bergmann import fs_bergmann
-from .chromaticity import fs_chromaticity
 from .full import fs_full
 from .full_v2 import fs_full_v2
 from .full_v3 import fs_full_v3

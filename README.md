@@ -5,24 +5,35 @@
 ## VascX retinal vascular analysis
 
 VascX was created to facilitate the extraction of retinal vascular biomarkers from color fundus image (CFI) segmentations. The instructions in this repository explain how to run the entire pipeline, which has two main parts:
-- **CFI Segmentation.** Extraction of optic disc, vessels and artery vein segmentation and fovea locations. The code for model inference and model weights are in the [models repository](https://github.com/Eyened/rtnls_vascx_models).
-- **Biomarker computation.** Extraction of biomarkers from the segmentations. The code for biomarker computation is in this repository.
+- **CFI Segmentation.** Extraction of optic disc, vessels and artery vein segmentation and fovea locations. Our model weights are publicly available in a [huggingface repository](https://huggingface.co/Eyened/vascx). See instructions below for inference.
+- **Biomarker computation.** Extraction of biomarkers from the segmentations.
 
 ## Features
 
-- Currently supported biomarkers / features: Central Retinal Equivalents, Calibers, Artery-Vein Ratio, Vascular Density, Bifurcation Angles, Tortuosity, Sparsity, and others.
+<table border="0">
+  <tr>
+    <td>
+      <ul>
+        <li>Currently supported biomarkers / features: Central Retinal Equivalents, Calibers, Artery-Vein Ratio, Vascular Density, Bifurcation Angles, Tortuosity, Sparsity, and others.</li>
+        <li>Many of these biomarkers support multiple implementations and configuration arguments as detailed in [our manuscript](https://arxiv.org/abs/2602.08580). The code for each biomarker also specificies the supported options.</li>
+        <li>VascX supports region-aware measurements, relative to the optic disc - fovea axis. If the region is not visible, the biomarker is not computed.</li>
+        <li>VascX can generate visualisations for every biomarker.</li>
+      <ul>
+    </td>
+    <td align="center">
+      <img src="samples/figures/biomarkers_combined_part1.png" alt="Image 1" width="100%">
+    </td>
+  </tr>
+</table>
 
-![](samples/figures/biomarkers_combined_part1.png)
-![](samples/figures/biomarkers_combined_part2.png)
-
-- Many of these biomarkers support multiple implementations and configuration arguments as detailed in [our manuscript](https://arxiv.org/abs/2602.08580). The code for each biomarker also specificies the supported options.
-
-- VascX supports region-aware measurements, relative to the optic disc - fovea axis. If the region is not visible, the biomarker is not computed.
-
-- VascX can generate visualisations for every biomarker.
 
 
-### Attribution
+<!-- <p align="center">
+  <img src="samples/figures/biomarkers_combined_part1.png" alt="Image 1" width="45%">
+  <img src="samples/figures/biomarkers_combined_part2.png" alt="Image 2" width="45%">
+</p> -->
+
+## Attribution
 
 If you use VascX, please consider citing our open access papers / preprints:
 - [VascX Models: Deep Ensembles for Retinal Vascular Analysis From Color Fundus Images](https://tvst.arvojournals.org/article.aspx?articleid=2810436)
@@ -32,7 +43,7 @@ Vargas Quiros, J. D., Liefers, B., van Garderen, K. A., Vermeulen, J. P., & Klav
 Vargas Quiros, J. V., Beyeler, M. J., Vela, S. O., Center, E. R., Bergmann, S., Klaver, C. C. W., & Liefers, B. (2026). retinalysis-vascx: An explainable software toolbox for the extraction of retinal vascular biomarkers. arXiv preprint arXiv:2602.08580.
 
 
-### Installation
+## Installation
 
 To install the entire fundus analysis pipeline including fundus preprocessing, model inference code and vascular biomarker extraction:
 
@@ -52,7 +63,7 @@ conda install pytorch torchvision torchaudio pytorch-cuda=11.8 -c pytorch -c nvi
 pip install retinalysis-vascx retinalysis-inference
 ```
 
-### Usage
+## Usage
 
 To run the two stages of VascX on a folder with input CFIs:
 
@@ -66,22 +77,22 @@ vascx calc-biomarkers <PATH_TO_FOLDER_FOR_SEGMENTATIONS> <PATH_TO_BIOMARKERS_CSV
 
 - `PATH_TO_IMAGES` should point to a folder with input CFIs in standard imaging formats. DICOM is supported via `pydicom`. Alternatively `PATH_TO_IMAGES` may be the path to a CSV file with `id` and `path` columns, and one image per row. If provided in this way, each `path` should be an absolute path to a valid image file and the corresponding unique `id` will be used to name the output and intermediate results for that image. This is useful when the source images are not all in a single folder.
 
-<details>
-<summary>Sample CSV file with inputs</summary>
-
-If you chose to use a CSV file as input to `run-models`, the format should be the following:
-```
-id,path
-drive_left_22,/path/to/samples/fundus/original/DRIVE_22.png
-drive_right_40,/path/to/samples/fundus/original/DRIVE_40.png
-chasedb_left_08,/path/to/samples/fundus/original/CHASEDB1_08L.png
-chasedb_right_12,/path/to/samples/fundus/original/CHASEDB1_12R.png
-hrf_green_04,/path/to/samples/fundus/original/HRF_04_g.jpg
-hrf_dr_07,/path/to/samples/fundus/original/HRF_07_dr.jpg
-```
-
-Note that paths should be absolute and IDs should be unique.
-</details>
+  <details>
+  <summary>Sample CSV file with inputs</summary>
+  
+  If you chose to use a CSV file as input to `run-models`, the format should be the following:
+  ```
+  id,path
+  drive_left_22,/path/to/samples/fundus/original/DRIVE_22.png
+  drive_right_40,/path/to/samples/fundus/original/DRIVE_40.png
+  chasedb_left_08,/path/to/samples/fundus/original/CHASEDB1_08L.png
+  chasedb_right_12,/path/to/samples/fundus/original/CHASEDB1_12R.png
+  hrf_green_04,/path/to/samples/fundus/original/HRF_04_g.jpg
+  hrf_dr_07,/path/to/samples/fundus/original/HRF_07_dr.jpg
+  ```
+  
+  Note that paths should be absolute and IDs should be unique.
+  </details>
 
 - The folder `PATH_TO_FOLDER_FOR_SEGMENTATIONS` should initially be an empty or non-existent folder. The first stage (`run-models`) will write intermediate segmentations and other AI outputs to this folder.
 - The same folder should be passed to the second stage as input as shown above. 
@@ -102,7 +113,7 @@ vascx run-models ./samples/fundus/original/ ./samples/fundus/segmentations
 vascx calc-biomarkers ./samples/fundus/segmentations ./samples/fundus/biomarkers.csv --feature_set full_v3 --n-jobs 8
 ```
 
-### Outputs
+## Outputs
 
 `vascx calc-biomarkers` will write a CSV file at `PATH_TO_BIOMARKERS` containing a row per image and a column per biomarker. 
 VascX parameter names typically follow the format:
@@ -144,7 +155,7 @@ vascx write-mapping --feature_set full_v3 PATH_TO_MAPPING_CSV
 
 The folders above will contain images with matching filenames.
 
-### Notebooks
+## Notebooks
 
 As an alternative, we also provide notebooks for running the three stages:
 
@@ -160,39 +171,7 @@ As an alternative, we also provide notebooks for running the three stages:
 > ### Biomarker post-processing and normalisation
 > While several VascX biomarkers such as tortuosity are unitless, others such as vessel calibers or CREs measure distances. By default, VascX reports these distance measurements in pixels. If an explicit per-image `mm_per_pixel` value is provided, VascX uses it for ETDRS grid scaling and multiplies caliber and CRE biomarkers into millimeters. Some derived biomarkers such as artery-vein ratio (AVR) may also be computed in a post-processing stage as the ratio between caliber or CRE (recommended) measurements. The [sample post-processing notebook](./notebooks/3_post_process.ipynb) shows how to post-process and optionally normalise a VascX export.
 
-
-
-
-### Skipping steps during re-execution
-
-The `run-models` command has several `--no-*` flags that are intended for re-executing part of a pipeline after some outputs already exist. These flags skip work; they do not change where downstream steps look for inputs. If a later step needs an output from a skipped step, that output must already be present in the same `OUTPUT_PATH` layout.
-
-For example, to reuse images that were already preprocessed, place them in the output folder before running `run-models` and pass `--no-preprocess`:
-
-```
-/path/to/segmentations
-  - preprocessed_rgb/
-    - image_001.png
-    - image_002.png
-```
-
-```
-vascx run-models ./samples/fundus/original/ /path/to/segmentations --no-preprocess
-```
-
-In `--no-preprocess` mode, model inputs are read from `/path/to/segmentations/preprocessed_rgb/*.png`. Files must be RGB PNG images named `<id>.png`; the `<id>` filename stem is used for all downstream outputs, such as `artery_vein/<id>.png`, `vessels/<id>.png`, `disc/<id>.png`, and rows in `fovea.csv` and `quality.csv`. These images should have the same preprocessed format produced by VascX/fundusprep, namely a square, model-ready fundus crop, normally 1024x1024 pixels.
-
-`DATA_PATH` is still required to be an existing path for CLI compatibility, but when `--no-preprocess` is used its contents are not used as model inputs. If you plan to run `calc-biomarkers` on the output folder, keep or provide the matching `bounds.csv` from preprocessing as well.
-
-The other skip flags follow the same idea:
-
-- `--no-vessels` skips vessel and artery-vein segmentation. Reuse this only when `vessels/<id>.png` and `artery_vein/<id>.png` already exist for the IDs you need downstream.
-- `--no-disc` skips optic disc segmentation. Reuse this only when `disc/<id>.png` already exists for the IDs you need downstream.
-- `--no-fovea` skips fovea detection. Reuse this only when `fovea.csv` already exists if you will create overlays or run biomarker extraction.
-- `--no-quality` skips image quality estimation. Reuse this when `quality.csv` already exists or when you do not need quality predictions.
-- `--no-overlay` skips overlay creation. Reuse this when overlays already exist or when visualization overlays are not needed.
-```
-
+## Advanced Usage
 
 ### Offline Usage
 
@@ -227,16 +206,37 @@ export VASCX_MODEL_DIR=/path/to/vascx-models
 vascx run-models /path/to/images /path/to/segmentations
 ```
 
-For more control, provide individual model files directly. Per-model options take precedence over `--model-dir` and `VASCX_MODEL_DIR`:
+For more control, provide individual model files directly with options `--quality-model`, `--av-model`, `--vessels-model`, `--disc-model` and `--fovea-model`. Per-model options take precedence over `--model-dir` and `VASCX_MODEL_DIR`.
+
+
+### Skipping steps during re-execution
+
+The `run-models` command has several `--no-*` flags that are intended for re-executing part of a pipeline after some outputs already exist. These flags skip work; they do not change where downstream steps look for inputs. If a later step needs an output from a skipped step, that output must already be present in the same `OUTPUT_PATH` layout.
+
+For example, to reuse images that were already preprocessed, place them in the output folder before running `run-models` and pass `--no-preprocess`:
 
 ```
-vascx run-models /path/to/images /path/to/segmentations \
-  --quality-model /path/to/vascx-models/quality/quality.pt \
-  --av-model /path/to/vascx-models/artery_vein/av_july24.pt \
-  --vessels-model /path/to/vascx-models/vessels/vessels_july24.pt \
-  --disc-model /path/to/vascx-models/disc/disc_july24.pt \
-  --fovea-model /path/to/vascx-models/fovea/fovea_july24.pt
+/path/to/segmentations
+  - preprocessed_rgb/
+    - image_001.png
+    - image_002.png
 ```
+
+```
+vascx run-models ./samples/fundus/original/ /path/to/segmentations --no-preprocess
+```
+
+In `--no-preprocess` mode, model inputs are read from `/path/to/segmentations/preprocessed_rgb/*.png`. Files must be RGB PNG images named `<id>.png`; the `<id>` filename stem is used for all downstream outputs, such as `artery_vein/<id>.png`, `vessels/<id>.png`, `disc/<id>.png`, and rows in `fovea.csv` and `quality.csv`. These images should have the same preprocessed format produced by VascX/fundusprep, namely a square, model-ready fundus crop, normally 1024x1024 pixels.
+
+`DATA_PATH` is still required to be an existing path for CLI compatibility, but when `--no-preprocess` is used its contents are not used as model inputs. If you plan to run `calc-biomarkers` on the output folder, keep or provide the matching `bounds.csv` from preprocessing as well.
+
+The other skip flags follow the same idea:
+
+- `--no-vessels` skips vessel and artery-vein segmentation. Reuse this only when `vessels/<id>.png` and `artery_vein/<id>.png` already exist for the IDs you need downstream.
+- `--no-disc` skips optic disc segmentation. Reuse this only when `disc/<id>.png` already exists for the IDs you need downstream.
+- `--no-fovea` skips fovea detection. Reuse this only when `fovea.csv` already exists if you will create overlays or run biomarker extraction.
+- `--no-quality` skips image quality estimation. Reuse this when `quality.csv` already exists or when you do not need quality predictions.
+- `--no-overlay` skips overlay creation. Reuse this when overlays already exist or when visualization overlays are not needed.
 
 Only models for enabled steps are required. For example, a run with `--no-quality --no-fovea` does not need `quality/quality.pt` or `fovea/fovea_july24.pt`. If no local model options are provided, VascX keeps using the default Hugging Face model locations.
 
@@ -270,7 +270,7 @@ After that, you are able to locally:
 
 
 
-### Implementation
+## Implementation
 
 VascX processes vessel segmentations through four main stages, each producing different data representations:
 
@@ -299,14 +299,14 @@ VascX processes vessel segmentations through four main stages, each producing di
 
 Biomarker families use different representations: mask-based features use `binary`; topology features use `digraph` and `nodes`; morphological features use `segments` with computed diameters; spatial features use segment-to-pixel mappings.
 
-### Biomarkers
+## Biomarkers
 
 VascX computes retinal vascular biomarkers from standardized representations (binary masks, undirected/directed graphs, resolved vessels). Below we describe each feature with the exact quantity being estimated and the equations used. Throughout, B denotes the stage‑1 binary vessel mask, S the set of eligible directed segments with lengths \(\ell_i\), and R an analysis region of interest; cardinalities count pixels, and distances are in pixels unless noted.
 
 **VascularDensity.** The fraction of retinal area occupied by vessels in R, computed on the binary mask B:
 
 $$
-D \,=\, \frac{|B \cap R|}{|R|}.
+D = \frac{|B \cap R|}{|R|}.
 $$
 
 ![](samples/figures/vascular_density.png)
@@ -314,7 +314,7 @@ $$
 **BifurcationCount.** The count of branching points in the directed graph (stage‑3). Let $\mathcal{B}$ be the set of bifurcation nodes with positions $p_b$:
 
 $$
-C \,=\, \sum_{b \in \mathcal{B}} \mathbf{1}[p_b \in R].
+C = \sum_{b \in \mathcal{B}} \mathbf{1}[p_b \in R].
 $$
 
 ![](samples/figures/bifurcation_count.png)
@@ -328,7 +328,7 @@ $$
 and the bifurcation angle is defined as the angle between these vectors:
 
 $$
-\theta_b \,=\, \arccos(u_b \cdot v_b), \quad \theta_b \in [0^\circ, 180^\circ].
+\theta_b = \arccos(u_b \cdot v_b), \quad \theta_b \in [0^\circ, 180^\circ].
 $$
 
 Angles exceeding 160° are discarded as non-bifurcating continuations. Summary statistics (e.g., mean/median) are reported across valid nodes.
@@ -338,7 +338,7 @@ Angles exceeding 160° are discarded as non-bifurcating continuations. Summary s
 **Caliber.** For each segment $i$, diameters are sampled along a spline fitted to its skeleton by projecting spline normals to the vessel boundary on B. The per‑segment diameter is the median along its arclength. The reported caliber aggregates over eligible segments (length $\ell_i \ge \ell_{\min}$):
 
 $$
-\operatorname{Caliber} \,=\, g\big(\{ d_i : i \in S \}\big),
+C = g\big(\{ d_i : i \in S \}\big),
 $$
 
 where \(g\) is a robust statistic (typically the median).
@@ -350,25 +350,25 @@ where \(g\) is a robust statistic (typically the median).
 - Distance factor:
 
 $$
-T_i^{\text{DF}} \,=\, \frac{L_{\text{arc},i}}{L_{\text{chord},i}}.
+T_i^{\text{DF}} = \frac{L_{\text{arc},i}}{L_{\text{chord},i}}.
 $$
 
 - Curvature‑based measure, using planar curvature $\kappa_i(s)$ and OD–fovea distance $d_{ODF}$ for scale normalization:
 
 $$
-T_i^{\kappa} \,=\, \frac{1}{L_{\text{arc},i}} \int_0^{L_{\text{arc},i}} \big|\kappa_i(s)\big| \, ds \; \cdot \; d_{ODF}.
+T_i^{\kappa} = \frac{1}{L_{\text{arc},i}} \int_0^{L_{\text{arc},i}} \big|\kappa_i(s)\big| \, ds \; \cdot \; d_{ODF}.
 $$
 
 - Inflection count (number of curvature sign changes along the centerline):
 
 $$
-T_i^{\text{INF}} \,=\, N^{(i)}_{\text{inflections}}.
+T_i^{\text{INF}} = N^{(i)}_{\text{inflections}}.
 $$
 
 When reporting a single score over multiple segments, length‑weighted aggregation may be used for normalization:
 
 $$
-T_{\text{tot}} \,=\, \sum_{i \in S} \left( \frac{\ell_i}{\sum_{j \in S} \ell_j} \right) t_i,
+T_{\text{tot}} = \sum_{i \in S} \left( \frac{\ell_i}{\sum_{j \in S} \ell_j} \right) t_i,
 $$
 
 with $t_i$ any of the measures above.
@@ -388,7 +388,7 @@ applied pairwise until a single equivalent caliber $d_r$ remains. The final CRE 
 **TemporalAngle.** On each concentric circle of radius \(r\), the two dominant temporal vessels are identified by diameter and spatial continuity. The angle at the disc center is
 
 $$
-\theta_r \,=\, \angle\big(\overline{OD\,p_1(r)},\, \overline{OD\,p_2(r)}\big),
+\theta_r = \angle\big(\overline{OD\,p_1(r)},\, \overline{OD\,p_2(r)}\big),
 $$
 
 and the reported value is the median over radii.
@@ -398,8 +398,8 @@ and the reported value is the median over radii.
 **Sparsity.** Let $\mathrm{DT}(x)$ represent the distance transform over $R$, ie. the normalized Euclidean distance to the nearest vessel pixel (scaled by $d_{ODF}$). Over pixels in R we report either the mean or the largest local maximum:
 
 $$
-S_{\text{mean}} \,=\, \frac{1}{|R|} \sum_{x \in R} \mathrm{DT}(x), \qquad
-S_{\max} \,=\, \max_{x \in R \cap \text{local maxima}} \mathrm{DT}(x).
+S_{\text{mean}} = \frac{1}{|R|} \sum_{x \in R} \mathrm{DT}(x), \qquad
+S_{\max} = \max_{x \in R \cap \text{local maxima}} \mathrm{DT}(x).
 $$
 
 ![](samples/figures/sparsity_max.png)
@@ -407,17 +407,17 @@ $$
 **VarianceOfLaplacian.** For the fundus image $I$ (grayscale), compute the discrete Laplacian $L = \Delta I$. Image sharpness is summarized as the variance over R:
 
 $$
-\operatorname{Var}\{ L(x) : x \in R \}.
+Var\{ L(x) : x \in R \}.
 $$
 
 **DiscFoveaDistance.** With optic disc center $c_{OD}$ and fovea position $p_f$,
 
 $$
- d_{ODF} \,=\, \lVert c_{OD} - p_f \rVert_2.
+ d_{ODF} = \lVert c_{OD} - p_f \rVert_2.
 $$
 
 
-### Feature localisation
+## Feature localisation
 
 VascX localises feature computations using anatomical references and predefined grids:
 
@@ -445,7 +445,7 @@ Ready-to-run feature sets are available under `vascx/fundus/feature_sets` (e.g.,
 df = extract_in_parallel(examples, "full", n_jobs=8, descriptions_output_path="feature_descriptions_full.txt")
 ```
 
-### Testing
+## Testing
 
 Run the standard test suite with:
 

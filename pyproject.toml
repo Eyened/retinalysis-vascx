@@ -53,7 +53,8 @@ include = ["vascx*"]
 markers = [
   "reference: regression tests for stored biomarker baselines",
   "profile: runtime profiling guards for the sample extraction pipeline",
-  "plotting: smoke tests for feature plotting methods"
+  "plotting: smoke tests for feature plotting methods",
+  "cli_e2e: opt-in end-to-end tests through the VascX CLI"
 ]
 testpaths = ["tests"]
 

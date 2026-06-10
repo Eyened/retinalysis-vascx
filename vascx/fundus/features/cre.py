@@ -310,8 +310,8 @@ class CRE(LayerFeature):
 
         if len(cres) < self.min_circles:
             return None
-        else:
-            return float(np.mean(cres))
+
+        return layer.retina.scale_length_measurement(float(np.mean(cres)))
 
     def display_name(self, layer_name: str, key: str = None) -> str:
         from .base import get_grid_field_suffix, get_layer_suffix

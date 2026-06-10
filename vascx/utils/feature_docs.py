@@ -1,3 +1,4 @@
+import csv
 import inspect
 import json
 from pathlib import Path
@@ -22,9 +23,9 @@ def write_feature_descriptions(feature_set: str, desc_file: Union[str, Path]) ->
 
 
 def write_variable_display_mapping(
-    feature_set_name: str, out_path: Union[str, Path]
+    feature_set_name: str, out_path: Union[str, Path], as_json: bool = False
 ) -> Path:
-    """Write a JSON object mapping canonical variable names to display names."""
+    """Write a mapping from canonical variable names to display names."""
     import vascx.fundus.feature_sets  # noqa: F401 — register FeatureSet instances
 
     from vascx.fundus.retina import Retina
@@ -36,9 +37,17 @@ def write_variable_display_mapping(
     mapping: Dict[str, str] = Retina.make_feature_display_names(fs)
     out = Path(out_path)
     out.parent.mkdir(parents=True, exist_ok=True)
-    out.write_text(
-        json.dumps(mapping, indent=2, ensure_ascii=False) + "\n",
-        encoding="utf-8",
-    )
+    if as_json:
+        out.write_text(
+            json.dumps(mapping, indent=2, ensure_ascii=False) + "\n",
+            encoding="utf-8",
+        )
+        return out
+
+    with out.open("w", newline="", encoding="utf-8") as f:
+        writer = csv.writer(f)
+        writer.writerow(["variable", "display_name"])
+        writer.writerows(mapping.items())
+
     return out
 

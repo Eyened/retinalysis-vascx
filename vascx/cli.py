@@ -1,3 +1,4 @@
+import os
 from pathlib import Path
 
 import click
@@ -6,8 +7,108 @@ import logging
 import numpy as np
 import random
 
+from vascx.inference.model_config import (
+    DEFAULT_AV_MODEL,
+    DEFAULT_DISC_MODEL,
+    DEFAULT_FOVEA_MODEL,
+    DEFAULT_QUALITY_MODEL,
+    DEFAULT_VESSELS_MODEL,
+    MODEL_DIR_FILES,
+)
+
 from .utils.analysis import extract_in_parallel
 from .utils.feature_docs import write_feature_descriptions, write_variable_display_mapping
+
+
+def _resolve_model_paths(
+    model_dir,
+    quality_model,
+    av_model,
+    vessels_model,
+    disc_model,
+    fovea_model,
+    run_quality,
+    run_vessels,
+    run_disc,
+    run_fovea,
+):
+    model_dir = model_dir or os.environ.get("VASCX_MODEL_DIR")
+    model_dir = Path(model_dir).expanduser() if model_dir else None
+    if model_dir is not None and not model_dir.is_dir():
+        raise click.ClickException(f"Model directory does not exist: {model_dir}")
+
+    def resolve(name, explicit, default):
+        if explicit is not None:
+            return Path(explicit).expanduser()
+        if model_dir is not None:
+            return model_dir / MODEL_DIR_FILES[name]
+        return default
+
+    resolved = {
+        "quality": resolve("quality", quality_model, DEFAULT_QUALITY_MODEL),
+        "av": resolve("av", av_model, DEFAULT_AV_MODEL),
+        "vessels": resolve("vessels", vessels_model, DEFAULT_VESSELS_MODEL),
+        "disc": resolve("disc", disc_model, DEFAULT_DISC_MODEL),
+        "fovea": resolve("fovea", fovea_model, DEFAULT_FOVEA_MODEL),
+    }
+
+    required = {
+        "quality": run_quality,
+        "av": run_vessels,
+        "vessels": run_vessels,
+        "disc": run_disc,
+        "fovea": run_fovea,
+    }
+    for name, is_required in required.items():
+        model = resolved[name]
+        if is_required and isinstance(model, Path) and not model.exists():
+            raise click.ClickException(
+                f"Missing {name} model file: {model}. "
+                "Pass an explicit --*-model path, use --model-dir with the documented "
+                "layout, or omit local model options to use the Hugging Face defaults."
+            )
+
+    return resolved, model_dir
+
+
+def _read_run_models_csv(data_path: Path):
+    df = pd.read_csv(data_path, dtype={"id": str, "path": str}, keep_default_na=False)
+    required_columns = {"id", "path"}
+    missing_columns = sorted(required_columns - set(df.columns))
+    if missing_columns:
+        missing = ", ".join(f"'{column}'" for column in missing_columns)
+        raise click.ClickException(f"CSV must contain {missing} column(s)")
+
+    path_values = df["path"].astype(str).str.strip()
+    missing_path_mask = path_values == ""
+    if missing_path_mask.any():
+        rows = ", ".join(str(i + 2) for i in path_values.index[missing_path_mask].tolist())
+        raise click.ClickException(f"CSV contains empty path values on row(s): {rows}")
+
+    files = [Path(value) for value in path_values]
+    relative_paths = [str(path) for path in files if not path.is_absolute()]
+    if relative_paths:
+        examples = ", ".join(relative_paths[:3])
+        suffix = "" if len(relative_paths) <= 3 else f", ... ({len(relative_paths)} total)"
+        raise click.ClickException(
+            "CSV 'path' values must be absolute paths; relative path(s) found: "
+            f"{examples}{suffix}"
+        )
+
+    id_values = df["id"].astype(str).str.strip()
+    missing_id_mask = id_values == ""
+    if missing_id_mask.any():
+        rows = ", ".join(str(i + 2) for i in id_values.index[missing_id_mask].tolist())
+        raise click.ClickException(f"CSV contains empty id values on row(s): {rows}")
+
+    ids = id_values.tolist()
+    duplicated_ids = sorted(id_values[id_values.duplicated()].unique().tolist())
+    if duplicated_ids:
+        examples = ", ".join(duplicated_ids[:5])
+        suffix = "" if len(duplicated_ids) <= 5 else f", ... ({len(duplicated_ids)} total)"
+        raise click.ClickException(f"CSV 'id' values must be unique; duplicate id(s): {examples}{suffix}")
+
+    return files, ids
 
 
 @click.group(name="vascx")
@@ -21,20 +122,53 @@ def cli():
 @click.option(
     "--preprocess/--no-preprocess",
     default=True,
-    help="Run preprocessing or use preprocessed images",
+    help=(
+        "Run preprocessing first. With --no-preprocess, reuse existing RGB PNGs "
+        "named <id>.png in OUTPUT_PATH/preprocessed_rgb/."
+    ),
 )
 @click.option(
-    "--vessels/--no-vessels", default=True, help="Run vessels and AV segmentation"
+    "--vessels/--no-vessels",
+    default=True,
+    help=(
+        "Run vessel and artery-vein segmentation. With --no-vessels, skip this "
+        "step and leave any existing OUTPUT_PATH/vessels/ and "
+        "OUTPUT_PATH/artery_vein/ outputs in place."
+    ),
 )
-@click.option("--disc/--no-disc", default=True, help="Run optic disc segmentation")
 @click.option(
-    "--quality/--no-quality", default=True, help="Run image quality estimation"
+    "--disc/--no-disc",
+    default=True,
+    help=(
+        "Run optic disc segmentation. With --no-disc, skip this step and leave "
+        "any existing OUTPUT_PATH/disc/ outputs in place."
+    ),
 )
-@click.option("--fovea/--no-fovea", default=True, help="Run fovea detection")
 @click.option(
-    "--overlay/--no-overlay", default=True, help="Create visualization overlays"
+    "--quality/--no-quality",
+    default=True,
+    help=(
+        "Run image quality estimation. With --no-quality, skip this step and "
+        "leave any existing OUTPUT_PATH/quality.csv in place."
+    ),
 )
-@click.option("--n_jobs", type=int, default=4, help="Number of preprocessing workers")
+@click.option(
+    "--fovea/--no-fovea",
+    default=True,
+    help=(
+        "Run fovea detection. With --no-fovea, skip this step and leave any "
+        "existing OUTPUT_PATH/fovea.csv in place."
+    ),
+)
+@click.option(
+    "--overlay/--no-overlay",
+    default=True,
+    help=(
+        "Create visualization overlays from model outputs. Use --no-overlay "
+        "when overlays are already present or not needed."
+    ),
+)
+@click.option("--n_jobs", "--n-jobs", type=int, default=4, help="Number of preprocessing workers")
 @click.option(
     "--device",
     default=None,
@@ -43,13 +177,85 @@ def cli():
         "When omitted, uses the first available CUDA GPU, Apple MPS, or CPU."
     ),
 )
+@click.option(
+    "--model-dir",
+    type=click.Path(file_okay=False, path_type=Path),
+    default=None,
+    help=(
+        "Directory containing manually downloaded model files. Defaults to "
+        "VASCX_MODEL_DIR when set. Expected layout: quality/quality.pt, "
+        "artery_vein/av_july24.pt, vessels/vessels_july24.pt, "
+        "disc/disc_july24.pt, fovea/fovea_july24.pt."
+    ),
+)
+@click.option(
+    "--quality-model",
+    type=click.Path(dir_okay=False, path_type=Path),
+    default=None,
+    help="Path to a local quality model file. Overrides --model-dir for quality.",
+)
+@click.option(
+    "--av-model",
+    type=click.Path(dir_okay=False, path_type=Path),
+    default=None,
+    help="Path to a local artery-vein segmentation model file. Overrides --model-dir for AV.",
+)
+@click.option(
+    "--vessels-model",
+    type=click.Path(dir_okay=False, path_type=Path),
+    default=None,
+    help="Path to a local vessel segmentation model file. Overrides --model-dir for vessels.",
+)
+@click.option(
+    "--disc-model",
+    type=click.Path(dir_okay=False, path_type=Path),
+    default=None,
+    help="Path to a local optic disc segmentation model file. Overrides --model-dir for disc.",
+)
+@click.option(
+    "--fovea-model",
+    type=click.Path(dir_okay=False, path_type=Path),
+    default=None,
+    help="Path to a local fovea detection model file. Overrides --model-dir for fovea.",
+)
 def run_models(
-    data_path, output_path, preprocess, vessels, disc, quality, fovea, overlay, n_jobs, device
+    data_path,
+    output_path,
+    preprocess,
+    vessels,
+    disc,
+    quality,
+    fovea,
+    overlay,
+    n_jobs,
+    device,
+    model_dir,
+    quality_model,
+    av_model,
+    vessels_model,
+    disc_model,
+    fovea_model,
 ):
     """Run the complete inference pipeline on fundus images.
 
-    DATA_PATH is either a directory containing images or a CSV file with 'path' column.
+    DATA_PATH is either a directory containing images or a CSV file with 'id' and
+    'path' columns. CSV path values must be absolute paths, and IDs must be unique.
     OUTPUT_PATH is the directory where results will be stored.
+
+    With --no-preprocess, DATA_PATH must still be an existing path for CLI
+    compatibility, but model inputs are read from OUTPUT_PATH/preprocessed_rgb/*.png.
+    Preprocessed images must be RGB PNG files named <id>.png; the file stem is used
+    as the ID for all model outputs. If you plan to run calc-biomarkers later,
+    OUTPUT_PATH/bounds.csv must also be present.
+
+    The --no-* flags are intended for re-executing part of a previous pipeline
+    run. Skipped steps are not regenerated, so keep the corresponding existing
+    files in OUTPUT_PATH if later steps need them.
+
+    By default, model weights are loaded from Hugging Face. For offline use,
+    provide local model files with --model-dir, VASCX_MODEL_DIR, or per-model
+    options such as --disc-model. Per-model options take precedence over
+    --model-dir and VASCX_MODEL_DIR.
     """
     try:
         import importlib.util
@@ -95,42 +301,54 @@ def run_models(
     quality_path = output_path / "quality.csv"
     fovea_path = output_path / "fovea.csv"
 
-    # Determine if input is a folder or CSV file
-    data_path = Path(data_path)
-    is_csv = data_path.suffix.lower() == ".csv"
+    models, active_model_dir = _resolve_model_paths(
+        model_dir=model_dir,
+        quality_model=quality_model,
+        av_model=av_model,
+        vessels_model=vessels_model,
+        disc_model=disc_model,
+        fovea_model=fovea_model,
+        run_quality=quality,
+        run_vessels=vessels,
+        run_disc=disc,
+        run_fovea=fovea,
+    )
+    if active_model_dir is not None:
+        click.echo(f"Using model directory: {active_model_dir}")
 
-    # Get files to process
+    data_path = Path(data_path)
     files = []
     ids = None
 
-    if is_csv:
-        click.echo(f"Reading file paths from CSV: {data_path}")
-        try:
-            df = pd.read_csv(data_path)
-            if "path" not in df.columns:
-                click.echo("Error: CSV must contain a 'path' column")
-                return
+    if preprocess:
+        # Determine if input is a folder or CSV file
+        is_csv = data_path.suffix.lower() == ".csv"
 
-            # Get file paths and convert to Path objects
-            files = [Path(p) for p in df["path"]]
-
-            if "id" in df.columns:
-                ids = df["id"].tolist()
+        # Get files to process
+        if is_csv:
+            click.echo(f"Reading file paths from CSV: {data_path}")
+            try:
+                files, ids = _read_run_models_csv(data_path)
                 click.echo("Using IDs from CSV 'id' column")
+            except click.ClickException:
+                raise
+            except Exception as e:
+                click.echo(f"Error reading CSV file: {e}")
+                return
+        else:
+            click.echo(f"Finding files in directory: {data_path}")
+            files = list(data_path.glob("*"))
+            ids = [f.stem for f in files]
 
-        except Exception as e:
-            click.echo(f"Error reading CSV file: {e}")
+        if not files:
+            click.echo("No files found to process")
             return
+
+        click.echo(f"Found {len(files)} files to process")
     else:
-        click.echo(f"Finding files in directory: {data_path}")
-        files = list(data_path.glob("*"))
-        ids = [f.stem for f in files]
-
-    if not files:
-        click.echo("No files found to process")
-        return
-
-    click.echo(f"Found {len(files)} files to process")
+        click.echo(
+            f"Skipping preprocessing; using preprocessed images from {preprocess_rgb_path}"
+        )
 
     # Step 1: Preprocess images if requested
     if preprocess:
@@ -153,7 +371,13 @@ def run_models(
         )
         
     # Use the preprocessed images for subsequent steps
-    preprocessed_files = list(preprocess_rgb_path.glob("*.png"))
+    preprocessed_files = sorted(preprocess_rgb_path.glob("*.png"))
+    if not preprocessed_files:
+        raise click.ClickException(
+            f"No preprocessed PNG files found in {preprocess_rgb_path}. "
+            "Expected RGB PNG files named <id>.png. When using --no-preprocess, "
+            "create this directory before running run-models."
+        )
     ids = [f.stem for f in preprocessed_files]
 
     # Set up inference device
@@ -164,7 +388,10 @@ def run_models(
     if quality:
         click.echo("Running quality estimation...")
         df_quality = run_quality_estimation(
-            fpaths=preprocessed_files, ids=ids, device=inference_device
+            fpaths=preprocessed_files,
+            ids=ids,
+            device=inference_device,
+            model=models["quality"],
         )
         df_quality.to_csv(quality_path)
         click.echo(f"Quality results saved to {quality_path}")
@@ -178,6 +405,8 @@ def run_models(
             av_path=av_path,
             vessels_path=vessels_path,
             device=inference_device,
+            av_model=models["av"],
+            vessels_model=models["vessels"],
         )
         click.echo(f"Vessel segmentation saved to {vessels_path}")
         click.echo(f"AV segmentation saved to {av_path}")
@@ -186,7 +415,11 @@ def run_models(
     if disc:
         click.echo("Running optic disc segmentation...")
         run_segmentation_disc(
-            rgb_paths=preprocessed_files, ids=ids, output_path=disc_path, device=inference_device
+            rgb_paths=preprocessed_files,
+            ids=ids,
+            output_path=disc_path,
+            device=inference_device,
+            model=models["disc"],
         )
         click.echo(f"Disc segmentation saved to {disc_path}")
 
@@ -195,7 +428,10 @@ def run_models(
     if fovea:
         click.echo("Running fovea detection...")
         df_fovea = run_fovea_detection(
-            rgb_paths=preprocessed_files, ids=ids, device=inference_device
+            rgb_paths=preprocessed_files,
+            ids=ids,
+            device=inference_device,
+            model=models["fovea"],
         )
         df_fovea.to_csv(fovea_path)
         click.echo(f"Fovea detection results saved to {fovea_path}")
@@ -226,6 +462,15 @@ def run_models(
     click.echo(f"All requested processing complete. Results saved to {output_path}")
 
 
+def _get_fovea_columns(fovea_df):
+    for x_col, y_col in (("x_fovea", "y_fovea"), ("mean_x", "mean_y")):
+        if x_col in fovea_df.columns and y_col in fovea_df.columns:
+            return x_col, y_col
+    raise click.ClickException(
+        "fovea.csv must contain x_fovea/y_fovea or mean_x/mean_y columns"
+    )
+
+
 def make_examples(input_path):
     # Required subpaths
     preprocess_rgb_path = input_path / "preprocessed_rgb"
@@ -243,6 +488,7 @@ def make_examples(input_path):
     bounds_df = pd.read_csv(bounds_csv, index_col=0)
     fovea_df.index = fovea_df.index.astype(str)
     bounds_df.index = bounds_df.index.astype(str)
+    x_fovea_col, y_fovea_col = _get_fovea_columns(fovea_df)
 
     # Discover candidate IDs from artery_vein folder
     candidate_files = list(av_dir.glob("*.png"))
@@ -269,22 +515,21 @@ def make_examples(input_path):
     examples = []
     for id_ in ids:
         try:
-            fx = float(fovea_df.loc[id_, "x_fovea"])  # type: ignore[arg-type]
-            fy = float(fovea_df.loc[id_, "y_fovea"])  # type: ignore[arg-type]
+            fx = float(fovea_df.loc[id_, x_fovea_col])  # type: ignore[arg-type]
+            fy = float(fovea_df.loc[id_, y_fovea_col])  # type: ignore[arg-type]
             bounds_str = bounds_df.loc[id_, "bounds"]
             bounds = eval(bounds_str, {"np": np}) if isinstance(bounds_str, str) else bounds_str
 
-            examples.append(
-                {
-                    "id": id_,
-                    "fundus_path": preprocess_rgb_path / f"{id_}.png",
-                    "av_path": av_dir / f"{id_}.png",
-                    "vessels_path": vessels_dir / f"{id_}.png",
-                    "disc_path": disc_dir / f"{id_}.png",
-                    "fovea_location": (fx, fy),
-                    "bounds": bounds,
-                }
-            )
+            example = {
+                "id": id_,
+                "fundus_path": preprocess_rgb_path / f"{id_}.png",
+                "av_path": av_dir / f"{id_}.png",
+                "vessels_path": vessels_dir / f"{id_}.png",
+                "disc_path": disc_dir / f"{id_}.png",
+                "fovea_location": (fx, fy),
+                "bounds": bounds,
+            }
+            examples.append(example)
         except Exception as e:
             click.echo(f"Skipping {id_}: error assembling inputs: {e}")
     
@@ -294,7 +539,7 @@ def make_examples(input_path):
 @click.argument("input_path", type=click.Path(exists=True))
 @click.argument("output_csv", type=click.Path())
 @click.option("--feature_set", required=True, help="Name of the feature set to run")
-@click.option("--n_jobs", type=int, default=8, help="Number of extraction workers")
+@click.option("--n_jobs", "--n-jobs", type=int, default=8, help="Number of extraction workers")
 @click.option("--logfile", type=click.Path(), default=None, help="Optional log file for warnings")
 @click.option("--plots_folder", type=click.Path(), default=None, help="Optional folder to save per-feature plots")
 @click.option("--sample", type=int, default=None, help="Sample N examples for testing")
@@ -371,7 +616,9 @@ def write_readme(output_file, feature_set):
 @cli.command("write-mapping")
 @click.argument("output_file", type=click.Path())
 @click.option("--feature_set", required=True, help="Name of the feature set")
-def write_mapping(output_file, feature_set):
-    """Write JSON mapping canonical variable names to display names for FEATURE_SET."""
-    write_variable_display_mapping(feature_set, Path(output_file))
-    click.echo(f"Variable display mapping written to {output_file}")
+@click.option("--json", "as_json", is_flag=True, help="Write mapping as JSON instead of CSV.")
+def write_mapping(output_file, feature_set, as_json):
+    """Write mapping from canonical variable names to display names for FEATURE_SET."""
+    write_variable_display_mapping(feature_set, Path(output_file), as_json=as_json)
+    output_format = "JSON" if as_json else "CSV"
+    click.echo(f"Variable display mapping written to {output_file} as {output_format}")

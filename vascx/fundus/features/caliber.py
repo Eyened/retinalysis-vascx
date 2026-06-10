@@ -75,9 +75,11 @@ class Caliber(LayerFeature):
 
         if isinstance(self.aggregator, LengthWeightedAggregator):
             weights = [self._compute_weight_for_segment(s) for s in segments]
-            return self.aggregator(list(zip(weights, calibers)))
+            result = self.aggregator(list(zip(weights, calibers)))
+        else:
+            result = self.aggregator(np.asarray(calibers))
 
-        return self.aggregator(np.asarray(calibers))
+        return layer.retina.scale_length_measurement(result)
 
     def display_name(self, layer_name: str, key: str = None) -> str:
         from .base import get_aggregator_prefix, get_grid_field_suffix, get_layer_suffix

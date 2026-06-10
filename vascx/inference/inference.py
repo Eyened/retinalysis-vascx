@@ -15,12 +15,13 @@ from rtnls_inference.ensembles.ensemble_segmentation import SegmentationEnsemble
 from tqdm import tqdm
 
 from vascx.inference.device import resolve_device
-
-DEFAULT_QUALITY_MODEL = "Eyened/vascx:quality/quality.pt"
-DEFAULT_AV_MODEL = "Eyened/vascx:artery_vein/av_july24.pt"
-DEFAULT_VESSELS_MODEL = "Eyened/vascx:vessels/vessels_july24.pt"
-DEFAULT_DISC_MODEL = "Eyened/vascx:disc/disc_july24.pt"
-DEFAULT_FOVEA_MODEL = "Eyened/vascx:fovea/fovea_july24.pt"
+from vascx.inference.model_config import (
+    DEFAULT_AV_MODEL,
+    DEFAULT_DISC_MODEL,
+    DEFAULT_FOVEA_MODEL,
+    DEFAULT_QUALITY_MODEL,
+    DEFAULT_VESSELS_MODEL,
+)
 
 EnsembleT = TypeVar("EnsembleT")
 

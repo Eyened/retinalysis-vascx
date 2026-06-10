@@ -52,6 +52,15 @@ def _normalize_disc_mask(mask: np.ndarray) -> np.ndarray:
 
 
 class Retina(Fundus):
+    def __init__(
+        self,
+        *args,
+        mm_per_pixel: Optional[float] = None,
+        **kwargs,
+    ):
+        mm_per_pixel = self._resolve_mm_per_pixel(mm_per_pixel)
+        super().__init__(*args, scaling_factor=mm_per_pixel, **kwargs)
+
     # Cache broadcast index grids for per-pixel geometry.
     @cached_property
     def yy_xx(self) -> tuple[np.ndarray, np.ndarray]:
@@ -320,6 +329,30 @@ class Retina(Fundus):
 
         return ax
 
+    @staticmethod
+    def _resolve_mm_per_pixel(mm_per_pixel: Optional[float] = None) -> Optional[float]:
+        if mm_per_pixel is None:
+            return None
+
+        value = float(mm_per_pixel)
+        if not np.isfinite(value) or value <= 0:
+            raise ValueError("mm_per_pixel must be a positive finite value")
+        return value
+
+    @property
+    def mm_per_pixel(self) -> Optional[float]:
+        return self.scaling_factor
+
+    def _grid_resolution(self) -> float:
+        if self.mm_per_pixel is not None:
+            return float(self.mm_per_pixel)
+        return super()._grid_resolution()
+
+    def scale_length_measurement(self, value):
+        if value is None or self.mm_per_pixel is None:
+            return value
+        return float(value) * float(self.mm_per_pixel)
+
     @classmethod
     def from_file(
         cls,
@@ -330,7 +363,7 @@ class Retina(Fundus):
         fovea_location: Tuple[float, float] = None,
         bounds=None,
         threshold=0.5,
-        scaling_factor=1,
+        mm_per_pixel: Optional[float] = None,
         id: Any = None,
         **kwargs,
     ):
@@ -338,6 +371,7 @@ class Retina(Fundus):
         #     "Either av_path or vessels_path must be provided"
         # )
         roi_mask = kwargs.pop("roi_mask", kwargs.pop("mask", None))
+        mm_per_pixel = cls._resolve_mm_per_pixel(mm_per_pixel)
 
         layers = {}
         if av_path is not None:
@@ -364,7 +398,7 @@ class Retina(Fundus):
             fundus_path_or_mask=fundus_path,
             layers=layers,
             fovea_location=fovea_location,
-            scaling_factor=scaling_factor,
+            mm_per_pixel=mm_per_pixel,
             bounds=bounds,
             roi_mask=roi_mask,
             id=id,

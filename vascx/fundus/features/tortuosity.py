@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import warnings
 from enum import Enum
-from typing import TYPE_CHECKING, Callable, Optional
+from typing import TYPE_CHECKING, Callable, Optional, Union
 
 import numpy as np
 from rtnls_enface.grids.specifications import BaseGridFieldSpecification
@@ -48,8 +48,10 @@ class Tortuosity(LayerFeature):
     - measure: `TortuosityMeasure` (distance, curvature, inflections).
     - length_measure: length source (splines or skeleton) for distance-based measure.
     - min_numpoints: minimum skeleton points required for inclusion.
-    - max_segment_len: optional maximum segment-piece length as a fraction of OD-fovea
-      distance; only applied for segment-mode distance tortuosity.
+    - max_segment_len: optional maximum segment-piece length for splitting long segments
+      before distance tortuosity. An integer is interpreted directly as a pixel length;
+      a float in [0.0, 1.0] is interpreted as a fraction of OD-fovea distance. Only
+      applied for segment-mode distance tortuosity.
     - max_tortuosity: optional upper bound for distance-based tortuosity; values above it are discarded.
     - grid_field: optional `GridFieldEnum` restricting segments to a region.
     - aggregator: callable aggregator returning a single scalar over per-entity values.
@@ -66,26 +68,58 @@ class Tortuosity(LayerFeature):
         measure: TortuosityMeasure = TortuosityMeasure.Distance,
         length_measure: LengthMeasure = LengthMeasure.Splines,
         min_numpoints: int = 25,
-        max_segment_len: Optional[float] = None,
+        max_segment_len: Optional[Union[int, float]] = None,
         max_tortuosity: Optional[float] = None,
         grid_field: Optional[BaseGridFieldSpecification] = None,
         aggregator: Callable = median,
         spline_error_fraction: Optional[float] = None,
     ):
-        """Configure tortuosity computation and optional segment filtering."""
+        """Configure tortuosity computation and optional segment filtering.
+
+        `max_segment_len` accepts either an integer pixel length or a float fraction
+        of OD-fovea distance in [0.0, 1.0].
+        """
         self.mode = mode
         self.measure = measure
         self.length_measure = length_measure
         self.min_numpoints = min_numpoints
-        self.max_segment_len = (
-            None if max_segment_len is None else float(max_segment_len)
-        )
+        self.max_segment_len = self._validate_max_segment_len(max_segment_len)
         self.max_tortuosity = self._default_max_tortuosity(max_tortuosity)
         self.spline_error_fraction = (
             None if spline_error_fraction is None else float(spline_error_fraction)
         )
         super().__init__(grid_field_spec=grid_field)
         self.aggregator = aggregator
+
+    @staticmethod
+    def _validate_max_segment_len(
+        max_segment_len: Optional[Union[int, float]],
+    ) -> Optional[Union[int, float]]:
+        """Validate max_segment_len as either a pixel length or OD-fovea fraction."""
+        if max_segment_len is None:
+            return None
+        if isinstance(max_segment_len, bool):
+            raise ValueError("max_segment_len cannot be a boolean")
+        if isinstance(max_segment_len, (int, np.integer)):
+            if max_segment_len <= 0:
+                raise ValueError(
+                    "max_segment_len must be positive when given as a pixel length"
+                )
+            return int(max_segment_len)
+        if isinstance(max_segment_len, (float, np.floating)):
+            fraction = float(max_segment_len)
+            if not 0.0 <= fraction <= 1.0:
+                raise ValueError(
+                    "max_segment_len must be an integer pixel length or a float in [0.0, 1.0]"
+                )
+            return fraction
+        raise TypeError(
+            "max_segment_len must be an integer pixel length or a float in [0.0, 1.0]"
+        )
+
+    @staticmethod
+    def _max_segment_len_is_fraction(max_segment_len: Union[int, float]) -> bool:
+        return isinstance(max_segment_len, (float, np.floating))
 
     def _default_max_tortuosity(
         self, max_tortuosity: Optional[float]
@@ -151,6 +185,9 @@ class Tortuosity(LayerFeature):
     ) -> Optional[float]:
         if self.max_segment_len is None:
             return None
+
+        if not self._max_segment_len_is_fraction(self.max_segment_len):
+            return float(self.max_segment_len)
 
         disc_fovea_distance = getattr(layer.retina, "disc_fovea_distance", None)
         if disc_fovea_distance is None or not np.isfinite(disc_fovea_distance):

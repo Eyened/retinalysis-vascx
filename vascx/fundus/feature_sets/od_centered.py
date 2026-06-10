@@ -45,7 +45,7 @@ fs_od_centered = FeatureSet(
         Caliber(aggregator=LengthWeightedAggregator()),
 
         # CRE: temporal variants in sup/inf/full; nasal and full variants on full grid
-        CRE(CREMode.Full, inner_circle=0.85, outer_circle=1.275, min_circles=3),
+        CRE(CREMode.Full, inner_circle=0.8, outer_circle=1.275, min_circles=2),
 
         # tortuosity (segments) — Distance and Curvature
         # whole image (non-normalized median)
@@ -61,9 +61,17 @@ fs_od_centered = FeatureSet(
             length_measure=LengthMeasure.Splines,
             aggregator=median,
         ),
+
         # whole image (length-weighted normalized)
         Tortuosity(
             mode=TortuosityMode.Segments,
+            measure=TortuosityMeasure.Distance,
+            length_measure=LengthMeasure.Splines,
+            aggregator=LengthWeightedAggregator(),
+        ),
+        Tortuosity(
+            mode=TortuosityMode.Segments,
+            max_segment_len=80,
             measure=TortuosityMeasure.Distance,
             length_measure=LengthMeasure.Splines,
             aggregator=LengthWeightedAggregator(),

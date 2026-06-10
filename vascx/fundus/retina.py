@@ -8,9 +8,11 @@ from typing import Any, Callable, Dict, Optional, Tuple, Union
 import cv2
 import numpy as np
 from matplotlib import pyplot as plt
+from rtnls_enface.disc import InvalidDiscMaskException, OpticDisc
 from rtnls_enface.fundus import Fundus
 from rtnls_enface.utils.data_loading import open_binary_mask
 from rtnls_enface.utils.image import match_resolution
+from scipy import ndimage as ndi
 from typing_extensions import TypeAlias
 
 from vascx.fundus.features.base import LayerFeature, RetinaFeature, VesselsLayerFeature
@@ -22,6 +24,31 @@ from vascx.utils import load_av_segmentation
 
 Aggregator: TypeAlias = Callable[[np.ndarray], np.float32]
 FeatureType: TypeAlias = Union[VesselTreeLayer, Segment]
+
+
+def _as_binary_uint8_mask(mask: np.ndarray) -> np.ndarray:
+    mask_array = np.asarray(mask)
+    if mask_array.ndim == 3:
+        mask_array = mask_array[..., 0]
+    return (mask_array > 0).astype(np.uint8)
+
+
+def _largest_binary_component(mask: np.ndarray) -> np.ndarray:
+    binary = _as_binary_uint8_mask(mask).astype(bool)
+    if not np.any(binary):
+        return np.zeros(binary.shape, dtype=np.uint8)
+
+    labels, num_features = ndi.label(binary)
+    if num_features <= 1:
+        return binary.astype(np.uint8)
+
+    sizes = ndi.sum(binary, labels, index=np.arange(1, num_features + 1))
+    largest_label = int(np.argmax(sizes) + 1)
+    return (labels == largest_label).astype(np.uint8)
+
+
+def _normalize_disc_mask(mask: np.ndarray) -> np.ndarray:
+    return _largest_binary_component(mask)
 
 
 class Retina(Fundus):
@@ -68,6 +95,40 @@ class Retina(Fundus):
         radius = self.disc_fovea_distance / 6
         return (xx - self.fovea_location.x) ** 2 + (yy - self.fovea_location.y) ** 2 <= radius**2
 
+    @cached_property
+    def background_mask(self) -> np.ndarray:
+        """Bool mask of retinal background pixels for chromaticity sampling.
+
+        Excludes vessels (artery+vein), optic disc, and the darkest 0.5% of
+        grayscale pixels, then dilates the exclusion region. Uses a binary disc
+        mask only (no cup segmentation). Returns all-False if AV layers or disc
+        are unavailable.
+        """
+        h, w = self.resolution
+        empty = np.zeros((h, w), dtype=bool)
+
+        if "arteries" not in self.layers or "veins" not in self.layers:
+            return empty
+        if self.disc is None:
+            return empty
+
+        exclusion = self.arteries.binary | self.veins.binary
+        exclusion |= self.disc.mask.astype(bool)
+
+        gray = self.grayscale.astype(np.float64)
+        th = np.percentile(gray, 0.5)
+        exclusion[gray <= th] = True
+
+        struct_elem = max(int(h / 600), 1)
+        exclusion = ndi.binary_dilation(
+            exclusion,
+            structure=ndi.generate_binary_structure(2, 2),
+            iterations=4 * struct_elem,
+        )
+
+        background = ~exclusion.astype(bool)
+        return background & self.mask.astype(bool)
+
     @classmethod
     def _target_names_for_feature(cls, feature) -> list[str]:
         if isinstance(feature, RetinaFeature):
@@ -103,6 +164,32 @@ class Retina(Fundus):
     @property
     def vessels(self) -> FundusVesselsLayer:
         return self.layers["vessels"]
+
+    def load_disc(self, path_or_array: Union[None, str, Path, np.ndarray]):
+        if path_or_array is None:
+            self.disc_path = None
+            self.disc = None
+            return
+
+        if isinstance(path_or_array, np.ndarray):
+            disc_mask = path_or_array
+            self.disc_path = None
+        else:
+            disc_mask = open_binary_mask(path_or_array)
+            self.disc_path = path_or_array
+
+        disc_mask = match_resolution(
+            disc_mask, self.resolution, interpolation=cv2.INTER_NEAREST
+        )
+        disc_mask = self._clip_mask_to_roi(_as_binary_uint8_mask(disc_mask))
+        disc_mask = _normalize_disc_mask(disc_mask)
+
+        try:
+            self.disc = OpticDisc(disc_mask, fundus=self)
+            self.disc.mask = _as_binary_uint8_mask(self.disc.mask)
+        except InvalidDiscMaskException:
+            warnings.warn("Invalid disc mask. Setting disc to None")
+            self.disc = None
 
     def set_retina(self, retina):
         self.retina = retina

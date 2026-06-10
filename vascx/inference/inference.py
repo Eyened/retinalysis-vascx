@@ -1,6 +1,6 @@
 import os
 from pathlib import Path
-from typing import Any, Callable, Dict, Iterator, List, Optional
+from typing import Any, Callable, Dict, Iterator, List, Optional, TypeVar
 
 import numpy as np
 import pandas as pd
@@ -15,6 +15,38 @@ from rtnls_inference.ensembles.ensemble_segmentation import SegmentationEnsemble
 from tqdm import tqdm
 
 from vascx.inference.device import resolve_device
+
+DEFAULT_QUALITY_MODEL = "Eyened/vascx:quality/quality.pt"
+DEFAULT_AV_MODEL = "Eyened/vascx:artery_vein/av_july24.pt"
+DEFAULT_VESSELS_MODEL = "Eyened/vascx:vessels/vessels_july24.pt"
+DEFAULT_DISC_MODEL = "Eyened/vascx:disc/disc_july24.pt"
+DEFAULT_FOVEA_MODEL = "Eyened/vascx:fovea/fovea_july24.pt"
+
+EnsembleT = TypeVar("EnsembleT")
+
+
+def _load_ensemble(
+    ensemble_cls: type[EnsembleT],
+    model: str | Path,
+    **kwargs,
+) -> EnsembleT:
+    """Load an ensemble from a HuggingFace string, local release, or release file."""
+    model_path = Path(model).expanduser()
+    if model_path.exists():
+        if model_path.is_dir():
+            from rtnls_inference.ensembles import make_ensemble
+
+            return make_ensemble(model_path, **kwargs)
+        if model_path.suffix.lower() == ".onnx":
+            return ensemble_cls.from_onnx(model_path, **kwargs)
+        return ensemble_cls.from_torchscript(model_path, **kwargs)
+
+    model_str = str(model)
+    if model_str.startswith("hf@"):
+        return ensemble_cls.from_modelstring(model_str, **kwargs)
+    if ":" in model_str:
+        return ensemble_cls.from_huggingface(model_str, **kwargs)
+    return ensemble_cls.from_modelstring(model_str, **kwargs)
 
 
 def _create_dtos(
@@ -48,12 +80,11 @@ def _create_dtos(
 def iterate_quality_estimation(
     data: List[ModelInputDTO],
     device: torch.device | None = None,
+    model: str | Path = DEFAULT_QUALITY_MODEL,
 ) -> Iterator[Dict[str, Any]]:
     """Yield quality ensemble inference items."""
     device = resolve_device(device)
-    ensemble_quality = ClassificationEnsemble.from_huggingface(
-        "Eyened/vascx:quality/quality.pt"
-    ).to(device)
+    ensemble_quality = _load_ensemble(ClassificationEnsemble, model).to(device)
 
     inputs = {"images": [item.to_serialized_dict() for item in data]}
     dataloader = ensemble_quality._make_inference_dataloader(
@@ -78,12 +109,13 @@ def run_quality_estimation(
     fpaths,
     ids: Optional[List[str]] = None,
     device: torch.device | None = None,
+    model: str | Path = DEFAULT_QUALITY_MODEL,
 ):
     device = resolve_device(device)
     data = _create_dtos(fpaths, ids=ids)
     output_ids, outputs = [], []
 
-    for item in iterate_quality_estimation(data, device=device):
+    for item in iterate_quality_estimation(data, device=device, model=model):
         output_ids.append(item["id"])
         outputs.append(item["logits"].tolist())
 
@@ -99,6 +131,8 @@ def iterate_segmentation_vessels_and_av(
     device: torch.device | None = None,
     predict_av: bool = True,
     predict_vessels: bool = True,
+    av_model: str | Path = DEFAULT_AV_MODEL,
+    vessels_model: str | Path = DEFAULT_VESSELS_MODEL,
 ) -> Iterator[Dict[str, Any]]:
     """Yield raw segmentation items for AV and vessels."""
     device = resolve_device(device)
@@ -106,16 +140,12 @@ def iterate_segmentation_vessels_and_av(
         return
 
     ensemble_av = (
-        SegmentationEnsemble.from_huggingface("Eyened/vascx:artery_vein/av_july24.pt")
-        .to(device)
-        .eval()
+        _load_ensemble(SegmentationEnsemble, av_model).to(device).eval()
         if predict_av
         else None
     )
     ensemble_vessels = (
-        SegmentationEnsemble.from_huggingface("Eyened/vascx:vessels/vessels_july24.pt")
-        .to(device)
-        .eval()
+        _load_ensemble(SegmentationEnsemble, vessels_model).to(device).eval()
         if predict_vessels
         else None
     )
@@ -176,6 +206,8 @@ def run_segmentation_vessels_and_av(
     callback: Optional[Callable[[Dict[str, Any]], None]] = None,
     predict_av: bool = False,
     predict_vessels: bool = False,
+    av_model: str | Path = DEFAULT_AV_MODEL,
+    vessels_model: str | Path = DEFAULT_VESSELS_MODEL,
 ) -> None:
     """
     Run AV and vessel segmentation on the provided images.
@@ -190,6 +222,8 @@ def run_segmentation_vessels_and_av(
         callback: Optional callback to process results instead of saving them
         predict_av: Whether to predict AV segmentation (default False, overriden by av_path)
         predict_vessels: Whether to predict vessel segmentation (default False, overriden by vessels_path)
+        av_model: Model string/path for the artery-vein segmentation ensemble
+        vessels_model: Model string/path for the vessel segmentation ensemble
     """
     if av_path is not None:
         av_path.mkdir(exist_ok=True, parents=True)
@@ -207,6 +241,8 @@ def run_segmentation_vessels_and_av(
         device=device,
         predict_av=should_predict_av,
         predict_vessels=should_predict_vessels,
+        av_model=av_model,
+        vessels_model=vessels_model,
     ):
         if callback is not None:
             callback(result)
@@ -225,14 +261,11 @@ def run_segmentation_vessels_and_av(
 def iterate_segmentation_disc(
     data: List[ModelInputDTO],
     device: torch.device | None = None,
+    model: str | Path = DEFAULT_DISC_MODEL,
 ) -> Iterator[Dict[str, Any]]:
     """Yield disc segmentation inference items."""
     device = resolve_device(device)
-    ensemble_disc = (
-        SegmentationEnsemble.from_huggingface("Eyened/vascx:disc/disc_july24.pt")
-        .to(device)
-        .eval()
-    )
+    ensemble_disc = _load_ensemble(SegmentationEnsemble, model).to(device).eval()
 
     inputs = {"images": [item.to_serialized_dict() for item in data]}
     dataloader = ensemble_disc._make_inference_dataloader(
@@ -261,6 +294,7 @@ def run_segmentation_disc(
     output_path: Optional[Path] = None,
     device: torch.device | None = None,
     callback: Optional[Callable[[Dict[str, Any]], None]] = None,
+    model: str | Path = DEFAULT_DISC_MODEL,
 ) -> None:
     device = resolve_device(device)
     if output_path is None and callback is None:
@@ -273,7 +307,7 @@ def run_segmentation_disc(
 
     data = _create_dtos(rgb_paths, ce_paths=ce_paths, ids=ids)
 
-    for item in iterate_segmentation_disc(data, device=device):
+    for item in iterate_segmentation_disc(data, device=device, model=model):
         if callback is not None:
             callback(item)
         elif output_path is not None:
@@ -285,12 +319,11 @@ def run_segmentation_disc(
 def iterate_fovea_detection(
     data: List[ModelInputDTO],
     device: torch.device | None = None,
+    model: str | Path = DEFAULT_FOVEA_MODEL,
 ) -> Iterator[Dict[str, Any]]:
     """Yield fovea detection inference items."""
     device = resolve_device(device)
-    ensemble_fovea = HeatmapRegressionEnsemble.from_huggingface(
-        "Eyened/vascx:fovea/fovea_july24.pt"
-    ).to(device)
+    ensemble_fovea = _load_ensemble(HeatmapRegressionEnsemble, model).to(device)
 
     inputs = {"images": [item.to_serialized_dict() for item in data]}
     dataloader = ensemble_fovea._make_inference_dataloader(
@@ -317,12 +350,13 @@ def run_fovea_detection(
     ce_paths: Optional[List[Path]] = None,
     ids: Optional[List[str]] = None,
     device: torch.device | None = None,
+    model: str | Path = DEFAULT_FOVEA_MODEL,
 ) -> pd.DataFrame:
     device = resolve_device(device)
     data = _create_dtos(rgb_paths, ce_paths=ce_paths, ids=ids)
     output_ids, outputs = [], []
 
-    for item in iterate_fovea_detection(data, device=device):
+    for item in iterate_fovea_detection(data, device=device, model=model):
         output_ids.append(item["id"])
         outputs.append(
             [

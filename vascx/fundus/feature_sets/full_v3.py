@@ -13,6 +13,7 @@ from rtnls_enface.grids.specifications import (
 
 from vascx.fundus.features.bifurcation_angles import BifurcationAngles
 from vascx.fundus.features.caliber import Caliber
+from vascx.fundus.features.chromaticity import Chromaticity, ChromaticityChannel
 from vascx.fundus.features.cre import CRE, CREMode
 from vascx.fundus.features.disc_features import DiscFoveaDistance
 from vascx.fundus.features.sparsity import Sparsity, SparsityMode
@@ -171,6 +172,10 @@ fs_full_v3 = FeatureSet(
         Sparsity(grid_field=ETDRS_FULL, mode=SparsityMode.MEAN),
         Sparsity(grid_field=ETDRS_FULL, mode=SparsityMode.MAX),
 
-        
+        ####  CHROMATICITY ####
+
+        Chromaticity(ChromaticityChannel.L),
+        Chromaticity(ChromaticityChannel.a),
+        Chromaticity(ChromaticityChannel.b),
     ],
 )

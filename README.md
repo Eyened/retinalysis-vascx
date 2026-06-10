@@ -10,21 +10,12 @@ VascX was created to facilitate the extraction of retinal vascular biomarkers fr
 
 ## Features
 
-<table border="0">
-  <tr>
-    <td>
-      <ul>
-        <li>Currently supported biomarkers / features: Central Retinal Equivalents, Calibers, Artery-Vein Ratio, Vascular Density, Bifurcation Angles, Tortuosity, Sparsity, and others.</li>
-        <li>Many of these biomarkers support multiple implementations and configuration arguments as detailed in [our manuscript](https://arxiv.org/abs/2602.08580). The code for each biomarker also specificies the supported options.</li>
-        <li>VascX supports region-aware measurements, relative to the optic disc - fovea axis. If the region is not visible, the biomarker is not computed.</li>
-        <li>VascX can generate visualisations for every biomarker.</li>
-      <ul>
-    </td>
-    <td align="center">
-      <img src="samples/figures/biomarkers_combined_part1.png" alt="Image 1" width="100%">
-    </td>
-  </tr>
-</table>
+<ul>
+  <li>Currently supported biomarkers / features: Central Retinal Equivalents, Calibers, Artery-Vein Ratio, Vascular Density, Bifurcation Angles, Tortuosity, Sparsity, and others.</li>
+  <li>Many of these biomarkers support multiple implementations and configuration arguments as detailed in [our manuscript](https://arxiv.org/abs/2602.08580). The code for each biomarker also specificies the supported options.</li>
+  <li>VascX supports region-aware measurements, relative to the optic disc - fovea axis. If the region is not visible, the biomarker is not computed.</li>
+  <li>VascX can generate visualisations for every biomarker.</li>
+</ul>
 
 
 

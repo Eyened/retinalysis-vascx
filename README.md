@@ -44,11 +44,20 @@ pip install torch torchvision torchaudio --index-url https://download.pytorch.or
 conda install pytorch torchvision torchaudio pytorch-cuda=11.8 -c pytorch -c nvidia # conda and CUDA 11
 ```
 
-3. Install VascX and retinalysis-inference (for model inference):
+3. Install VascX:
 
 ```
 pip install retinalysis-vascx retinalysis-inference
 ```
+
+> [!TIP]
+> To be able to directly modify VascX code to eg. customise biomarkers or develop new ones, clone and install the Python package in development mode instead:
+> ```
+> git clone git@github.com:Eyened/retinalysis-vascx.git rtnls_vascx
+> cd rtnls_vascx
+> pip install -e .
+> ```
+
 
 ## Usage
 
@@ -233,7 +242,7 @@ For most datasets, the standard [feature extraction notebook](./notebooks/2_feat
 
 `mm_per_pixel` is interpreted as millimeters per pixel. When provided, VascX uses it to scale some grids defined in physical units (eg. ETDRS grid), and to convert caliber and CRE outputs from pixels to millimeters. Unitless features, densities, angles, and tortuosity values are not multiplied. If no `mm_per_pixel` value is provided, VascX keeps the legacy behavior: grid scaling is derived from the optic-disc to fovea distance using the 4.75 mm assumption, and caliber/CRE outputs remain in pixels. For full feature sets, also provide the ROI mask or preprocessing bounds; the advanced notebook shows how to convert VascX preprocessing bounds into an ROI mask.
 
-
+<a id="code-changes"></a>
 ### Code changes
 
 We welcome advanced users who want to do one of:

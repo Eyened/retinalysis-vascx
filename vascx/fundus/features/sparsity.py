@@ -38,6 +38,8 @@ class Sparsity(VesselsLayerFeature):
     - mode: `SparsityMode` controlling aggregation ("mean" or "max").
     """
 
+    min_grid_field_fraction_in_bounds = 0.80
+
     def __init__(
         self,
         grid_field: Optional[BaseGridFieldSpecification] = None,
@@ -47,8 +49,8 @@ class Sparsity(VesselsLayerFeature):
         """Coverage of distance transform, optionally restricted to an ETDRS grid field.
 
         When grid_field is provided, the computation is performed over pixels within the
-        ETDRS field that are also inside the retina mask. If less than 50% of the field
-        lies within the retina, a warning is issued and None is returned. Mode controls
+        ETDRS field that are also inside the retina mask. If too little of the field
+        lies within the retina, None is returned. Mode controls
         whether the mean is taken over all selected pixels ("mean") or only over blob-wise
         maxima of the distance transform ("max"). If `normalize` is True, sparsity is
         normalized by the OD-fovea distance.
@@ -127,7 +129,7 @@ class Sparsity(VesselsLayerFeature):
     def compute(self, layer: FundusVesselsLayer):
         if self.grid_field_spec is not None:
             frac = grid_field_fraction_in_bounds(layer.retina, self.grid_field_spec)
-            if frac < 0.5:
+            if frac < self.min_grid_field_fraction_in_bounds:
                 return None
 
         fovea_mask = self.get_fovea_mask(layer)

@@ -6,7 +6,7 @@ import cv2
 import numpy as np
 from rtnls_enface.grids.specifications import BaseGridFieldSpecification
 
-from .base import LayerFeature, grid_field_masks_and_fraction
+from .base import LayerFeature, grid_field_passes_qc
 
 if TYPE_CHECKING:
     from vascx.fundus.layer import VesselTreeLayer
@@ -23,6 +23,8 @@ class VascularDensity(LayerFeature):
     Args (constructor):
     - grid_field: optional grid field specification; if None, density is over the full retina mask.
     """
+
+    min_grid_field_fraction_in_bounds = 1.0
 
     def __init__(self, grid_field: Optional[BaseGridFieldSpecification] = None):
         """Configure optional grid region; default is full retina (no grid field)."""
@@ -42,12 +44,12 @@ class VascularDensity(LayerFeature):
         return np.sum(selected_pixels[mask == 255]) / np.sum(mask == 255)
 
     def compute(self, layer: VesselTreeLayer):
-        # If using a grid_field, ensure at least 50% is within bounds
         if self.grid_field_spec is not None:
-            _, in_bounds_mask, frac = grid_field_masks_and_fraction(
-                layer.retina, self.grid_field_spec
-            )
-            if frac < 0.5:
+            if not grid_field_passes_qc(
+                layer.retina,
+                self.grid_field_spec,
+                min_fraction_in_bounds=self.min_grid_field_fraction_in_bounds,
+            ):
                 return None
         mask = self.get_mask(layer)
 

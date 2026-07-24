@@ -18,6 +18,7 @@ def extract_one(
     retina_cls: EnfaceImage = Retina,
     print_stack_trace: bool = False,
     plots_folder: Optional[str] = None,
+    naming: str = "canonical",
 ):
     feature_set = FeatureSet.get_by_name(feature_set_name)
     if feature_set is None:
@@ -36,7 +37,7 @@ def extract_one(
                 ex["roi_mask"] = roi_mask
                 ex["bounds"] = None
         retina = retina_cls.from_file(**ex)
-        features = retina.calc_features(feature_set, plots_folder)
+        features = retina.calc_features(feature_set, plots_folder, naming=naming)
 
         warning_messages = [str(w.message) for w in caught_warnings]
 
@@ -56,10 +57,13 @@ def extract_multiple(
     retina_cls: EnfaceImage = Retina,
     print_stack_trace: bool = False,
     plots_folder: Optional[str] = None,
+    naming: str = "canonical",
 ):
     """Extract features for multiple examples sequentially."""
     return [
-        extract_one(ex, feature_set_name, retina_cls, print_stack_trace, plots_folder)
+        extract_one(
+            ex, feature_set_name, retina_cls, print_stack_trace, plots_folder, naming
+        )
         for ex in examples
     ]
 
@@ -72,6 +76,7 @@ def extract_in_parallel(
     print_stack_trace: bool = False,
     logger=None,
     plots_folder: Optional[str] = None,
+    naming: str = "canonical",
 ):
     from vascx.shared.features import FeatureSet
 
@@ -94,7 +99,7 @@ def extract_in_parallel(
 
     batch_results = Parallel(n_jobs=n_workers, verbose=0)(
         delayed(extract_multiple)(
-            batch, feature_set_name, retina_cls, print_stack_trace, plots_folder
+            batch, feature_set_name, retina_cls, print_stack_trace, plots_folder, naming
         )
         for batch in example_batches
     )

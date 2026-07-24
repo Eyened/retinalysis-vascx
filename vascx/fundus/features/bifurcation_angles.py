@@ -7,7 +7,7 @@ from rtnls_enface.grids.specifications import BaseGridFieldSpecification
 
 from vascx.shared.aggregators import mean
 
-from .base import LayerFeature, grid_field_fraction_in_bounds
+from .base import LayerFeature, grid_field_passes_qc
 
 if TYPE_CHECKING:
     from vascx.fundus.layer import VesselTreeLayer
@@ -31,6 +31,8 @@ class BifurcationAngles(LayerFeature):
     - min_bifurcations: if fewer valid angles remain, compute returns None.
     - aggregator: function to aggregate per-bifurcation angles (e.g., mean/median).
     """
+
+    min_grid_field_fraction_in_bounds = 0.95
 
     def __init__(
         self,
@@ -59,8 +61,11 @@ class BifurcationAngles(LayerFeature):
 
     def compute(self, layer: VesselTreeLayer):
         if self.grid_field_spec is not None:
-            frac = grid_field_fraction_in_bounds(layer.retina, self.grid_field_spec)
-            if frac < 0.5:
+            if not grid_field_passes_qc(
+                layer.retina,
+                self.grid_field_spec,
+                min_fraction_in_bounds=self.min_grid_field_fraction_in_bounds,
+            ):
                 return None
         bifurcations = self._get_bifurcation_points(layer)
         angles: list[float] = []

@@ -9,7 +9,7 @@ from vascx.shared.aggregators import LengthWeightedAggregator, median
 from vascx.shared.segment import Segment
 from vascx.shared.vessels import Vessels
 
-from .base import LayerFeature, grid_field_fraction_in_bounds
+from .base import LayerFeature, grid_field_passes_qc
 
 if TYPE_CHECKING:
     from vascx.fundus.layer import VesselTreeLayer
@@ -33,6 +33,8 @@ class Caliber(LayerFeature):
     - aggregator: callable aggregator returning a single scalar from diameters, or
       `LengthWeightedAggregator` for length-weighted mean of per-segment median diameters.
     """
+
+    min_grid_field_fraction_in_bounds = 0.95
 
     def __init__(
         self,
@@ -58,8 +60,11 @@ class Caliber(LayerFeature):
     def compute(self, layer: VesselTreeLayer):
         # raise NotImplementedError("Caliber is not implemented")
         if self.grid_field_spec is not None:
-            frac = grid_field_fraction_in_bounds(layer.retina, self.grid_field_spec)
-            if frac < 0.5:
+            if not grid_field_passes_qc(
+                layer.retina,
+                self.grid_field_spec,
+                min_fraction_in_bounds=self.min_grid_field_fraction_in_bounds,
+            ):
                 return None
         segments = self._get_segments(layer)
         if isinstance(self.aggregator, LengthWeightedAggregator) and len(segments) < 5:

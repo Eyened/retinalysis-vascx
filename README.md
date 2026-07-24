@@ -97,12 +97,12 @@ For example, to run VascX on the provided samples folder in our git repository:
 git clone git@github.com:Eyened/retinalysis-vascx.git rtnls_vascx
 cd rtnls_vascx
 vascx run-models ./samples/fundus/original/ ./samples/fundus/segmentations
-vascx calc-biomarkers ./samples/fundus/segmentations ./samples/fundus/biomarkers.csv --feature_set full_v3 --n-jobs 8
+vascx calc-biomarkers ./samples/fundus/segmentations ./samples/fundus/biomarkers.csv --feature_set full_v3 --n-jobs 8 --naming resolved
 ```
 
 ## Outputs
 
-`vascx calc-biomarkers` will write a CSV file at `PATH_TO_BIOMARKERS` containing a row per image and a column per biomarker. 
+`vascx calc-biomarkers` will write a CSV file at `PATH_TO_BIOMARKERS` containing a row per image and a column per biomarker. It also writes the matching JSON name/display mapping beside it as `PATH_TO_BIOMARKERS` with a `.names.json` suffix. By default, CLI output uses feature-set-aware `resolved` names; pass `--naming canonical` to preserve the full canonical convention.
 VascX parameter names typically follow the format:
 
 ```
@@ -119,10 +119,10 @@ REGION = measured over the full ETDRS grid
 LAYER = arteries - arterial biomarker - as opposed to veins or vessels (combined)
 ```
 
-Some of the tokens may be ommited if they match defaults or if they do not apply. A CSV mapping between the biomarker names in the ouput CSV and more friendly display names can be generated with:
+Some of the tokens may be ommited if they match defaults or if they do not apply. A CSV mapping between the selected biomarker names in the output CSV and publication-friendly display names can be generated with the same `--naming` option:
 
 ```
-vascx write-mapping --feature_set full_v3 PATH_TO_MAPPING_CSV
+vascx write-mapping --feature_set full_v3 PATH_TO_MAPPING_CSV --naming resolved
 ```
 
 

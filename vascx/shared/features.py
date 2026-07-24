@@ -1,7 +1,16 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from typing import TYPE_CHECKING, Any, Iterable, List, Tuple
+from inspect import signature
+from typing import TYPE_CHECKING, Any, Iterable, List, Sequence, Tuple
+
+from .naming import (
+    FeatureName,
+    NamePart,
+    NamingConvention,
+    coerce_naming_convention,
+    make_feature_names,
+)
 
 import numpy as np
 
@@ -57,6 +66,17 @@ class Feature(ABC):
         """Return the canonical machine-readable feature name."""
         return "_".join(token for token in self.name_tokens(**kwargs) if token)
 
+    def name_parts(self, **kwargs: Any) -> Sequence[NamePart]:
+        """Return structured naming parts for feature-set-aware naming."""
+        return (
+            NamePart(
+                key="feature",
+                tokens=tuple(self.name_tokens(**kwargs)),
+                display=self.display_name(**kwargs),
+                family=True,
+            ),
+        )
+
     @abstractmethod
     def _plot(self, ax: 'Axes', layer: Any, **kwargs: Any) -> 'Axes':
         """Subclass draws onto ax for the given layer and returns ax."""
@@ -75,10 +95,49 @@ class Feature(ABC):
         else:
             return str(display_value)
 
+    def _get_retina_for_plot(self, layer: Any) -> Any:
+        """Return the retina object associated with a feature plot target."""
+        if getattr(layer, "fovea_location", None) is not None:
+            return layer
+        return getattr(layer, "retina", None)
+
+    def _plot_fovea_location(self, ax: 'Axes', layer: Any) -> 'Axes':
+        """Overlay the fovea marker using the retina plotting helper."""
+        retina = self._get_retina_for_plot(layer)
+        if retina is None or getattr(retina, "fovea_location", None) is None:
+            return ax
+
+        plot = getattr(retina, "plot", None)
+        if plot is None:
+            return ax
+
+        try:
+            parameters = signature(plot).parameters
+        except (TypeError, ValueError):
+            return ax
+
+        if "fovea" not in parameters:
+            return ax
+
+        plot_kwargs = {
+            "ax": ax,
+            "image": False,
+            "disc": False,
+            "fovea": True,
+            "bounds": False,
+        }
+        if "av" in parameters:
+            plot_kwargs["av"] = False
+
+        return plot(**plot_kwargs)
+
     def plot(self, ax: 'Axes', layer: Any, **kwargs: Any) -> 'Axes':
         """Compute value, delegate drawing to _plot, annotate value at upper-left, return ax."""
+        plot_fovea = kwargs.pop("plot_fovea", True)
         value = self.compute(layer, **kwargs)
         ax = self._plot(ax, layer, **kwargs)
+        if plot_fovea:
+            ax = self._plot_fovea_location(ax, layer)
 
         # Display values starting from top-left, going down
         y_start = 0.99

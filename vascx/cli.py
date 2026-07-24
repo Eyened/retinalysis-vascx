@@ -543,7 +543,14 @@ def make_examples(input_path):
 @click.option("--logfile", type=click.Path(), default=None, help="Optional log file for warnings")
 @click.option("--plots_folder", type=click.Path(), default=None, help="Optional folder to save per-feature plots")
 @click.option("--sample", type=int, default=None, help="Sample N examples for testing")
-def calc_biomarkers(input_path, output_csv, feature_set, n_jobs, logfile, plots_folder, sample):
+@click.option(
+    "--naming",
+    type=click.Choice(["resolved", "canonical"]),
+    default="resolved",
+    show_default=True,
+    help="Biomarker naming convention for output columns.",
+)
+def calc_biomarkers(input_path, output_csv, feature_set, n_jobs, logfile, plots_folder, sample, naming):
     """Extract vascular biomarkers from a run_models output folder and save to CSV.
 
     INPUT_PATH is the output directory from 'vascx run-models' containing folders
@@ -594,14 +601,20 @@ def calc_biomarkers(input_path, output_csv, feature_set, n_jobs, logfile, plots_
         logger=logger,
         plots_folder=plots_folder,
         print_stack_trace=True,
+        naming=naming,
     )
 
     # Write feature descriptions to file
     write_feature_descriptions(feature_set, output_csv.parent / "feature_descriptions.txt")
     
-    # Save results
+    # Save results and the matching machine-name/display-name mapping.
     df.to_csv(output_csv)
+    names_json = output_csv.with_suffix(".names.json")
+    write_variable_display_mapping(
+        feature_set, names_json, as_json=True, naming=naming
+    )
     click.echo(f"Features saved to {output_csv}")
+    click.echo(f"Feature name mapping written to {names_json}")
 
 
 @cli.command()
@@ -617,8 +630,17 @@ def write_readme(output_file, feature_set):
 @click.argument("output_file", type=click.Path())
 @click.option("--feature_set", required=True, help="Name of the feature set")
 @click.option("--json", "as_json", is_flag=True, help="Write mapping as JSON instead of CSV.")
-def write_mapping(output_file, feature_set, as_json):
-    """Write mapping from canonical variable names to display names for FEATURE_SET."""
-    write_variable_display_mapping(feature_set, Path(output_file), as_json=as_json)
+@click.option(
+    "--naming",
+    type=click.Choice(["resolved", "canonical"]),
+    default="resolved",
+    show_default=True,
+    help="Naming convention for mapping keys and display names.",
+)
+def write_mapping(output_file, feature_set, as_json, naming):
+    """Write mapping from selected variable names to display names for FEATURE_SET."""
+    write_variable_display_mapping(
+        feature_set, Path(output_file), as_json=as_json, naming=naming
+    )
     output_format = "JSON" if as_json else "CSV"
     click.echo(f"Variable display mapping written to {output_file} as {output_format}")

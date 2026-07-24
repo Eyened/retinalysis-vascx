@@ -7,6 +7,7 @@ import numpy as np
 from vascx.faz.features.base import FAZLayerFeature
 from vascx.faz.layer import FAZLayer
 from vascx.shared.features import FeatureSet
+from vascx.shared.naming import make_feature_names
 from vascx.utils import load_av_segmentation, load_image
 
 from rtnls_enface.faz_enface import FAZEnface
@@ -29,14 +30,16 @@ class FAZRetina(FAZEnface):
     def set_retina(self, retina):
         self.retina = retina
 
-    def calc_features(self, feature_set: FeatureSet):
+    def calc_features(self, feature_set: FeatureSet, naming: str = "canonical"):
         all_features = {}
-        for feature in feature_set:
+        target_names = lambda _feature: tuple(self.layers.keys())
+        feature_names = make_feature_names(feature_set, target_names, naming=naming)
+        for feature_index, feature in enumerate(feature_set):
             if not isinstance(feature, FAZLayerFeature):
                 continue
             for layer_name, layer in self.layers.items():
                 res = feature.compute(layer)
-                feature_name = feature.canonical_name(layer_name=layer_name)
+                feature_name = feature_names[(feature_index, layer_name)].name
                 all_features[feature_name] = res
 
         return all_features

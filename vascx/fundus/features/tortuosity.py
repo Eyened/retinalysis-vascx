@@ -11,7 +11,7 @@ from vascx.shared.aggregators import LengthWeightedAggregator, median
 from vascx.shared.segment import Segment
 from vascx.shared.vessels import Vessels
 
-from .base import LayerFeature, grid_field_fraction_in_bounds
+from .base import LayerFeature, grid_field_passes_qc
 
 if TYPE_CHECKING:
     from vascx.fundus.layer import VesselTreeLayer
@@ -56,6 +56,8 @@ class Tortuosity(LayerFeature):
     - grid_field: optional `GridFieldEnum` restricting segments to a region.
     - aggregator: callable aggregator returning a single scalar over per-entity values.
     """
+
+    min_grid_field_fraction_in_bounds = 0.80
 
     # Ideas
     # tortuosity for different levels of caliber
@@ -250,8 +252,11 @@ class Tortuosity(LayerFeature):
 
     def compute(self, layer: VesselTreeLayer):
         if self.grid_field_spec is not None:
-            frac = grid_field_fraction_in_bounds(layer.retina, self.grid_field_spec)
-            if frac < 0.5:
+            if not grid_field_passes_qc(
+                layer.retina,
+                self.grid_field_spec,
+                min_fraction_in_bounds=self.min_grid_field_fraction_in_bounds,
+            ):
                 return None
         tortuosities = self.raw(layer)
         if tortuosities is None:

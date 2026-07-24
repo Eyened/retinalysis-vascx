@@ -19,6 +19,7 @@ from vascx.fundus.features.base import LayerFeature, RetinaFeature, VesselsLayer
 from vascx.fundus.layer import VesselTreeLayer
 from vascx.fundus.vessels_layer import FundusVesselsLayer
 from vascx.shared.features import FeatureSet
+from vascx.shared.naming import make_feature_names
 from vascx.shared.segment import Segment
 from vascx.utils import load_av_segmentation
 
@@ -232,10 +233,20 @@ class Retina(Fundus):
         feature_set: FeatureSet,
         plots_folder: Optional[str] = None,
         raise_on_error: bool = False,
+        naming: str = "canonical",
     ):
         all_features = {}
         seen_names: Dict[str, object] = {}
-        for feature in feature_set:
+        name_cache = getattr(feature_set, "_vascx_name_cache", {})
+        cache_key = (self.__class__, str(naming))
+        feature_names = name_cache.get(cache_key)
+        if feature_names is None:
+            feature_names = make_feature_names(
+                feature_set, self._target_names_for_feature, naming=naming
+            )
+            name_cache[cache_key] = feature_names
+            feature_set._vascx_name_cache = name_cache
+        for feature_index, feature in enumerate(feature_set):
             feature_label = feature.__class__.__name__
             if isinstance(feature, RetinaFeature):
                 targets = [("retina", self)]
@@ -266,7 +277,7 @@ class Retina(Fundus):
                     )
                     res = None
 
-                feature_name = feature.canonical_name(layer_name=target_name)
+                feature_name = feature_names[(feature_index, target_name)].name
                 self._register_canonical_name(seen_names, feature_name, feature)
                 all_features[feature_name] = res
 
@@ -276,7 +287,7 @@ class Retina(Fundus):
                     fig, ax = plt.subplots(1, 1, figsize=(8, 8), dpi=300)
                     feature.plot(ax, target)
                     fname_prefix = str(self.id) if self.id is not None else "sample"
-                    plot_name = feature.canonical_name(layer_name=target_name)
+                    plot_name = feature_names[(feature_index, target_name)].name
                     fname = f"{fname_prefix}_{plot_name}.png"
                     fig.savefig(
                         Path(plots_folder) / fname, dpi=200, bbox_inches="tight"
@@ -286,19 +297,11 @@ class Retina(Fundus):
         return all_features
 
     @classmethod
-    def make_feature_display_names(cls, feature_set: FeatureSet) -> Dict[str, str]:
-        mapping = {}
-        seen_names: Dict[str, object] = {}
-        for feature in feature_set:
-            targets = cls._target_names_for_feature(feature)
-
-            for target_name in targets:
-                full_key = feature.canonical_name(layer_name=target_name)
-                cls._register_canonical_name(seen_names, full_key, feature)
-                display = feature.display_name(layer_name=target_name)
-                mapping[full_key] = display
-
-        return mapping
+    def make_feature_display_names(
+        cls, feature_set: FeatureSet, naming: str = "canonical"
+    ) -> Dict[str, str]:
+        names = make_feature_names(feature_set, cls._target_names_for_feature, naming=naming)
+        return {item.name: item.display_name for item in names.values()}
 
     def plot(
         self,

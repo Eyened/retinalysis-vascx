@@ -27,6 +27,8 @@ class VarianceOfLaplacian(RetinaFeature):
       (applied within the retina mask).
     """
 
+    min_grid_field_fraction_in_bounds = 0.80
+
     def __init__(self, grid_field: Optional[BaseGridFieldSpecification] = None):
         """Variance of Laplacian, optionally restricted to an ETDRS grid_field.
 
@@ -39,10 +41,10 @@ class VarianceOfLaplacian(RetinaFeature):
         if self.grid_field_spec is None:
             return float(np.nanvar(retina.laplacian))
 
-        field_mask, in_bounds_mask, frac = grid_field_masks_and_fraction(
+        _, in_bounds_mask, frac = grid_field_masks_and_fraction(
             retina, self.grid_field_spec
         )
-        if frac < 0.5:
+        if frac < self.min_grid_field_fraction_in_bounds:
             return None
         mask = in_bounds_mask
         if not np.any(mask):

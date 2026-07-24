@@ -23,7 +23,7 @@ REFERENCE_DIR = REPO_ROOT / "tests" / "reference"
 FEATURE_SET_PACKAGE = "vascx.fundus.feature_sets"
 DEFAULT_ABS_TOL = 1e-4
 DEFAULT_REL_TOL = 1e-3
-MAX_FAILURE_LINES = 25
+MAX_FAILURE_LINES = 100
 
 
 @dataclass

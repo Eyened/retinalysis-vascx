@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import warnings
 from enum import Enum
 from typing import TYPE_CHECKING, List, Optional, Tuple
 
@@ -62,8 +61,8 @@ class CRE(LayerFeature):
     `median_diameter`.
 
     Computation: across concentric radii around the disc, identifies intersecting segments, optionally
-    filters by a superior/inferior hemifield, retains up to the largest `max_vessels` by `median_diameter`,
-    and recursively combines diameters using the Hubbard reduction (√(d₁² + d₂²)) scaled by artery/vein
+    filters by a superior/inferior hemifield, retains the largest `max_vessels` by `median_diameter`
+    (mode defaults: 6 full, 4 temporal/nasal), and recursively combines diameters using the Hubbard reduction (√(d₁² + d₂²)) scaled by artery/vein
     constants (c=0.88 for arteries, c=0.95 for veins). Returns the median equivalent diameter across radii.
 
     Args (constructor):
@@ -82,16 +81,16 @@ class CRE(LayerFeature):
     def __init__(
         self,
         CREMode: CREMode = CREMode.Temporal,
-        max_vessels: int = 6,
+        max_vessels: Optional[int] = None,
         hemifield: Optional[HemifieldField] = None,
-        min_circles: int = 6,
+        min_circles: int = 2,
         inner_circle: float = 1.0,
         outer_circle: float = 1.5,
-        num_circles: int = 6,
+        num_circles: int = 5,
         spline_error_fraction: float = 0.05,
     ):
         self.CREMode = CREMode
-        self.max_vessels = max_vessels
+        
         self.inner_circle = float(inner_circle)
         self.outer_circle = float(outer_circle)
         self.num_circles = int(num_circles)
@@ -99,18 +98,32 @@ class CRE(LayerFeature):
         if self.num_circles < 1:
             raise ValueError("num_circles must be at least 1")
         if self.outer_circle < self.inner_circle:
-            raise ValueError("outer_circle must be greater than or equal to inner_circle")
-        self.min_intersections = 4
-        if self.CREMode in [CREMode.Nasal, CREMode.Temporal]:
-            self.min_intersections = 2
+            raise ValueError(
+                "outer_circle must be greater than or equal to inner_circle"
+            )
         if hemifield is None:
             self.hemifield_spec = None
         else:
             self.hemifield_spec = GridFieldSpecification(
                 HemifieldGridSpecification(), hemifield
             )
-            self.min_intersections //= 2
         self.min_circles: int = int(min_circles)
+        self.max_vessels = (
+            self.default_max_vessels()
+            if max_vessels is None
+            else int(max_vessels)
+        )
+
+    def default_max_vessels(self) -> int:
+        """Return the mode-specific default number of vessels to reduce."""
+        if self.CREMode == CREMode.Full:
+            max_vessels = 6
+        else:
+            max_vessels = 4
+        if self.hemifield_spec is not None and self.hemifield_spec.field in [HemifieldField.Superior, HemifieldField.Inferior]:
+            max_vessels = max_vessels // 2
+        return max_vessels
+        
 
     def get_circle(self, layer: VesselTreeLayer, od_multiple: float = 1.0):
         disc = layer.retina.disc
@@ -126,6 +139,73 @@ class CRE(LayerFeature):
         return np.linspace(
             self.inner_circle, self.outer_circle, num=self.num_circles
         ).tolist()
+
+    def _temporal_origin_and_vector(
+        self, layer: "VesselTreeLayer"
+    ) -> Optional[Tuple[float, float, float, float]]:
+        """Return the shifted temporal origin and OD-to-fovea vector."""
+        retina = layer.retina
+        if retina.disc is None or retina.fovea_location is None:
+            return None
+
+        disc_center = retina.disc.center_of_mass
+        fovea = retina.fovea_location
+        vy = fovea.y - disc_center.y
+        vx = fovea.x - disc_center.x
+        norm_v = np.hypot(vx, vy)
+        if norm_v == 0:
+            return None
+
+        origin_y = disc_center.y - 0.5 * retina.disc.circle.r * vy / norm_v
+        origin_x = disc_center.x - 0.5 * retina.disc.circle.r * vx / norm_v
+        return origin_y, origin_x, vy, vx
+
+    def _temporal_angle_deg(
+        self,
+        layer: "VesselTreeLayer",
+        y: np.ndarray | float,
+        x: np.ndarray | float,
+    ) -> Optional[np.ndarray | float]:
+        """Measure angle from the shifted temporal origin to image point(s)."""
+        geometry = self._temporal_origin_and_vector(layer)
+        if geometry is None:
+            return None
+
+        origin_y, origin_x, vy, vx = geometry
+        dy = y - origin_y
+        dx = x - origin_x
+        norm_v = np.hypot(vx, vy)
+        norm_p = np.hypot(dx, dy) + 1e-6
+        cosang = (dx * vx + dy * vy) / (norm_p * norm_v)
+        cosang = np.clip(cosang, -1.0, 1.0)
+        return np.degrees(np.arccos(cosang))
+
+    def _temporal_fod_mask(self, layer: "VesselTreeLayer") -> Optional[np.ndarray]:
+        """Return the shifted-origin temporal field mask."""
+        yy, xx = layer.retina.yy_xx
+        angle_deg = self._temporal_angle_deg(layer, yy, xx)
+        if angle_deg is None:
+            return None
+        return angle_deg < 85.0
+
+    def _segment_temporal_fod_angle(self, segment: Segment) -> Optional[float]:
+        """Return the shifted-origin temporal angle for a segment midpoint."""
+        point = segment.mean_position()
+        angle_deg = self._temporal_angle_deg(segment.layer, point.y, point.x)
+        if angle_deg is None:
+            return None
+        return float(angle_deg)
+
+    def _is_temporal_segment(self, segment: Segment) -> bool:
+        """Return whether a segment is eligible for temporal CRE."""
+        temporal_angle = self._segment_temporal_fod_angle(segment)
+        orientation = segment.orientation()
+        return (
+            temporal_angle is not None
+            and temporal_angle < 85.0
+            and orientation is not None
+            and orientation < 90.0
+        )
 
     def _binary_mask_cache_key(self, circle: Circle) -> tuple:
         """Build a stable cache key for a CRE binary mask."""
@@ -173,7 +253,11 @@ class CRE(LayerFeature):
             fod_mask = np.ones_like(circle_mask, dtype=bool)
         else:
             if self.CREMode == CREMode.Temporal:
-                fod_mask = angle_deg < 100.0
+                temporal_mask = self._temporal_fod_mask(layer)
+                if temporal_mask is None:
+                    fod_mask = np.ones_like(circle_mask, dtype=bool)
+                else:
+                    fod_mask = temporal_mask
             elif self.CREMode == CREMode.Nasal:
                 fod_mask = angle_deg > 80.0
             else:
@@ -201,10 +285,7 @@ class CRE(LayerFeature):
         # Orientation filtering kept as-is
         if self.CREMode == CREMode.Temporal:
             filtered_segments = [
-                seg
-                for seg in filtered_segments
-                if seg.fod_angle() is not None and seg.fod_angle() < 100
-                if seg.orientation() is not None and seg.orientation() < 90
+                seg for seg in filtered_segments if self._is_temporal_segment(seg)
             ]
         elif self.CREMode == CREMode.Nasal:
             filtered_segments = [
@@ -276,7 +357,9 @@ class CRE(LayerFeature):
         h, w = mask.shape
         filtered_intersections: List[Tuple[Segment, float]] = []
         for seg, t in intersections:
-            y, x = seg.get_spline(error_fraction=self.spline_error_fraction).get_point(t)
+            y, x = seg.get_spline(error_fraction=self.spline_error_fraction).get_point(
+                t
+            )
             yi, xi = int(round(y)), int(round(x))
             if 0 <= yi < h and 0 <= xi < w and mask[yi, xi]:
                 filtered_intersections.append((seg, t))
@@ -285,19 +368,24 @@ class CRE(LayerFeature):
             return None, []
         # Deduplicate segments that may intersect circle multiple times
         segments = list(set([p[0] for p in intersections]))
-        if len(segments) < self.min_intersections:
-            warnings.warn("Could not find enough intersecting segments for CRE circle.")
-            return None, []
-
-        # Keep up to the largest N segments by median diameter
         segments.sort(
             key=lambda s: s.get_median_diameter(self.spline_error_fraction),
             reverse=True,
         )
+        if len(segments) < self.max_vessels:
+            return None, []
         segments = segments[: self.max_vessels]
+        selected_segments = set(segments)
+        selected_intersections: List[Tuple[Segment, float]] = []
+        seen_segments: set[Segment] = set()
+        for seg, t in intersections:
+            if seg not in selected_segments or seg in seen_segments:
+                continue
+            selected_intersections.append((seg, t))
+            seen_segments.add(seg)
 
         calibers = [s.get_median_diameter(self.spline_error_fraction) for s in segments]
-        return self.recursive_cre(calibers, cte), intersections
+        return self.recursive_cre(calibers, cte), selected_intersections
 
     def compute(self, layer: VesselTreeLayer):
         cres = []
@@ -311,7 +399,7 @@ class CRE(LayerFeature):
         if len(cres) < self.min_circles:
             return None
 
-        return layer.retina.scale_length_measurement(float(np.mean(cres)))
+        return layer.retina.scale_length_measurement(float(np.median(cres)))
 
     def display_name(self, layer_name: str, key: str = None) -> str:
         from .base import get_grid_field_suffix, get_layer_suffix
@@ -331,15 +419,15 @@ class CRE(LayerFeature):
         from .base import format_name_value
 
         tokens: list[str] = []
-        if self.max_vessels != 6:
+        if self.max_vessels != self.default_max_vessels():
             tokens.extend(["max_vessels", str(self.max_vessels)])
-        if self.min_circles != 6:
+        if self.min_circles != 2:
             tokens.extend(["min_circles", str(self.min_circles)])
         if self.inner_circle != 1.0:
             tokens.extend(["inner_circle", str(self.inner_circle)])
         if self.outer_circle != 1.5:
             tokens.extend(["outer_circle", str(self.outer_circle)])
-        if self.num_circles != 6:
+        if self.num_circles != 5:
             tokens.extend(["num_circles", str(self.num_circles)])
         if self.spline_error_fraction != 0.05:
             tokens.extend(
@@ -379,9 +467,9 @@ class CRE(LayerFeature):
                 continue
             segments += [p[0] for p in intersections]
             points += [
-                p[0].get_spline(error_fraction=self.spline_error_fraction).get_point(
-                    p[1]
-                )
+                p[0]
+                .get_spline(error_fraction=self.spline_error_fraction)
+                .get_point(p[1])
                 for p in intersections
             ]
             circles.append(circle)
@@ -406,6 +494,11 @@ class CRE(LayerFeature):
                     circle.center.tuple_xy, circle.r, color="w", fill=False, lw=0.5
                 )
             )
+        # reset axes limits to the image resolution
+        # they might get extended if the circles go out of bounds
+        h, w = layer.retina.resolution
+        ax.set_xlim(0, w)
+        ax.set_ylim(h, 0)
 
         for p in points:
             ax.scatter(x=p[1], y=p[0], c="white", s=2, marker="x")
@@ -413,7 +506,7 @@ class CRE(LayerFeature):
         ax.text(
             0.05,
             0.95,
-            f"min_intersections={self.min_intersections}",
+            f"max_vessels={self.max_vessels}",
             transform=ax.transAxes,
             fontsize=6,
             color="white",

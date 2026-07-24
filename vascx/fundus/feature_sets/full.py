@@ -71,4 +71,7 @@ fs_full = FeatureSet(
         VarianceOfLaplacian(),
         DiscFoveaDistance(),
     ],
+    description=(
+        "Legacy comprehensive fundus biomarker set. Prefer full_v3 for new analyses."
+    ),
 )

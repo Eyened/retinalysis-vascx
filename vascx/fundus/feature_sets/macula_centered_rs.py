@@ -136,5 +136,9 @@ fs_macula_centered_rs = FeatureSet(
             mode=SparsityMode.MEAN, grid_field=ETDRS_FULL
         ),
     ],
+    description=(
+        "Biomarkers for macula-centered fundus images using a cropped circular field "
+        "optimized for devices in the Rotterdam Study."
+    ),
 )
 

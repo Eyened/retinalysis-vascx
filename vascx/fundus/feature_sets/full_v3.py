@@ -173,4 +173,9 @@ fs_full_v3 = FeatureSet(
 
         
     ],
+    description=(
+        "Recommended comprehensive fundus biomarker set covering caliber, CRE, "
+        "tortuosity, sparsity, vascular density, and related measures on hemifield, "
+        "disc-centered, ETDRS, and ellipse grids."
+    ),
 )

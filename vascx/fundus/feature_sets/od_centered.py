@@ -184,4 +184,7 @@ fs_od_centered = FeatureSet(
         )
     
     ],
+    description=(
+        "Biomarkers for optic-disc–centered fundus images with a view of the fovea."
+    ),
 )

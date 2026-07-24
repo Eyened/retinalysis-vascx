@@ -48,4 +48,8 @@ fs_sparsity = FeatureSet(
         VascularDensity(grid_field=DISC_FULL),
         VascularDensity(grid_field=ETDRS_FULL),
     ],
+    description=(
+        "Experimental set of vessel sparsity biomarkers with matching variance-of-Laplacian "
+        "and vascular density measures on ellipse, disc-centered, and ETDRS grids."
+    ),
 )

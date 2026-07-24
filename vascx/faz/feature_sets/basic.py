@@ -39,4 +39,8 @@ basic_features = FeatureSet(
         # Note: we have deprecated BifurcationCount due to low reproducibility scores.
         BifurcationCount(),
     ],
+    description=(
+        "Basic OCTA FAZ and macular vessel biomarkers including density, FAZ geometry, "
+        "caliber, tortuosity, and bifurcation count."
+    ),
 )

@@ -75,4 +75,7 @@ fs_od_centered = FeatureSet(
         Sparsity(mode=SparsityMode.MEAN),
         Sparsity(mode=SparsityMode.MEAN, normalize=False),
     ],
+    description=(
+        "Biomarkers for optic-disc–centered images with narrow field of view for which the fovea is out of bounds."
+    ),
 )

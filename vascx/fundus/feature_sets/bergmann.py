@@ -19,4 +19,8 @@ fs_bergmann = FeatureSet(
         # Note: we have deprecated BifurcationCount due to low reproducibility scores.
         BifurcationCount(),
     ],
+    description=(
+        "Compact set aligned with Bergmann et al. analyses: temporal angle, CRE, "
+        "vascular density, caliber, tortuosity, and bifurcation count."
+    ),
 )

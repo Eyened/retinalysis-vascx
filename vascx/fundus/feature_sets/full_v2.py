@@ -139,4 +139,7 @@ fs_full_v2 = FeatureSet(
         # disc–fovea distance
         DiscFoveaDistance(),
     ],
+    description=(
+        "Previous comprehensive fundus biomarker set. Prefer full_v3 for new analyses."
+    ),
 )

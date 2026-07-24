@@ -21,9 +21,16 @@ if TYPE_CHECKING:
 class FeatureSet:
     _registry = {}
 
-    def __init__(self, name: str, features: Iterable["Feature"]):
+    def __init__(
+        self,
+        name: str,
+        features: Iterable["Feature"],
+        *,
+        description: str = "",
+    ):
         self.name = name
         self.features = list(features)
+        self.description = description
         self.__class__._register_instance(self)
 
     def __iter__(self):

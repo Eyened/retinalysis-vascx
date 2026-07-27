@@ -12,7 +12,6 @@ from rtnls_enface.grids.specifications import (
     HemifieldGridSpecification,
 )
 
-from vascx.fundus.feature_sets.macula_centered_rs import CIRCLE_CROPPED_GRID
 from vascx.fundus.features.bifurcation_angles import BifurcationAngles
 from vascx.fundus.features.caliber import Caliber
 from vascx.fundus.features.cre import CRE, CREMode
@@ -29,162 +28,174 @@ from vascx.fundus.features.vascular_densities import VascularDensity
 from vascx.shared.aggregators import LengthWeightedAggregator, mean, median
 from vascx.shared.features import FeatureSet
 
-DISC_GRID = DiscCenteredGridSpecification(multiplier=7 / 6, band_crop_fraction=0.06, name="crcl")
-DISC_FULL = GridFieldSpecification(
-    grid_spec=DISC_GRID,
-    field=DiscCenteredRing.FullGrid,
-)
-DISC_SUP = GridFieldSpecification(DISC_GRID, DiscCenteredHemifield.Superior)
-DISC_INF = GridFieldSpecification(DISC_GRID, DiscCenteredHemifield.Inferior)
-DISC_TEMP = GridFieldSpecification(DISC_GRID, DiscCenteredHemifield.Temporal)
-DISC_NASAL = GridFieldSpecification(DISC_GRID, DiscCenteredHemifield.Nasal)
-
-
 
 # Feature set for OD-centered images where the fovea location is known
-# ie. none of the following features use localizers relative to the fovea
-fs_od_centered = FeatureSet(
-    "od_centered",
-    [
-        TemporalAngle(),
-
-        # bifurcation angles (full, superior, inferior)
-        BifurcationAngles(grid_field=DISC_FULL, aggregator=mean),
-        BifurcationAngles(grid_field=DISC_SUP, aggregator=mean),
-        BifurcationAngles(grid_field=DISC_INF, aggregator=mean),
-        BifurcationAngles(grid_field=DISC_TEMP, aggregator=mean),
-        BifurcationAngles(grid_field=DISC_NASAL, aggregator=mean),
-
-        # caliber (full, superior, inferior)
-        Caliber(grid_field=DISC_FULL, aggregator=LengthWeightedAggregator()),
-        Caliber(grid_field=DISC_SUP, aggregator=LengthWeightedAggregator()),
-        Caliber(grid_field=DISC_INF, aggregator=LengthWeightedAggregator()),
-        Caliber(grid_field=DISC_TEMP, aggregator=LengthWeightedAggregator()),
-        Caliber(grid_field=DISC_NASAL, aggregator=LengthWeightedAggregator()),
-
-        # CRE: temporal variants in sup/inf/full; nasal and full variants on full grid
-        CRE(CREMode.Full, min_circles=2),
-        CRE(CREMode.Nasal, min_circles=2),
-        CRE(CREMode.Temporal, min_circles=2),
-
-        # tortuosity (segments) — Distance and Curvature
-        # whole image (length-weighted normalized)
-        Tortuosity(
-            mode=TortuosityMode.Segments,
-            max_segment_len=0.15,
-            measure=TortuosityMeasure.Distance,
-            length_measure=LengthMeasure.Splines,
-            grid_field=DISC_FULL,
-            aggregator=LengthWeightedAggregator(),
-        ),
-        Tortuosity(
-            mode=TortuosityMode.Segments,
-            max_segment_len=0.2,
-            measure=TortuosityMeasure.Distance,
-            length_measure=LengthMeasure.Splines,
-            grid_field=DISC_FULL,
-            aggregator=LengthWeightedAggregator(),
-        ),
-        Tortuosity(
-            mode=TortuosityMode.Segments,
-            max_segment_len=0.25,
-            measure=TortuosityMeasure.Distance,
-            length_measure=LengthMeasure.Splines,
-            grid_field=DISC_FULL,
-            aggregator=LengthWeightedAggregator(),
-        ),
-        Tortuosity(
-            mode=TortuosityMode.Segments,
-            measure=TortuosityMeasure.Curvature,
-            length_measure=LengthMeasure.Splines,
-            grid_field=DISC_FULL,
-            aggregator=LengthWeightedAggregator(),
-        ),
-
-        # tortuosity distance per region
-        Tortuosity(
-            mode=TortuosityMode.Segments,
-            max_segment_len=0.2,
-            measure=TortuosityMeasure.Distance,
-            length_measure=LengthMeasure.Splines,
-            grid_field=DISC_SUP,
-            aggregator=LengthWeightedAggregator(),
-        ),
-        Tortuosity(
-            mode=TortuosityMode.Segments,
-            max_segment_len=0.2,
-            measure=TortuosityMeasure.Distance,
-            length_measure=LengthMeasure.Splines,
-            grid_field=DISC_INF,
-            aggregator=LengthWeightedAggregator(),
-        ),
-        Tortuosity(
-            mode=TortuosityMode.Segments,
-            max_segment_len=0.2,
-            measure=TortuosityMeasure.Distance,
-            length_measure=LengthMeasure.Splines,
-            grid_field=DISC_TEMP,
-            aggregator=LengthWeightedAggregator(),
-        ),
-        Tortuosity(
-            mode=TortuosityMode.Segments,
-            max_segment_len=0.2,
-            measure=TortuosityMeasure.Distance,
-            length_measure=LengthMeasure.Splines,
-            grid_field=DISC_NASAL,
-            aggregator=LengthWeightedAggregator(),
-        ),
-
-        # tortuosity curvature per region
-        Tortuosity(
-            mode=TortuosityMode.Segments,
-            measure=TortuosityMeasure.Curvature,
-            length_measure=LengthMeasure.Splines,
-            grid_field=DISC_SUP,
-            aggregator=LengthWeightedAggregator(),
-        ),
-        Tortuosity(
-            mode=TortuosityMode.Segments,
-            measure=TortuosityMeasure.Curvature,
-            length_measure=LengthMeasure.Splines,
-            grid_field=DISC_INF,
-            aggregator=LengthWeightedAggregator(),
-        ),
-        Tortuosity(
-            mode=TortuosityMode.Segments,
-            measure=TortuosityMeasure.Curvature,
-            length_measure=LengthMeasure.Splines,
-            grid_field=DISC_TEMP,
-            aggregator=LengthWeightedAggregator(),
-        ),
-        Tortuosity(
-            mode=TortuosityMode.Segments,
-            measure=TortuosityMeasure.Curvature,
-            length_measure=LengthMeasure.Splines,
-            grid_field=DISC_NASAL,
-            aggregator=LengthWeightedAggregator(),
-        ),
-
-        # vascular densities (full, superior, inferior)
-        VascularDensity(grid_field=DISC_FULL),
-        VascularDensity(grid_field=DISC_SUP),
-        VascularDensity(grid_field=DISC_INF),
-        VascularDensity(grid_field=DISC_TEMP),
-        VascularDensity(grid_field=DISC_NASAL),
-
-        # disc–fovea distance
-        DiscFoveaDistance(),
-        DiscFoveaDistance(mode=DiscFoveaDistanceMode.Edge),
-        ####  IMAGE QUALITY FEATURES ####
-
-        # Sparsity features
-        Sparsity(mode=SparsityMode.MEAN),
-        Sparsity(
-            mode=SparsityMode.MEAN, grid_field=DISC_FULL
-        )
+def make_set(name: str, description: str, multiplier: float=7 / 6, band_crop: bool=False, min_area_within_bounds: float=None) -> FeatureSet:
+    DISC_GRID = DiscCenteredGridSpecification(multiplier=multiplier, band_crop_fraction=0.06 if band_crop else 0.0, name="crcl", min_area_within_bounds=min_area_within_bounds)
+    DISC_FULL = GridFieldSpecification(
+        grid_spec=DISC_GRID,
+        field=DiscCenteredRing.FullGrid,
+    )
+    DISC_SUP = GridFieldSpecification(DISC_GRID, DiscCenteredHemifield.Superior)
+    DISC_INF = GridFieldSpecification(DISC_GRID, DiscCenteredHemifield.Inferior)
+    DISC_TEMP = GridFieldSpecification(DISC_GRID, DiscCenteredHemifield.Temporal)
+    DISC_NASAL = GridFieldSpecification(DISC_GRID, DiscCenteredHemifield.Nasal)
     
-    ],
-    description=(
-        "Biomarkers for optic-disc–centered fundus images with a view of the fovea."
-    ),
-)
+    return FeatureSet(
+        name,
+        [
+            TemporalAngle(),
+
+            # bifurcation angles (full, superior, inferior)
+            BifurcationAngles(grid_field=DISC_FULL, aggregator=mean),
+            BifurcationAngles(grid_field=DISC_SUP, aggregator=mean),
+            BifurcationAngles(grid_field=DISC_INF, aggregator=mean),
+            BifurcationAngles(grid_field=DISC_TEMP, aggregator=mean),
+            BifurcationAngles(grid_field=DISC_NASAL, aggregator=mean),
+
+            # caliber (full, superior, inferior)
+            Caliber(grid_field=DISC_FULL, aggregator=LengthWeightedAggregator()),
+            Caliber(grid_field=DISC_SUP, aggregator=LengthWeightedAggregator()),
+            Caliber(grid_field=DISC_INF, aggregator=LengthWeightedAggregator()),
+            Caliber(grid_field=DISC_TEMP, aggregator=LengthWeightedAggregator()),
+            Caliber(grid_field=DISC_NASAL, aggregator=LengthWeightedAggregator()),
+
+            # CRE: temporal variants in sup/inf/full; nasal and full variants on full grid
+            CRE(CREMode.Full, min_circles=2),
+            CRE(CREMode.Nasal, min_circles=2),
+            CRE(CREMode.Temporal, min_circles=2),
+
+            # tortuosity (segments) — Distance and Curvature
+            # whole image (length-weighted normalized)
+            Tortuosity(
+                mode=TortuosityMode.Segments,
+                max_segment_len=0.15,
+                measure=TortuosityMeasure.Distance,
+                length_measure=LengthMeasure.Splines,
+                grid_field=DISC_FULL,
+                aggregator=LengthWeightedAggregator(),
+            ),
+            Tortuosity(
+                mode=TortuosityMode.Segments,
+                max_segment_len=0.2,
+                measure=TortuosityMeasure.Distance,
+                length_measure=LengthMeasure.Splines,
+                grid_field=DISC_FULL,
+                aggregator=LengthWeightedAggregator(),
+            ),
+            Tortuosity(
+                mode=TortuosityMode.Segments,
+                max_segment_len=0.25,
+                measure=TortuosityMeasure.Distance,
+                length_measure=LengthMeasure.Splines,
+                grid_field=DISC_FULL,
+                aggregator=LengthWeightedAggregator(),
+            ),
+            Tortuosity(
+                mode=TortuosityMode.Segments,
+                measure=TortuosityMeasure.Curvature,
+                length_measure=LengthMeasure.Splines,
+                grid_field=DISC_FULL,
+                aggregator=LengthWeightedAggregator(),
+            ),
+
+            # tortuosity distance per region
+            Tortuosity(
+                mode=TortuosityMode.Segments,
+                max_segment_len=0.2,
+                measure=TortuosityMeasure.Distance,
+                length_measure=LengthMeasure.Splines,
+                grid_field=DISC_SUP,
+                aggregator=LengthWeightedAggregator(),
+            ),
+            Tortuosity(
+                mode=TortuosityMode.Segments,
+                max_segment_len=0.2,
+                measure=TortuosityMeasure.Distance,
+                length_measure=LengthMeasure.Splines,
+                grid_field=DISC_INF,
+                aggregator=LengthWeightedAggregator(),
+            ),
+            Tortuosity(
+                mode=TortuosityMode.Segments,
+                max_segment_len=0.2,
+                measure=TortuosityMeasure.Distance,
+                length_measure=LengthMeasure.Splines,
+                grid_field=DISC_TEMP,
+                aggregator=LengthWeightedAggregator(),
+            ),
+            Tortuosity(
+                mode=TortuosityMode.Segments,
+                max_segment_len=0.2,
+                measure=TortuosityMeasure.Distance,
+                length_measure=LengthMeasure.Splines,
+                grid_field=DISC_NASAL,
+                aggregator=LengthWeightedAggregator(),
+            ),
+
+            # tortuosity curvature per region
+            Tortuosity(
+                mode=TortuosityMode.Segments,
+                measure=TortuosityMeasure.Curvature,
+                length_measure=LengthMeasure.Splines,
+                grid_field=DISC_SUP,
+                aggregator=LengthWeightedAggregator(),
+            ),
+            Tortuosity(
+                mode=TortuosityMode.Segments,
+                measure=TortuosityMeasure.Curvature,
+                length_measure=LengthMeasure.Splines,
+                grid_field=DISC_INF,
+                aggregator=LengthWeightedAggregator(),
+            ),
+            Tortuosity(
+                mode=TortuosityMode.Segments,
+                measure=TortuosityMeasure.Curvature,
+                length_measure=LengthMeasure.Splines,
+                grid_field=DISC_TEMP,
+                aggregator=LengthWeightedAggregator(),
+            ),
+            Tortuosity(
+                mode=TortuosityMode.Segments,
+                measure=TortuosityMeasure.Curvature,
+                length_measure=LengthMeasure.Splines,
+                grid_field=DISC_NASAL,
+                aggregator=LengthWeightedAggregator(),
+            ),
+
+            # vascular densities (full, superior, inferior)
+            VascularDensity(grid_field=DISC_FULL),
+            VascularDensity(grid_field=DISC_SUP),
+            VascularDensity(grid_field=DISC_INF),
+            VascularDensity(grid_field=DISC_TEMP),
+            VascularDensity(grid_field=DISC_NASAL),
+
+            # disc–fovea distance
+            DiscFoveaDistance(),
+            DiscFoveaDistance(mode=DiscFoveaDistanceMode.Edge),
+            ####  IMAGE QUALITY FEATURES ####
+
+            # Sparsity features
+            Sparsity(mode=SparsityMode.MEAN),
+            Sparsity(
+                mode=SparsityMode.MEAN, grid_field=DISC_FULL
+            )
+        
+        ],
+        description=description,
+    )
+
+fs_od_centered = make_set(
+    name="od_centered",
+    description="Biomarkers optimized for optic-disc–centered fundus images with a view of the fovea.",
+    band_crop=False)
+
+fs_od_centered_rs = make_set(
+    name="od_centered_rs",
+    description="Biomarkers for optic-disc–centered fundus images in the Rotterdam Study.",
+    band_crop=True)
+
+fs_od_centered_narrow_rs = make_set(
+    name="od_centered_narrow_rs",
+    multiplier=2/3,
+    description="Biomarkers for very narrow optic-disc–centered fundus images in the Rotterdam Study.")

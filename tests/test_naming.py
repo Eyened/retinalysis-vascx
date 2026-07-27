@@ -141,11 +141,14 @@ def test_resolved_grid_name_keeps_identity_and_drops_shared_parameters():
     )
     assert target.name == "diam_crcl_inferior_veins"
     assert "multiplier" not in target.name
+    assert "center" not in target.name
+    assert "radius_multiplier" not in target.name
     assert "band_crop_fraction" not in target.name
 
 
 def test_grid_name_override_is_generic_and_not_a_parameter():
     specifications = [
+        (CircleGridSpecification(center=0.9, band_crop_fraction=0.12, name="crcl"), CircleField.FullGrid),
         (CircleGridSpecification(multiplier=0.9, band_crop_fraction=0.12, name="crcl"), CircleField.FullGrid),
         (DiscCenteredGridSpecification(multiplier=7 / 6, band_crop_fraction=0.06, name="crcl"), None),
         (EllipseGridSpecification(name="ellipse"), None),

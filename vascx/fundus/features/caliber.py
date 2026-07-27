@@ -9,7 +9,12 @@ from vascx.shared.aggregators import LengthWeightedAggregator, median
 from vascx.shared.segment import Segment
 from vascx.shared.vessels import Vessels
 
-from .base import LayerFeature, grid_field_passes_qc
+from .base import (
+    LayerFeature,
+    grid_field_passes_qc,
+    resolve_min_area_within_bounds,
+    validate_min_area_within_bounds,
+)
 
 if TYPE_CHECKING:
     from vascx.fundus.layer import VesselTreeLayer
@@ -34,7 +39,7 @@ class Caliber(LayerFeature):
       `LengthWeightedAggregator` for length-weighted mean of per-segment median diameters.
     """
 
-    min_grid_field_fraction_in_bounds = 0.95
+    default_min_area_within_bounds = 0.95
 
     def __init__(
         self,
@@ -42,10 +47,14 @@ class Caliber(LayerFeature):
         grid_field: Optional[BaseGridFieldSpecification] = None,
         aggregator: Callable = median,
         spline_error_fraction: float = 0.05,
+        min_area_within_bounds: Optional[float] = None,
     ):
         self.min_numpoints = min_numpoints
         self.aggregator = aggregator
         self.spline_error_fraction = float(spline_error_fraction)
+        self.min_area_within_bounds = validate_min_area_within_bounds(
+            min_area_within_bounds
+        )
         super().__init__(grid_field_spec=grid_field)
 
     def _get_segments(self, layer: VesselTreeLayer):
@@ -63,7 +72,11 @@ class Caliber(LayerFeature):
             if not grid_field_passes_qc(
                 layer.retina,
                 self.grid_field_spec,
-                min_fraction_in_bounds=self.min_grid_field_fraction_in_bounds,
+                min_fraction_in_bounds=resolve_min_area_within_bounds(
+                    self.grid_field_spec,
+                    self.min_area_within_bounds,
+                    self.default_min_area_within_bounds,
+                ),
             ):
                 return None
         segments = self._get_segments(layer)
@@ -111,6 +124,11 @@ class Caliber(LayerFeature):
         from .base import format_name_value
 
         tokens: list[str] = []
+        if self.min_area_within_bounds is not None:
+            tokens.extend([
+                "min_area_within_bounds",
+                format_name_value(self.min_area_within_bounds),
+            ])
         if self.min_numpoints != 10:
             tokens.extend(["min_numpoints", str(self.min_numpoints)])
         if self.spline_error_fraction != 0.05:

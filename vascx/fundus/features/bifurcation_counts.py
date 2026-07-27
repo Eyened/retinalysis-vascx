@@ -5,7 +5,12 @@ from typing import TYPE_CHECKING, Optional
 
 from rtnls_enface.grids.specifications import BaseGridFieldSpecification
 
-from .base import LayerFeature, grid_field_passes_qc
+from .base import (
+    LayerFeature,
+    grid_field_passes_qc,
+    resolve_min_area_within_bounds,
+    validate_min_area_within_bounds,
+)
 
 if TYPE_CHECKING:
     from vascx.fundus.layer import VesselTreeLayer
@@ -25,13 +30,20 @@ class BifurcationCount(LayerFeature):
     - grid_field: optional `GridFieldEnum` restricting the count to a predefined retinal region.
     """
 
-    min_grid_field_fraction_in_bounds = 1.0
+    default_min_area_within_bounds = 1.0
 
-    def __init__(self, grid_field: Optional[BaseGridFieldSpecification] = None):
+    def __init__(
+        self,
+        grid_field: Optional[BaseGridFieldSpecification] = None,
+        min_area_within_bounds: Optional[float] = None,
+    ):
         """
         Calculation of the number of bifurcation points.
 
         """
+        self.min_area_within_bounds = validate_min_area_within_bounds(
+            min_area_within_bounds
+        )
         super().__init__(grid_field_spec=grid_field)
 
     def _get_bifurcation_points(self, layer: VesselTreeLayer):
@@ -43,7 +55,11 @@ class BifurcationCount(LayerFeature):
             if not grid_field_passes_qc(
                 layer.retina,
                 self.grid_field_spec,
-                min_fraction_in_bounds=self.min_grid_field_fraction_in_bounds,
+                min_fraction_in_bounds=resolve_min_area_within_bounds(
+                    self.grid_field_spec,
+                    self.min_area_within_bounds,
+                    self.default_min_area_within_bounds,
+                ),
             ):
                 return None
         bifurcations = self._get_bifurcation_points(layer)

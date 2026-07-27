@@ -10,7 +10,13 @@ from rtnls_enface.grids.specifications import BaseGridFieldSpecification
 
 from vascx.shared.masks import fill_small_holes
 
-from .base import VesselsLayerFeature, grid_field_fraction_in_bounds
+from .base import (
+    VesselsLayerFeature,
+    format_name_value,
+    grid_field_fraction_in_bounds,
+    resolve_min_area_within_bounds,
+    validate_min_area_within_bounds,
+)
 
 if TYPE_CHECKING:
     from vascx.fundus.vessels_layer import FundusVesselsLayer
@@ -38,13 +44,14 @@ class Sparsity(VesselsLayerFeature):
     - mode: `SparsityMode` controlling aggregation ("mean" or "max").
     """
 
-    min_grid_field_fraction_in_bounds = 0.80
+    default_min_area_within_bounds = 0.80
 
     def __init__(
         self,
         grid_field: Optional[BaseGridFieldSpecification] = None,
         mode: "SparsityMode" = SparsityMode.MEAN,
         normalize: bool = True,
+        min_area_within_bounds: Optional[float] = None,
     ):
         """Coverage of distance transform, optionally restricted to an ETDRS grid field.
 
@@ -58,6 +65,9 @@ class Sparsity(VesselsLayerFeature):
         super().__init__(grid_field_spec=grid_field)
         self.mode = mode
         self.normalize = normalize
+        self.min_area_within_bounds = validate_min_area_within_bounds(
+            min_area_within_bounds
+        )
 
     def _get_field_mask(self, layer: FundusVesselsLayer) -> Optional[np.ndarray]:
         field = self._get_grid_field(layer)
@@ -129,7 +139,11 @@ class Sparsity(VesselsLayerFeature):
     def compute(self, layer: FundusVesselsLayer):
         if self.grid_field_spec is not None:
             frac = grid_field_fraction_in_bounds(layer.retina, self.grid_field_spec)
-            if frac < self.min_grid_field_fraction_in_bounds:
+            if frac < resolve_min_area_within_bounds(
+                self.grid_field_spec,
+                self.min_area_within_bounds,
+                self.default_min_area_within_bounds,
+            ):
                 return None
 
         fovea_mask = self.get_fovea_mask(layer)
@@ -165,6 +179,11 @@ class Sparsity(VesselsLayerFeature):
 
     def parameter_name_tokens(self) -> list[str]:
         tokens: list[str] = []
+        if self.min_area_within_bounds is not None:
+            tokens.extend([
+                "min_area_within_bounds",
+                format_name_value(self.min_area_within_bounds),
+            ])
         if not self.normalize:
             tokens.append("unnormalized")
         return tokens

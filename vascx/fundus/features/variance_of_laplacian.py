@@ -6,7 +6,12 @@ import numpy as np
 from rtnls_enface.grids.specifications import BaseGridFieldSpecification
 from skimage.exposure import equalize_adapthist
 
-from .base import RetinaFeature, grid_field_masks_and_fraction
+from .base import (
+    RetinaFeature,
+    grid_field_masks_and_fraction,
+    resolve_min_area_within_bounds,
+    validate_min_area_within_bounds,
+)
 
 if TYPE_CHECKING:
     from vascx.fundus.retina import Retina
@@ -27,14 +32,21 @@ class VarianceOfLaplacian(RetinaFeature):
       (applied within the retina mask).
     """
 
-    min_grid_field_fraction_in_bounds = 0.80
+    default_min_area_within_bounds = 0.80
 
-    def __init__(self, grid_field: Optional[BaseGridFieldSpecification] = None):
+    def __init__(
+        self,
+        grid_field: Optional[BaseGridFieldSpecification] = None,
+        min_area_within_bounds: Optional[float] = None,
+    ):
         """Variance of Laplacian, optionally restricted to an ETDRS grid_field.
 
         When grid_field is provided, the variance is computed over the Laplacian
         values inside the ETDRS field intersected with the retinal mask.
         """
+        self.min_area_within_bounds = validate_min_area_within_bounds(
+            min_area_within_bounds
+        )
         super().__init__(grid_field_spec=grid_field)
 
     def compute(self, retina: "Retina"):
@@ -44,7 +56,11 @@ class VarianceOfLaplacian(RetinaFeature):
         _, in_bounds_mask, frac = grid_field_masks_and_fraction(
             retina, self.grid_field_spec
         )
-        if frac < self.min_grid_field_fraction_in_bounds:
+        if frac < resolve_min_area_within_bounds(
+            self.grid_field_spec,
+            self.min_area_within_bounds,
+            self.default_min_area_within_bounds,
+        ):
             return None
         mask = in_bounds_mask
         if not np.any(mask):

@@ -11,7 +11,12 @@ from vascx.shared.aggregators import LengthWeightedAggregator, median
 from vascx.shared.segment import Segment
 from vascx.shared.vessels import Vessels
 
-from .base import LayerFeature, grid_field_passes_qc
+from .base import (
+    LayerFeature,
+    grid_field_passes_qc,
+    resolve_min_area_within_bounds,
+    validate_min_area_within_bounds,
+)
 
 if TYPE_CHECKING:
     from vascx.fundus.layer import VesselTreeLayer
@@ -57,7 +62,7 @@ class Tortuosity(LayerFeature):
     - aggregator: callable aggregator returning a single scalar over per-entity values.
     """
 
-    min_grid_field_fraction_in_bounds = 0.80
+    default_min_area_within_bounds = 0.80
 
     # Ideas
     # tortuosity for different levels of caliber
@@ -75,6 +80,7 @@ class Tortuosity(LayerFeature):
         grid_field: Optional[BaseGridFieldSpecification] = None,
         aggregator: Callable = median,
         spline_error_fraction: Optional[float] = None,
+        min_area_within_bounds: Optional[float] = None,
     ):
         """Configure tortuosity computation and optional segment filtering.
 
@@ -89,6 +95,9 @@ class Tortuosity(LayerFeature):
         self.max_tortuosity = self._default_max_tortuosity(max_tortuosity)
         self.spline_error_fraction = (
             None if spline_error_fraction is None else float(spline_error_fraction)
+        )
+        self.min_area_within_bounds = validate_min_area_within_bounds(
+            min_area_within_bounds
         )
         super().__init__(grid_field_spec=grid_field)
         self.aggregator = aggregator
@@ -255,7 +264,11 @@ class Tortuosity(LayerFeature):
             if not grid_field_passes_qc(
                 layer.retina,
                 self.grid_field_spec,
-                min_fraction_in_bounds=self.min_grid_field_fraction_in_bounds,
+                min_fraction_in_bounds=resolve_min_area_within_bounds(
+                    self.grid_field_spec,
+                    self.min_area_within_bounds,
+                    self.default_min_area_within_bounds,
+                ),
             ):
                 return None
         tortuosities = self.raw(layer)
@@ -289,6 +302,11 @@ class Tortuosity(LayerFeature):
         from .base import format_name_value
 
         tokens = [self.measure.value]
+        if self.min_area_within_bounds is not None:
+            tokens.extend([
+                "min_area_within_bounds",
+                format_name_value(self.min_area_within_bounds),
+            ])
         if self.mode != TortuosityMode.Segments:
             tokens.append(self.mode.value)
         if self.length_measure != LengthMeasure.Splines:

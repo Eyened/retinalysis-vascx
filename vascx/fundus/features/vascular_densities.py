@@ -6,7 +6,12 @@ import cv2
 import numpy as np
 from rtnls_enface.grids.specifications import BaseGridFieldSpecification
 
-from .base import LayerFeature, grid_field_passes_qc
+from .base import (
+    LayerFeature,
+    grid_field_passes_qc,
+    resolve_min_area_within_bounds,
+    validate_min_area_within_bounds,
+)
 
 if TYPE_CHECKING:
     from vascx.fundus.layer import VesselTreeLayer
@@ -24,10 +29,17 @@ class VascularDensity(LayerFeature):
     - grid_field: optional grid field specification; if None, density is over the full retina mask.
     """
 
-    min_grid_field_fraction_in_bounds = 1.0
+    default_min_area_within_bounds = 1.0
 
-    def __init__(self, grid_field: Optional[BaseGridFieldSpecification] = None):
+    def __init__(
+        self,
+        grid_field: Optional[BaseGridFieldSpecification] = None,
+        min_area_within_bounds: Optional[float] = None,
+    ):
         """Configure optional grid region; default is full retina (no grid field)."""
+        self.min_area_within_bounds = validate_min_area_within_bounds(
+            min_area_within_bounds
+        )
         super().__init__(grid_field_spec=grid_field)
 
     def get_mask(self, layer: VesselTreeLayer):
@@ -48,7 +60,11 @@ class VascularDensity(LayerFeature):
             if not grid_field_passes_qc(
                 layer.retina,
                 self.grid_field_spec,
-                min_fraction_in_bounds=self.min_grid_field_fraction_in_bounds,
+                min_fraction_in_bounds=resolve_min_area_within_bounds(
+                    self.grid_field_spec,
+                    self.min_area_within_bounds,
+                    self.default_min_area_within_bounds,
+                ),
             ):
                 return None
         mask = self.get_mask(layer)
@@ -68,11 +84,13 @@ class VascularDensity(LayerFeature):
 
     def _plot(self, ax, layer: VesselTreeLayer, **kwargs):
         field = self._get_grid_field(layer)
+        # FundusVesselsLayer.plot does not accept grid_field; plot the outline separately.
         ax = layer.plot(
             ax=ax,
             image=True,
             bounds=True,
             mask=True,
-            grid_field=field,
         )
+        if field is not None:
+            field.plot(ax)
         return ax

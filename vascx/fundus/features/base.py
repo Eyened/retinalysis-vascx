@@ -3,6 +3,8 @@ from __future__ import annotations
 import re
 from abc import abstractmethod
 from enum import Enum
+from math import isfinite
+from numbers import Real
 from typing import TYPE_CHECKING, Any, List, Optional, Tuple
 
 import numpy as np
@@ -51,6 +53,39 @@ def format_name_value(value: Any) -> str:
     return normalize_name_token(str(value))
 
 
+def validate_min_area_within_bounds(value: Optional[float]) -> Optional[float]:
+    """Validate an optional visible-area fraction and normalize it to ``float``."""
+    if value is None:
+        return None
+    if (
+        isinstance(value, bool)
+        or not isinstance(value, Real)
+        or not isfinite(float(value))
+        or not 0.0 <= float(value) <= 1.0
+    ):
+        raise ValueError("min_area_within_bounds must be a finite fraction in [0.0, 1.0]")
+    return float(value)
+
+
+def resolve_min_area_within_bounds(
+    grid_field_spec: Optional[BaseGridFieldSpecification],
+    biomarker_min_area_within_bounds: Optional[float],
+    default_min_area_within_bounds: float,
+) -> float:
+    """Resolve visible-area QC from biomarker, field, grid, then feature default."""
+    grid_spec = getattr(grid_field_spec, "grid_spec", None)
+    for value in (
+        biomarker_min_area_within_bounds,
+        getattr(grid_field_spec, "min_area_within_bounds", None),
+        getattr(grid_spec, "min_area_within_bounds", None),
+        default_min_area_within_bounds,
+    ):
+        validated = validate_min_area_within_bounds(value)
+        if validated is not None:
+            return validated
+    raise ValueError("default_min_area_within_bounds must not be None")
+
+
 def get_layer_token(layer_name: str) -> str:
     return normalize_name_token(layer_name)
 
@@ -68,6 +103,13 @@ def get_aggregator_token(aggregator=None) -> Optional[str]:
 def get_aggregator_tokens(aggregator=None) -> List[str]:
     token = get_aggregator_token(aggregator=aggregator)
     return [token] if token else []
+
+
+def min_area_within_bounds_name_tokens(feature: Feature) -> List[str]:
+    value = getattr(feature, "min_area_within_bounds", None)
+    if value is None:
+        return []
+    return ["min_area_within_bounds", format_name_value(value)]
 
 
 def get_grid_spec_token(grid_spec: Any) -> str:
@@ -125,6 +167,15 @@ def get_grid_spec_parameter_tokens(grid_spec: Any) -> List[str]:
     return _nondefault_object_parameter_tokens(grid_spec)
 
 
+def get_grid_field_parameter_tokens(spec: Optional[BaseGridFieldSpecification]) -> List[str]:
+    if spec is None:
+        return []
+    value = getattr(spec, "min_area_within_bounds", None)
+    if value is None:
+        return []
+    return ["min_area_within_bounds", format_name_value(value)]
+
+
 def get_grid_field_tokens(spec: Optional[BaseGridFieldSpecification]) -> List[str]:
     if spec is None:
         return []
@@ -141,6 +192,7 @@ def get_grid_field_tokens(spec: Optional[BaseGridFieldSpecification]) -> List[st
         field_token = _field_name_token(spec.field)
         if field_token:
             tokens.append(field_token)
+        tokens.extend(get_grid_field_parameter_tokens(spec))
     return tokens
 
 
@@ -149,7 +201,8 @@ _PARAMETER_MARKERS = {
     "min_numpoints", "max_segment_len", "max_tortuosity", "length",
     "max_vessels", "min_circles", "inner_circle", "outer_circle",
     "num_circles", "full_vessels", "temporal_nasal_vessels",
-    "multiplier", "band_crop_fraction",
+    "multiplier", "center", "radius_multiplier", "band_crop_fraction",
+    "min_area_within_bounds",
     "zone_inner_circle", "zone_outer_circle",
 }
 
@@ -198,6 +251,7 @@ def _make_name_parts(feature: Feature, layer_name: str) -> List[NamePart]:
 
     grid_tokens = ()
     grid_parameter_tokens = ()
+    field_parameter_tokens = ()
     field_token = None
     if grid_spec is not None:
         grid_tokens = (get_grid_spec_token(grid_spec.grid_spec),)
@@ -205,6 +259,7 @@ def _make_name_parts(feature: Feature, layer_name: str) -> List[NamePart]:
             get_grid_spec_parameter_tokens(grid_spec.grid_spec)
         )
         field_token = _field_name_token(grid_spec.field)
+        field_parameter_tokens = tuple(get_grid_field_parameter_tokens(grid_spec))
 
     field_display = field_token.replace("_", " ").title() if field_token else ""
     return [
@@ -239,6 +294,12 @@ def _make_name_parts(feature: Feature, layer_name: str) -> List[NamePart]:
             resolution_scope="grid",
         ),
         NamePart("field", (field_token,) if field_token else (), field_display),
+        NamePart(
+            "field_parameters",
+            field_parameter_tokens,
+            _display_parameter_suffix(list(field_parameter_tokens)),
+            annotation=True,
+        ),
         NamePart("layer", tuple(get_layer_tokens(layer_name)), get_layer_suffix(layer_name).strip()),
     ]
 
@@ -280,7 +341,7 @@ class RetinaFeature(Feature):
         )
 
     def parameter_name_tokens(self) -> List[str]:
-        return []
+        return min_area_within_bounds_name_tokens(self)
 
     def name_tokens(self, layer_name: str = "retina", **kwargs) -> List[str]:
         return [
@@ -331,7 +392,7 @@ class LayerFeature(Feature):
         )
 
     def parameter_name_tokens(self) -> List[str]:
-        return []
+        return min_area_within_bounds_name_tokens(self)
 
     def name_tokens(self, layer_name: str, **kwargs) -> List[str]:
         return [
@@ -382,7 +443,7 @@ class VesselsLayerFeature(Feature):
         )
 
     def parameter_name_tokens(self) -> List[str]:
-        return []
+        return min_area_within_bounds_name_tokens(self)
 
     def name_tokens(self, layer_name: str, **kwargs) -> List[str]:
         return [
@@ -461,14 +522,14 @@ def grid_field_masks_and_fraction(
 ) -> Tuple[np.ndarray, np.ndarray, float]:
     """Return (field_mask, in_bounds_mask, fraction_in_bounds) for a grid field specification.
 
-    fraction_in_bounds = sum(field_mask & retina.mask) / sum(field_mask), 0.0 if empty.
+    fraction_in_bounds = sum(field_mask & retina.mask) / full geometric field area, 0.0 if empty.
     """
     field = retina.get_grid_field(grid_field_spec)
     field_mask = field.mask.astype(bool)
     if field_mask.size == 0:
         return field_mask, field_mask, 0.0
     in_bounds_mask = field_mask & retina.mask
-    total = int(np.count_nonzero(field_mask))
+    total = field.full_pixel_count()
     if total == 0:
         return field_mask, in_bounds_mask, 0.0
     frac = float(np.count_nonzero(in_bounds_mask)) / float(total)

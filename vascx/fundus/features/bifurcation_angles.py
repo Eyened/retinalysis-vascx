@@ -7,7 +7,12 @@ from rtnls_enface.grids.specifications import BaseGridFieldSpecification
 
 from vascx.shared.aggregators import mean
 
-from .base import LayerFeature, grid_field_passes_qc
+from .base import (
+    LayerFeature,
+    grid_field_passes_qc,
+    resolve_min_area_within_bounds,
+    validate_min_area_within_bounds,
+)
 
 if TYPE_CHECKING:
     from vascx.fundus.layer import VesselTreeLayer
@@ -32,7 +37,7 @@ class BifurcationAngles(LayerFeature):
     - aggregator: function to aggregate per-bifurcation angles (e.g., mean/median).
     """
 
-    min_grid_field_fraction_in_bounds = 0.95
+    default_min_area_within_bounds = 0.95
 
     def __init__(
         self,
@@ -42,12 +47,16 @@ class BifurcationAngles(LayerFeature):
         min_bifurcations: int = 3,
         spline_error_fraction: float = 0.05,
         aggregator=mean,
+        min_area_within_bounds: Optional[float] = None,
     ):
         """Configure sampling distance, optional grid field and aggregation function."""
         self.delta = delta
         self.max_angle = max_angle
         self.min_bifurcations = min_bifurcations
         self.spline_error_fraction = float(spline_error_fraction)
+        self.min_area_within_bounds = validate_min_area_within_bounds(
+            min_area_within_bounds
+        )
         super().__init__(grid_field_spec=grid_field)
         self.aggregator = aggregator
 
@@ -64,7 +73,11 @@ class BifurcationAngles(LayerFeature):
             if not grid_field_passes_qc(
                 layer.retina,
                 self.grid_field_spec,
-                min_fraction_in_bounds=self.min_grid_field_fraction_in_bounds,
+                min_fraction_in_bounds=resolve_min_area_within_bounds(
+                    self.grid_field_spec,
+                    self.min_area_within_bounds,
+                    self.default_min_area_within_bounds,
+                ),
             ):
                 return None
         bifurcations = self._get_bifurcation_points(layer)
@@ -92,6 +105,11 @@ class BifurcationAngles(LayerFeature):
         from .base import format_name_value
 
         tokens: list[str] = []
+        if self.min_area_within_bounds is not None:
+            tokens.extend([
+                "min_area_within_bounds",
+                format_name_value(self.min_area_within_bounds),
+            ])
         if self.delta != 20:
             tokens.extend(["delta", str(self.delta)])
         if self.max_angle != 135:

@@ -16,6 +16,7 @@ from vascx.fundus.features.bifurcation_angles import BifurcationAngles
 from vascx.fundus.features.caliber import Caliber
 from vascx.fundus.features.cre import CRE, CREMode
 from vascx.fundus.features.disc_features import DiscFoveaDistance, DiscFoveaDistanceMode
+from vascx.fundus.features.sharpness import Sharpness
 from vascx.fundus.features.sparsity import Sparsity, SparsityMode
 from vascx.fundus.features.tortuosity import (
     LengthMeasure,
@@ -179,7 +180,8 @@ def make_set(name: str, description: str, multiplier: float=7 / 6, band_crop: bo
             Sparsity(mode=SparsityMode.MEAN),
             Sparsity(
                 mode=SparsityMode.MEAN, grid_field=DISC_FULL
-            )
+            ),
+            Sharpness(grid_field=DISC_FULL)
         
         ],
         description=description,

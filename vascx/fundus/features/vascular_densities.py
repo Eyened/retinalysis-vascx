@@ -84,13 +84,10 @@ class VascularDensity(LayerFeature):
 
     def _plot(self, ax, layer: VesselTreeLayer, **kwargs):
         field = self._get_grid_field(layer)
-        # FundusVesselsLayer.plot does not accept grid_field; plot the outline separately.
-        ax = layer.plot(
+        return layer.plot(
             ax=ax,
             image=True,
             bounds=True,
             mask=True,
+            grid_field=field,
         )
-        if field is not None:
-            field.plot(ax)
-        return ax

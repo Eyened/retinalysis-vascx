@@ -433,9 +433,8 @@ VascX localises feature computations using anatomical references and predefined 
   - If the fraction in-bounds is too small (typically < 0.5), many features skip computation and return `None` to avoid out-of-frame bias.
   - Visualizers plot the requested field overlayed on the image; computations always respect in-bounds masking.
 
-Ready-to-run feature sets are available under `vascx/fundus/feature_sets` (e.g., `full`, `bergmann`, `quality`) and can be selected by name when using `extract_in_parallel`. To generate feature descriptions alongside extraction:
+Ready-to-run feature sets are available under `vascx/fundus/feature_sets` (e.g., `full`, `bergmann`, `sparsity`) and can be selected by name when using `extract_in_parallel`. To generate feature descriptions alongside extraction:
 
-Ready-to-run feature sets are available under `vascx/fundus/feature_sets` (e.g., `full`, `bergmann`, `quality`) and can be selected by name when using `extract_in_parallel`. To generate feature descriptions alongside extraction:
 
 ```python
 df = extract_in_parallel(examples, "full", n_jobs=8, descriptions_output_path="feature_descriptions_full.txt")

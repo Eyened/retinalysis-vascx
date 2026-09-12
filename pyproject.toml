@@ -23,8 +23,8 @@ dependencies = [
   "click>=8,<9",
   "sortedcontainers==2.4.0",
   "scikit-image>=0.21,<1",
-  "retinalysis-enface==1.3.0",
-  "retinalysis-inference==0.7.1",
+  "retinalysis-enface==2.0.0",
+  "retinalysis-inference==0.8.0",
   "networkx>=3,<4",
   "numba>=0.58,<1; sys_platform != 'emscripten'"
 ]

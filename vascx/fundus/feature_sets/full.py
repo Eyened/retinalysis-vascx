@@ -24,7 +24,9 @@ from vascx.shared.aggregators import (
 from vascx.shared.features import FeatureSet
 
 ETDRS_FULL_FIELD = GridFieldSpecification(
-    grid_spec=ETDRSGridSpecification(),
+    grid_spec=ETDRSGridSpecification(
+        description="a fovea-centered ETDRS grid with ring radii of 0.5, 1.5, and 3.0 mm"
+    ),
     field=ETDRSRing.FullGrid,
 )
 
@@ -32,19 +34,19 @@ fs_full = FeatureSet(
     "full",
     [
         # temporal angles
-        TemporalAngle(),
+        TemporalAngle(plot=True),
 
         # CREs and diameters
-        CRE(),
-        Caliber(aggregator=median),
+        CRE(plot=True),
+        Caliber(plot=True, aggregator=median),
         Caliber(aggregator=std),
 
         # vascular densities
-        VascularDensity(),
+        VascularDensity(plot=True),
         VascularDensity(ETDRS_FULL_FIELD),
 
         # tortuosity on segments
-        Tortuosity(length_measure=LengthMeasure.Skeleton, aggregator=median),
+        Tortuosity(plot=True, length_measure=LengthMeasure.Skeleton, aggregator=median),
         Tortuosity(length_measure=LengthMeasure.Splines, aggregator=median),
         Tortuosity(measure=TortuosityMeasure.Curvature, aggregator=median),
         Tortuosity(measure=TortuosityMeasure.Inflections, aggregator=median),
@@ -62,14 +64,14 @@ fs_full = FeatureSet(
         Tortuosity(mode=TortuosityMode.Vessels, measure=TortuosityMeasure.Inflections, aggregator=median),
 
         # bifurcation angles
-        BifurcationAngles(aggregator=median),
+        BifurcationAngles(plot=True, aggregator=median),
         # Note: we have deprecated BifurcationCount due to low reproducibility scores.
-        BifurcationCount(),
+        BifurcationCount(plot=True),
 
         # general and retina-level features
-        Sparsity(),
-        VarianceOfLaplacian(),
-        DiscFoveaDistance(),
+        Sparsity(plot=True),
+        VarianceOfLaplacian(plot=True),
+        DiscFoveaDistance(plot=True),
     ],
     description=(
         "Legacy comprehensive fundus biomarker set. Prefer full_v3 for new analyses."

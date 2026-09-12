@@ -10,10 +10,10 @@ from vascx.fundus.loader import RetinaLoader
 from vascx.shared.sknw import sknw
 from vascx.utils.analysis import extract_one
 
+from tests import settings
 from tests.regression_helpers import SAMPLES_DIR
 
 FEATURE_SET_NAME = "full_v3"
-MAX_SECONDS_PER_CALL = 2.0
 WARMUP_INDEX = 1
 PROFILE_ROWS = 20
 
@@ -47,9 +47,9 @@ def test_pipeline_profile_runtime_guard() -> None:
         "cumulative"
     ).print_stats(PROFILE_ROWS)
 
-    assert seconds_per_call <= MAX_SECONDS_PER_CALL, (
+    assert seconds_per_call <= settings.PIPELINE_MAX_SECONDS_PER_CALL, (
         f"{FEATURE_SET_NAME} averaged {seconds_per_call:.3f}s per call across {len(examples)} "
-        f"sample retinas, above the {MAX_SECONDS_PER_CALL:.3f}s ceiling.\n"
+        f"sample retinas, above the {settings.PIPELINE_MAX_SECONDS_PER_CALL:.3f}s ceiling.\n"
         f"Total elapsed: {elapsed:.3f}s\n"
         f"Top cumulative profile rows:\n{stats_buffer.getvalue()}"
     )

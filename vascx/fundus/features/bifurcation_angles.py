@@ -37,6 +37,23 @@ class BifurcationAngles(LayerFeature):
     - aggregator: function to aggregate per-bifurcation angles (e.g., mean/median).
     """
 
+    general_description = (
+        "Retinal vessel bifurcation angle describes the opening between two daughter "
+        "vessels at a branch point."
+    )
+
+    def implementation_description(self, layer_name: str = "vessels", **kwargs) -> str:
+        from .base import get_layer_description
+
+        layer = get_layer_description(layer_name)
+        return (
+            f"Calculated as the angle between the outgoing branches of each eligible "
+            f"{layer} bifurcation."
+        )
+
+    def aggregation_unit(self, **kwargs) -> str:
+        return "eligible bifurcations"
+
     default_min_area_within_bounds = 0.95
 
     def __init__(
@@ -48,6 +65,7 @@ class BifurcationAngles(LayerFeature):
         spline_error_fraction: float = 0.05,
         aggregator=mean,
         min_area_within_bounds: Optional[float] = None,
+        plot: bool = False,
     ):
         """Configure sampling distance, optional grid field and aggregation function."""
         self.delta = delta
@@ -57,7 +75,7 @@ class BifurcationAngles(LayerFeature):
         self.min_area_within_bounds = validate_min_area_within_bounds(
             min_area_within_bounds
         )
-        super().__init__(grid_field_spec=grid_field)
+        super().__init__(grid_field_spec=grid_field, plot=plot)
         self.aggregator = aggregator
 
     def _get_bifurcation_points(self, layer: VesselTreeLayer):

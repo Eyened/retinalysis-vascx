@@ -18,6 +18,9 @@ if TYPE_CHECKING:
     from matplotlib.axes import Axes
 
 
+_MISSING = object()
+
+
 class FeatureSet:
     _registry = {}
 
@@ -53,6 +56,12 @@ class FeatureSet:
 
 
 class Feature(ABC):
+    general_description: str = ""
+    plot_in_report: bool = False
+
+    def __init__(self, *, plot: bool = False) -> None:
+        self.plot_in_report = bool(plot)
+
     @abstractmethod
     def compute(self, *args: Any, **kwargs: Any) -> Any:
         """Compute the feature value for provided domain arguments."""
@@ -84,6 +93,44 @@ class Feature(ABC):
             ),
         )
 
+
+    def implementation_description(self, **kwargs: Any) -> str:
+        """Return a brief publication-facing explanation of the measurement."""
+        return ""
+
+    def aggregation_unit(self, **kwargs: Any) -> str:
+        """Return the units summarized by an optional aggregator."""
+        return "measurements"
+
+    def aggregation_description(self, **kwargs: Any) -> str:
+        """Return a publication-facing explanation of aggregation."""
+        aggregator = getattr(self, "aggregator", None)
+        describe = getattr(aggregator, "describe", None)
+        if describe is None:
+            return ""
+        return describe(self.aggregation_unit(**kwargs))
+
+    def region_description(self, **kwargs: Any) -> str:
+        """Return the configured region or the full-image fallback."""
+        region = getattr(self, "hemifield_spec", None)
+        if region is None:
+            region = getattr(self, "grid_field_spec", None)
+        if region is None:
+            return "Computed on the full image."
+        return f"Computed in {region.description}."
+
+    def description(self, **kwargs: Any) -> str:
+        """Compose a publication-facing biomarker description."""
+        general = self.general_description.strip()
+        if not general:
+            return "No publication description available."
+        parts = (
+            general,
+            self.implementation_description(**kwargs),
+            self.aggregation_description(**kwargs),
+            self.region_description(**kwargs),
+        )
+        return " ".join(part.strip() for part in parts if part and part.strip())
     @abstractmethod
     def _plot(self, ax: 'Axes', layer: Any, **kwargs: Any) -> 'Axes':
         """Subclass draws onto ax for the given layer and returns ax."""
@@ -141,7 +188,12 @@ class Feature(ABC):
     def plot(self, ax: 'Axes', layer: Any, **kwargs: Any) -> 'Axes':
         """Compute value, delegate drawing to _plot, annotate value at upper-left, return ax."""
         plot_fovea = kwargs.pop("plot_fovea", True)
-        value = self.compute(layer, **kwargs)
+        computed_value = kwargs.pop("computed_value", _MISSING)
+        value = (
+            self.compute(layer, **kwargs)
+            if computed_value is _MISSING
+            else computed_value
+        )
         ax = self._plot(ax, layer, **kwargs)
         if plot_fovea:
             ax = self._plot_fovea_location(ax, layer)

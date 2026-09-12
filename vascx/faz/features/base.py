@@ -11,6 +11,9 @@ if TYPE_CHECKING:
 
 
 class FAZLayerFeature(Feature):
+    def __init__(self, *, plot: bool = False) -> None:
+        super().__init__(plot=plot)
+
     @abstractmethod
     def compute(self, layer: FAZLayer):
         """Compute the feature given its parameters.

@@ -13,8 +13,9 @@ if TYPE_CHECKING:
 
 class Caliber(FAZLayerFeature):
     def __init__(
-        self, min_numpoints=10, aggregator=median, spline_error_fraction: float = 0.05
+        self, min_numpoints=10, aggregator=median, spline_error_fraction: float = 0.05, *, plot: bool = False
     ):
+        super().__init__(plot=plot)
         self.min_numpoints = min_numpoints
         self.aggregator = aggregator
         self.spline_error_fraction = float(spline_error_fraction)

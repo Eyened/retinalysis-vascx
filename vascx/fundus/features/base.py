@@ -86,6 +86,16 @@ def resolve_min_area_within_bounds(
     raise ValueError("default_min_area_within_bounds must not be None")
 
 
+def get_layer_description(layer_name: str) -> str:
+    """Return a publication-facing vessel-layer label."""
+    labels = {
+        "arteries": "retinal arterial",
+        "veins": "retinal venous",
+        "vessels": "retinal vessel",
+    }
+    return labels.get(str(layer_name).lower(), "retinal vessel")
+
+
 def get_layer_token(layer_name: str) -> str:
     return normalize_name_token(layer_name)
 
@@ -153,7 +163,7 @@ def _nondefault_object_parameter_tokens(obj: Any) -> List[str]:
 
     tokens: List[str] = []
     for attr, value in vars(obj).items():
-        if attr.startswith("_") or attr == "name":
+        if attr.startswith("_") or attr in {"name", "description", "plot_in_report"}:
             continue
         default_value = default_values.get(attr, _MISSING)
         if default_value is _MISSING or value != default_value:
@@ -306,8 +316,12 @@ def _make_name_parts(feature: Feature, layer_name: str) -> List[NamePart]:
 
 class RetinaFeature(Feature):
     def __init__(
-        self, grid_field_spec: Optional[BaseGridFieldSpecification] = None
+        self,
+        grid_field_spec: Optional[BaseGridFieldSpecification] = None,
+        *,
+        plot: bool = False,
     ) -> None:
+        super().__init__(plot=plot)
         self.grid_field_spec = grid_field_spec
 
     def _get_grid_field(self, retina: "Retina") -> Optional[GridField]:
@@ -355,8 +369,12 @@ class RetinaFeature(Feature):
 
 class LayerFeature(Feature):
     def __init__(
-        self, grid_field_spec: Optional[BaseGridFieldSpecification] = None
+        self,
+        grid_field_spec: Optional[BaseGridFieldSpecification] = None,
+        *,
+        plot: bool = False,
     ) -> None:
+        super().__init__(plot=plot)
         self.grid_field_spec = grid_field_spec
 
     def _get_grid_field(self, layer: "VesselTreeLayer") -> Optional[GridField]:
@@ -406,8 +424,12 @@ class LayerFeature(Feature):
 
 class VesselsLayerFeature(Feature):
     def __init__(
-        self, grid_field_spec: Optional[BaseGridFieldSpecification] = None
+        self,
+        grid_field_spec: Optional[BaseGridFieldSpecification] = None,
+        *,
+        plot: bool = False,
     ) -> None:
+        super().__init__(plot=plot)
         self.grid_field_spec = grid_field_spec
 
     def _get_grid_field(self, layer: "FundusVesselsLayer") -> Optional[GridField]:

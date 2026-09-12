@@ -19,7 +19,9 @@ class VascularDensity(FAZLayerFeature):
         self,
         grid_field: Optional[BaseGridFieldSpecification] = None,
         cut_mask: bool = False,
+        plot: bool = False,
     ):
+        super().__init__(plot=plot)
         self.grid_field_spec = grid_field
         self.cut_mask = cut_mask
 

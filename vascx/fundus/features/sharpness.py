@@ -402,6 +402,20 @@ class Sharpness(VesselsLayerFeature):
     Lower values indicate sharper edges.
     """
 
+    general_description = (
+        "Vessel sharpness describes the clarity of vessel borders in the fundus image. "
+        "Lower values indicate sharper vessel borders."
+    )
+
+    def implementation_description(self, layer_name: str = "vessels", **kwargs) -> str:
+        from .base import get_layer_description
+
+        layer = get_layer_description(layer_name)
+        return f"Calculated from the width of the intensity transition across {layer} vessel edges."
+
+    def aggregation_description(self, **kwargs) -> str:
+        return "Reported as the mean across eligible vessel segments, weighted by vessel length."
+
     default_min_area_within_bounds = 0.80
     default_min_numpoints = 20
     default_n_profiles = 12
@@ -422,6 +436,7 @@ class Sharpness(VesselsLayerFeature):
         max_diameter: float = default_max_diameter,
         width_prior_fraction: float = default_width_prior_fraction,
         min_area_within_bounds: Optional[float] = None,
+        plot: bool = False,
     ):
         """Bilateral ESF sharpness (blur σ) from vessel cross-sections."""
         if min_numpoints < 2:
@@ -446,7 +461,7 @@ class Sharpness(VesselsLayerFeature):
         self.min_area_within_bounds = validate_min_area_within_bounds(
             min_area_within_bounds
         )
-        super().__init__(grid_field_spec=grid_field)
+        super().__init__(grid_field_spec=grid_field, plot=plot)
 
     def _green_channel(self, layer: FundusVesselsLayer) -> Optional[np.ndarray]:
         image = layer.retina.image

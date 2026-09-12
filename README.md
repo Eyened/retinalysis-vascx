@@ -47,8 +47,18 @@ conda install pytorch torchvision torchaudio pytorch-cuda=11.8 -c pytorch -c nvi
 3. Install VascX:
 
 ```
-pip install retinalysis-vascx retinalysis-inference
+pip install retinalysis-vascx
 ```
+
+This checkout declares `retinalysis-inference==0.7.1` and
+`retinalysis-enface==1.3.0` as dependencies; a release containing this metadata
+will install them automatically.
+
+Development release blocker: the published inference `0.7.1` wheel does not yet
+contain `rtnls_inference.ensembles.predict_output`, used by this checkout.
+Publish the compatible inference changes and update the exact pin before
+releasing this VascX checkout. The current public VascX `1.4.0` also omits the
+inference dependency; `tox -e public` reports that missing dependency.
 
 > [!TIP]
 > To be able to directly modify VascX code to eg. customise biomarkers or develop new ones, clone and install the Python package in development mode instead:
@@ -65,7 +75,7 @@ To run the two stages of VascX on a folder with input CFIs:
 
 ```
 vascx run-models <PATH_TO_IMAGES> <PATH_TO_FOLDER_FOR_SEGMENTATIONS>
-vascx calc-biomarkers <PATH_TO_FOLDER_FOR_SEGMENTATIONS> <PATH_TO_BIOMARKERS_CSV> --feature_set full_v3 --n-jobs 8 
+vascx calc-biomarkers <PATH_TO_FOLDER_FOR_SEGMENTATIONS> <PATH_TO_BIOMARKER_REPORT> --feature-set full_v3 --n-jobs 8
 ```
 
 > [!TIP]
@@ -92,11 +102,11 @@ vascx calc-biomarkers <PATH_TO_FOLDER_FOR_SEGMENTATIONS> <PATH_TO_BIOMARKERS_CSV
 
 - The folder `PATH_TO_FOLDER_FOR_SEGMENTATIONS` should initially be an empty or non-existent folder. The first stage (`run-models`) will write intermediate segmentations and other AI outputs to this folder.
 - The same folder should be passed to the second stage as input as shown above. 
-- `PATH_TO_BIOMARKERS` should be the path to a CSV file where the final outputs will be stored. See below for details on how to interpret biomarker names. 
-- The `--feature_set` is used to specify a set of biomarkers to extract. We recommend to use the latest "full" set which contains a comprehensive set.
+- `PATH_TO_BIOMARKER_REPORT` is an output folder containing the biomarker values, metadata, README, manifest, and sample plots.
+- The `--feature-set` is used to specify a set of biomarkers to extract. The underscore spelling `--feature_set` remains available as an alias.
 - The `--n-jobs` option indicates how many CPU jobs to start. For optimal performance, we recommend to set to the number of CPU threads available divided by two, as a rule of thumb.
 - By default, `run-models` picks the first available CUDA GPU, Apple MPS acceleration, or CPU. Override this with `--device`, passing any string accepted by `torch.device` (for example `cuda:0`, `mps`, or `cpu`).
-- An optional `--logile PATH_TO_LOGFILE_TXT` can be added to store logs. This can indicate if the code produces errors on some of the images.
+- An optional `--logfile PATH_TO_LOGFILE_TXT` can be added to store warnings.
 
 ### Example 
 
@@ -106,12 +116,28 @@ For example, to run VascX on the provided samples folder in our git repository:
 git clone git@github.com:Eyened/retinalysis-vascx.git rtnls_vascx
 cd rtnls_vascx
 vascx run-models ./samples/fundus/original/ ./samples/fundus/segmentations
-vascx calc-biomarkers ./samples/fundus/segmentations ./samples/fundus/biomarkers.csv --feature_set full_v3 --n-jobs 8 --naming resolved
+vascx calc-biomarkers ./samples/fundus/segmentations ./samples/fundus/biomarker_report --feature-set full_v3 --n-jobs 8 --naming resolved
 ```
 
 ## Outputs
 
-`vascx calc-biomarkers` will write a CSV file at `PATH_TO_BIOMARKERS` containing a row per image and a column per biomarker. It also writes the matching JSON name/display mapping beside it as `PATH_TO_BIOMARKERS` with a `.names.json` suffix. By default, CLI output uses feature-set-aware `resolved` names; pass `--naming canonical` to preserve the full canonical convention.
+`vascx calc-biomarkers` writes a self-contained output folder:
+
+```text
+PATH_TO_BIOMARKER_REPORT/
+├── biomarkers.csv
+├── biomarkers.metadata.csv
+├── biomarkers.names.json
+├── README.md
+├── report.json
+└── plots/
+    └── <variable>/
+        └── <image-id>.png
+```
+
+`biomarkers.metadata.csv` contains the machine variable, human-friendly display name, and description for every biomarker. `biomarkers.names.json` preserves the existing variable-to-display-name JSON format. By default, the report visualizes up to three input images; use `--report-samples` or repeated `--report-image` options to select them. Use `--no-report` to skip README, manifest, and plot generation while still writing biomarkers and metadata. Existing report-owned outputs are protected unless `--overwrite` is passed.
+
+By default, CLI output uses feature-set-aware `resolved` names; pass `--naming canonical` to preserve the full canonical convention.
 VascX parameter names typically follow the format:
 
 ```
@@ -180,13 +206,13 @@ For offline use, download the VascX model files on a machine with internet acces
   - quality/
     - quality.pt
   - artery_vein/
-    - av_july24.pt
+    - av_wsoft_patches_02_finetune.pt
   - vessels/
-    - vessels_july24.pt
+    - vessels_may26.pt
   - disc/
-    - disc_july24.pt
+    - disc_may26.pt
   - fovea/
-    - fovea_july24.pt
+    - fovea_may26.pt
 ```
 
 Then pass that directory to `run-models`:
@@ -234,7 +260,7 @@ The other skip flags follow the same idea:
 - `--no-quality` skips image quality estimation. Reuse this when `quality.csv` already exists or when you do not need quality predictions.
 - `--no-overlay` skips overlay creation. Reuse this when overlays already exist or when visualization overlays are not needed.
 
-Only models for enabled steps are required. For example, a run with `--no-quality --no-fovea` does not need `quality/quality.pt` or `fovea/fovea_july24.pt`. If no local model options are provided, VascX keeps using the default Hugging Face model locations.
+Only models for enabled steps are required. For example, a run with `--no-quality --no-fovea` does not need `quality/quality.pt` or `fovea/fovea_may26.pt`. If no local model options are provided, VascX keeps using the default Hugging Face model locations.
 
 ### Advanced extraction
 
@@ -433,37 +459,141 @@ VascX localises feature computations using anatomical references and predefined 
   - If the fraction in-bounds is too small (typically < 0.5), many features skip computation and return `None` to avoid out-of-frame bias.
   - Visualizers plot the requested field overlayed on the image; computations always respect in-bounds masking.
 
-Ready-to-run feature sets are available under `vascx/fundus/feature_sets` (e.g., `full`, `bergmann`, `quality`) and can be selected by name when using `extract_in_parallel`. To generate feature descriptions alongside extraction:
-
-Ready-to-run feature sets are available under `vascx/fundus/feature_sets` (e.g., `full`, `bergmann`, `quality`) and can be selected by name when using `extract_in_parallel`. To generate feature descriptions alongside extraction:
+Ready-to-run feature sets are available under `vascx/fundus/feature_sets` and can be selected by name. Use `extract_in_parallel` when only an in-memory DataFrame is needed:
 
 ```python
-df = extract_in_parallel(examples, "full", n_jobs=8, descriptions_output_path="feature_descriptions_full.txt")
+from vascx.utils.analysis import extract_in_parallel
+
+df = extract_in_parallel(examples, "full_v3", n_jobs=8)
 ```
+
+Use `extract_biomarkers_to_folder` to write the same report bundle as the CLI:
+
+```python
+from vascx.utils.analysis import extract_biomarkers_to_folder
+
+df = extract_biomarkers_to_folder(
+    examples,
+    "full_v3",
+    "biomarker_report",
+    n_jobs=8,
+    naming="resolved",
+    report_sample_size=3,
+)
+```
+
+Inputs may be dictionaries accepted by `Retina.from_file` or already constructed `Retina` objects. Pass `report_retinas` to visualize a separate, explicitly selected set of representative images, or `generate_report=False` to skip README, manifest, and plot generation.
 
 ## Testing
 
-Run the standard test suite with:
+Edit [`tests/settings.py`](tests/settings.py) to configure all numerical test
+tolerances: biomarker percentage changes, segmentation Dice, fovea coordinate
+errors, extraction timing, CLI timeouts, and floating-point boundary allowance.
+Each setting has a comment explaining its meaning and units. Local and public
+runs use the same file. The biomarker pytest option overrides its configured
+default for that run. Per-feature-set YAML files contain schema exceptions only.
+
+`test_biomarker_report.py` generates real reports for `macula_centered` and
+`od_centered`, with light checks for report files and plots. `test_feature_plotting.py`
+renders the individual feature plots for the same two sets. Outputs are saved in
+pytest's temporary directories; use `--basetemp=/tmp/vascx-test-output` to choose a
+predictable location (pytest clears that directory on each run).
+The inference test is `tests/test_inference.py::test_inference`; its selection
+marker remains `cli_e2e`.
+
+Run tests against your local editable installation:
 
 ```bash
+pip install -e ".[test]"
 pytest
 ```
 
-The biomarker regression tests compare current outputs against stored reference files. When a change intentionally updates biomarker outputs, refresh those references with:
+The same tests can target the public package in a separate environment:
+
+```bash
+pip install tox
+tox -e public
+# Select a particular published VascX version:
+VASCX_VERSION=1.2.3 tox -r -e public
+```
+
+`public` installs VascX from PyPI with its published dependencies, checks dependency
+consistency, and prints package versions and import paths. It copies the tests and
+sample data into an isolated working directory without the local package source.
+It runs both regression groups by default. Tests and reference values are identical
+in local and public modes; only the installed target changes. The version above is
+an example; select an existing release. To validate historical releases, use tests
+and references from the corresponding source tag when their CLI/schema differs.
+
+The two stages are tested independently through the installed `vascx` executable:
+
+- **Biomarker computation** (`reference`): `calc-biomarkers` reads the fixed sample
+  segmentations and metadata. Each feature set's canonical CSV columns are compared
+  against `tests/reference/*.parquet`, allowing up to 5% change per image by default.
+  Report files are checked too. This test does not run inference.
+  Multiple value mismatches are summarized per biomarker with means over failing
+  images (excluding NaN), plus the image with the largest absolute difference.
+  Schema messages explicitly identify variables present only in the reference
+  or only in the current output.
+- **AI inference** (`cli_e2e`): `run-models` reads `samples/fundus/original` and
+  compares vessel, artery/vein and disc masks against the stored sample masks
+  (Dice >= 0.99 for each foreground class), and fovea coordinates within 2 pixels.
+  It also checks output IDs, files and finite quality logits. Quality scores do
+  not yet have a numerical reference baseline. Model weights are downloaded from
+  Hugging Face or reused from its cache; the CLI selects the available device.
+  `VASCX_MODEL_DIR` can select a fixed local model release in both modes.
+
+Run the same selection locally or publicly:
+
+```bash
+pytest -m reference
+tox -e public -- -m reference
+
+pytest -m cli_e2e
+tox -e public -- -m cli_e2e
+
+pytest -m "reference or cli_e2e"
+```
+
+Inference runs by default in both local and public tests and loads real models.
+To exclude it, use `pytest -m "not cli_e2e"` or
+`tox -e public -- -m "reference and not cli_e2e"`.
+The old `--run-cli-e2e` option remains accepted for compatibility but is unnecessary.
+Public runs deliberately do not add missing runtime
+dependencies separately: incomplete published dependency metadata should fail.
+
+When a reviewed change intentionally updates biomarker outputs, refresh the local
+references explicitly (never as part of public-package validation):
 
 ```bash
 pytest --accept-vascx-reference -m reference
 ```
 
-The full CLI end-to-end test is opt-in because it runs `run-models` on `samples/fundus/original`, downloads or uses cached Hugging Face model weights, and then runs `calc-biomarkers`. Run it with:
+Inference uses the existing sample masks and fovea CSV as references and does not
+rewrite them. Changes to model weights or preprocessing may require a separately
+reviewed update of those inputs and the corresponding biomarker references.
+
+Regression tests explicitly request `canonical` names, and reference metadata records
+`naming: canonical`. VascX CLI commands and Python extraction/reporting APIs default
+to `resolved` names; pass `naming="canonical"` in Python or `--naming canonical`
+on the CLI when canonical output is needed. Reference column renaming preserves
+all stored numerical values, including existing schema and numerical mismatches.
+
+The biomarker regression threshold is configurable at test time:
 
 ```bash
-pytest --run-cli-e2e -m cli_e2e tests/test_cli_e2e.py
+pytest -m reference --vascx-max-percent-change 5
+tox -e public -- -m reference --vascx-max-percent-change 5
+# Include inference as well:
+tox -e public -- -m "reference or cli_e2e" --vascx-max-percent-change 5
 ```
 
-With tox, pass the pytest arguments after `--`:
-
-```bash
-tox -- --run-cli-e2e -m cli_e2e tests/test_cli_e2e.py
-```
-
+For each biomarker on each image, a numerical comparison fails when
+`abs(current - reference) > (threshold / 100) * abs(reference)`.
+Exactly 5% passes at the default threshold, including integer-valued biomarkers.
+The threshold must be finite and non-negative; use `0` for exact numerical equality.
+Zero references require zero current values. Matching NaNs pass, but transitions
+between missing and measured values fail, as do changed infinities. Missing images,
+variables, and reference files still fail independently of the numerical threshold.
+YAML overrides control schema compatibility; historical numeric tolerance entries
+are no longer used. The percentage option does not change inference mask/landmark tolerances.

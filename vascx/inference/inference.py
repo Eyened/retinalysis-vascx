@@ -7,11 +7,16 @@ import pandas as pd
 import torch
 from PIL import Image
 from rtnls_inference.dtos_inference import ModelInputDTO
+from rtnls_inference.ensembles import get_ensemble_class
 from rtnls_inference.ensembles.ensemble_classification import ClassificationEnsemble
 from rtnls_inference.ensembles.ensemble_heatmap_regression import (
     HeatmapRegressionEnsemble,
 )
 from rtnls_inference.ensembles.ensemble_segmentation import SegmentationEnsemble
+from rtnls_inference.ensembles.predict_output import (
+    decollate_predict_full,
+    restore_array_to_preprocessed,
+)
 from tqdm import tqdm
 
 from vascx.inference.device import resolve_device
@@ -39,31 +44,54 @@ def _load_ensemble(
 
             return make_ensemble(model_path, **kwargs)
         if model_path.suffix.lower() == ".onnx":
-            return ensemble_cls.from_onnx(model_path, **kwargs)
-        return ensemble_cls.from_torchscript(model_path, **kwargs)
+            loaded = ensemble_cls.from_onnx(model_path, **kwargs)
+        else:
+            loaded = ensemble_cls.from_torchscript(model_path, **kwargs)
+        return _specialize_ensemble(loaded, ensemble_cls)
 
     model_str = str(model)
     if model_str.startswith("hf@"):
-        return ensemble_cls.from_modelstring(model_str, **kwargs)
+        loaded = ensemble_cls.from_modelstring(model_str, **kwargs)
+        return _specialize_ensemble(loaded, ensemble_cls)
     if ":" in model_str:
-        return ensemble_cls.from_huggingface(model_str, **kwargs)
-    return ensemble_cls.from_modelstring(model_str, **kwargs)
+        loaded = ensemble_cls.from_huggingface(model_str, **kwargs)
+        return _specialize_ensemble(loaded, ensemble_cls)
+    loaded = ensemble_cls.from_modelstring(model_str, **kwargs)
+    return _specialize_ensemble(loaded, ensemble_cls)
+
+
+def _specialize_ensemble(loaded: EnsembleT, fallback: type[EnsembleT]) -> EnsembleT:
+    """Honor embedded inference classes, retaining legacy explicit-class fallback."""
+    try:
+        resolved = get_ensemble_class(loaded.config)
+    except (ImportError, ValueError, KeyError):
+        return loaded
+    if resolved is fallback or isinstance(loaded, resolved):
+        return loaded
+    return resolved(loaded.ensemble, loaded.config, loaded.fpath)
+
+
+def _full_items(ensemble, batch) -> list[dict[str, Any]]:
+    """Run one supported full-contract batch and split its normalized batch axis."""
+    return decollate_predict_full(ensemble.predict_step_full(batch))
+
+
+def _canonical_probability_item(item: dict[str, Any]) -> dict[str, Any]:
+    return {
+        "id": item.get("id"),
+        "image": restore_array_to_preprocessed(
+            item["aggregate"], item["geometry"], "bilinear"
+        ),
+    }
 
 
 def _create_dtos(
     rgb_paths: List[Path],
-    ce_paths: Optional[List[Path]] = None,
     ids: Optional[List[str]] = None,
 ) -> List[ModelInputDTO]:
     """Helper to create ModelInputDTOs from paths."""
     if ids is None:
         ids = [p.stem for p in rgb_paths]
-
-    if ce_paths is None:
-        ce_paths = [None] * len(rgb_paths)
-
-    if len(rgb_paths) != len(ce_paths):
-        raise ValueError("rgb_paths and ce_paths must have the same length")
 
     if len(rgb_paths) != len(ids):
         raise ValueError("rgb_paths and ids must have the same length")
@@ -72,9 +100,8 @@ def _create_dtos(
         ModelInputDTO(
             id=str(id_val),
             image=str(rgb_path),
-            contrast_enhanced=str(ce_path) if ce_path else None,
         )
-        for id_val, rgb_path, ce_path in zip(ids, rgb_paths, ce_paths)
+        for id_val, rgb_path in zip(ids, rgb_paths)
     ]
 
 
@@ -100,7 +127,10 @@ def iterate_quality_estimation(
             if len(batch) == 0:
                 continue
 
-            items = ensemble_quality._predict_batch(batch)
+            items = [
+                {"id": item.get("id"), "logits": item["aggregate"]}
+                for item in _full_items(ensemble_quality, batch)
+            ]
 
             for item in items:
                 yield item
@@ -167,9 +197,24 @@ def iterate_segmentation_vessels_and_av(
             if len(batch) == 0:
                 continue
 
-            items_av = ensemble_av._predict_batch(batch) if ensemble_av else None
+            if ensemble_av:
+                av_full_items = _full_items(ensemble_av, batch)
+                items_av = []
+                for full_item in av_full_items:
+                    item = _canonical_probability_item(full_item)
+                    processed = ensemble_av.postprocess_item(full_item)
+                    item["refined_mask"] = processed["output"]
+                    item["output_space"] = processed["output_space"]
+                    items_av.append(item)
+            else:
+                items_av = None
             items_vessels = (
-                ensemble_vessels._predict_batch(batch) if ensemble_vessels else None
+                [
+                    _canonical_probability_item(item)
+                    for item in _full_items(ensemble_vessels, batch)
+                ]
+                if ensemble_vessels
+                else None
             )
 
             num_items = (
@@ -199,7 +244,6 @@ def iterate_segmentation_vessels_and_av(
 
 def run_segmentation_vessels_and_av(
     rgb_paths: List[Path],
-    ce_paths: Optional[List[Path]] = None,
     ids: Optional[List[str]] = None,
     av_path: Optional[Path] = None,
     vessels_path: Optional[Path] = None,
@@ -215,7 +259,6 @@ def run_segmentation_vessels_and_av(
 
     Args:
         rgb_paths: List of paths to RGB fundus images
-        ce_paths: Optional list of paths to contrast enhanced images
         ids: Optional list of ids to pass to _make_inference_dataloader
         av_path: Folder where to store output AV segmentations
         vessels_path: Folder where to store output vessel segmentations
@@ -235,7 +278,7 @@ def run_segmentation_vessels_and_av(
     should_predict_vessels = (vessels_path is not None) or predict_vessels
 
     device = resolve_device(device)
-    data = _create_dtos(rgb_paths, ce_paths=ce_paths, ids=ids)
+    data = _create_dtos(rgb_paths, ids=ids)
 
     for result in iterate_segmentation_vessels_and_av(
         data,
@@ -250,7 +293,9 @@ def run_segmentation_vessels_and_av(
         else:
             if av_path is not None and result["av"] is not None:
                 fpath = os.path.join(av_path, f"{result['id']}.png")
-                mask = np.argmax(result["av"]["image"], -1)
+                mask = result["av"].get("refined_mask")
+                if mask is None:
+                    mask = np.argmax(result["av"]["image"], -1)
                 Image.fromarray(mask.squeeze().astype(np.uint8)).save(fpath)
 
             if vessels_path is not None and result["vessels"] is not None:
@@ -281,8 +326,10 @@ def iterate_segmentation_disc(
             if len(batch) == 0:
                 continue
 
-            items = ensemble_disc._predict_batch(batch)
-            items = [dataloader.dataset.transform.undo_item(item) for item in items]
+            items = [
+                _canonical_probability_item(item)
+                for item in _full_items(ensemble_disc, batch)
+            ]
 
             for item in items:
                 yield item
@@ -290,7 +337,6 @@ def iterate_segmentation_disc(
 
 def run_segmentation_disc(
     rgb_paths: List[Path],
-    ce_paths: Optional[List[Path]] = None,
     ids: Optional[List[str]] = None,
     output_path: Optional[Path] = None,
     device: torch.device | None = None,
@@ -306,7 +352,7 @@ def run_segmentation_disc(
     if output_path is not None:
         output_path.mkdir(exist_ok=True, parents=True)
 
-    data = _create_dtos(rgb_paths, ce_paths=ce_paths, ids=ids)
+    data = _create_dtos(rgb_paths, ids=ids)
 
     for item in iterate_segmentation_disc(data, device=device, model=model):
         if callback is not None:
@@ -339,8 +385,10 @@ def iterate_fovea_detection(
             if len(batch) == 0:
                 continue
 
-            items = ensemble_fovea._predict_batch(batch)
-            items = [dataloader.dataset.transform.undo_item(item) for item in items]
+            items = [
+                ensemble_fovea.postprocess_item(item)
+                for item in _full_items(ensemble_fovea, batch)
+            ]
 
             for item in items:
                 yield item
@@ -348,13 +396,12 @@ def iterate_fovea_detection(
 
 def run_fovea_detection(
     rgb_paths: List[Path],
-    ce_paths: Optional[List[Path]] = None,
     ids: Optional[List[str]] = None,
     device: torch.device | None = None,
     model: str | Path = DEFAULT_FOVEA_MODEL,
 ) -> pd.DataFrame:
     device = resolve_device(device)
-    data = _create_dtos(rgb_paths, ce_paths=ce_paths, ids=ids)
+    data = _create_dtos(rgb_paths, ids=ids)
     output_ids, outputs = [], []
 
     for item in iterate_fovea_detection(data, device=device, model=model):

@@ -12,6 +12,7 @@ from vascx.fundus.features.bifurcation_angles import BifurcationAngles
 from vascx.fundus.features.caliber import Caliber
 from vascx.fundus.features.cre import CRE, CREMode
 from vascx.fundus.features.disc_features import DiscFoveaDistance, DiscFoveaDistanceMode
+from vascx.fundus.features.luminance import Luminance
 from vascx.fundus.features.sharpness import Sharpness
 from vascx.fundus.features.sparsity import Sparsity, SparsityMode
 from vascx.fundus.features.temporal_angles import TemporalAngle
@@ -27,12 +28,12 @@ from vascx.shared.features import FeatureSet
 
 
 
-def make_set(name: str, description: str, center: float=1.0, radius_multiplier: float=1.0, band_crop: bool=False) -> FeatureSet:
+def make_set(name: str, description: str, grid_description: str, center: float=1.0, radius_multiplier: float=1.0, band_crop: bool=False) -> FeatureSet:
 
-    ETDRS_FULL = GridFieldSpecification(ETDRSGridSpecification(), ETDRSRing.FullGrid)
+    ETDRS_FULL = GridFieldSpecification(ETDRSGridSpecification(description="a fovea-centered ETDRS grid with ring radii of 0.5, 1.5, and 3.0 mm"), ETDRSRing.FullGrid)
 
     CIRCLE_CROPPED_GRID = CircleGridSpecification(
-        band_crop_fraction=0.12 if band_crop else 0.0, center=center, radius_multiplier=radius_multiplier, name="crcl"
+        band_crop_fraction=0.12 if band_crop else 0.0, center=center, radius_multiplier=radius_multiplier, name="crcl", description=grid_description
     )
     CIRCLE_CROPPED_FIELD = GridFieldSpecification(CIRCLE_CROPPED_GRID, CircleField.FullGrid)
     CIRCLE_CROPPED_SUP = GridFieldSpecification(CIRCLE_CROPPED_GRID, CircleField.Superior)
@@ -41,21 +42,21 @@ def make_set(name: str, description: str, center: float=1.0, radius_multiplier: 
     return FeatureSet(
         name,
         [
-            TemporalAngle(),
+            TemporalAngle(plot=True),
 
             # bifurcation angles (full, superior, inferior)
-            BifurcationAngles(aggregator=mean, grid_field=CIRCLE_CROPPED_FIELD),
+            BifurcationAngles(plot=True, aggregator=mean, grid_field=CIRCLE_CROPPED_FIELD),
             BifurcationAngles(grid_field=CIRCLE_CROPPED_SUP, aggregator=mean),
             BifurcationAngles(grid_field=CIRCLE_CROPPED_INF, aggregator=mean),
 
             # caliber (length-weighted)
-            Caliber(grid_field=CIRCLE_CROPPED_FIELD, aggregator=LengthWeightedAggregator()),
+            Caliber(plot=True, grid_field=CIRCLE_CROPPED_FIELD, aggregator=LengthWeightedAggregator()),
             Caliber(grid_field=CIRCLE_CROPPED_SUP, aggregator=LengthWeightedAggregator()),
             Caliber(grid_field=CIRCLE_CROPPED_INF, aggregator=LengthWeightedAggregator()),
             Caliber(grid_field=ETDRS_FULL, aggregator=LengthWeightedAggregator()),
 
             # CRE: temporal variants in sup/inf/full; nasal and full variants on full grid
-            CRE(CREMode.Temporal),
+            CRE(CREMode.Temporal, plot=True),
             CRE(CREMode.Temporal, max_vessels=3),
             CRE(CREMode.Temporal, max_vessels=6),
             CRE(CREMode.Temporal, hemifield=HemifieldField.Superior),
@@ -63,7 +64,7 @@ def make_set(name: str, description: str, center: float=1.0, radius_multiplier: 
 
             # tortuosity (segments) — Distance and Curvature
             # whole image (length-weighted normalized)
-            Tortuosity(
+            Tortuosity(plot=True,
                 mode=TortuosityMode.Segments,
                 max_segment_len=0.2,
                 measure=TortuosityMeasure.Distance,
@@ -112,24 +113,26 @@ def make_set(name: str, description: str, center: float=1.0, radius_multiplier: 
             ),
 
             # vascular densities (full, superior, inferior)
-            VascularDensity(grid_field=CIRCLE_CROPPED_FIELD),
+            VascularDensity(plot=True, grid_field=CIRCLE_CROPPED_FIELD),
             VascularDensity(grid_field=CIRCLE_CROPPED_SUP),
             VascularDensity(grid_field=CIRCLE_CROPPED_INF),
 
             # disc–fovea distance
-            DiscFoveaDistance(),
+            DiscFoveaDistance(plot=True),
             DiscFoveaDistance(mode=DiscFoveaDistanceMode.Edge),
             ####  IMAGE QUALITY FEATURES ####
 
             # Sparsity features
-            Sparsity(mode=SparsityMode.MEAN),
+            Sparsity(plot=True, mode=SparsityMode.MEAN),
             Sparsity(
                 mode=SparsityMode.MEAN, grid_field=CIRCLE_CROPPED_FIELD
             ),
             Sparsity(
                 mode=SparsityMode.MEAN, grid_field=ETDRS_FULL
             ),
-            Sharpness(grid_field=CIRCLE_CROPPED_FIELD)
+            Sharpness(plot=True, grid_field=CIRCLE_CROPPED_FIELD),
+            Sharpness(grid_field=ETDRS_FULL),
+            Luminance(plot=True),
         ],
         description=description,
     )
@@ -137,10 +140,12 @@ def make_set(name: str, description: str, center: float=1.0, radius_multiplier: 
 
 fs_macula_centered = make_set(
     name="macula_centered",
-    description="Biomarkers optimized for macula-centered fundus images.")
+    description="Biomarkers optimized for macula-centered fundus images.",
+    grid_description="a circular grid centered on the fovea with radius equal to the optic-disc–fovea distance plus the optic-disc radius")
 fs_macula_centered_rs = make_set(
     name="macula_centered_rs", 
     description="Biomarkers for macula-centered fundus images using a cropped circular field optimized for devices in the Rotterdam Study (narrow FoV and band crop).",
+    grid_description="a cropped circular grid centered nine-tenths of the way from the optic disc to the fovea, with radius equal to nine-tenths of their separation plus the optic-disc radius",
     center=0.9,
     radius_multiplier=0.9,
     band_crop=True)

@@ -38,15 +38,32 @@ class TemporalAngle(LayerFeature):
     outer_circle: float = 2 / 3 + 4 * 0.03
     num_circles: int = 5
 
+    general_description = (
+        "Temporal vessel angle describes the angular spread of the major temporal retinal vessels."
+    )
+
+    def implementation_description(self, layer_name: str = "vessels", **kwargs) -> str:
+        from .base import get_layer_description
+
+        layer = get_layer_description(layer_name)
+        return (
+            f"Calculated as the angle between the dominant superior and inferior "
+            f"temporal {layer} vessels on concentric circles centered on the optic disc."
+        )
+
+    def aggregation_description(self, **kwargs) -> str:
+        return "Reported as the median across valid measurement circles."
+
     def __init__(
         self,
         inner_circle: float = 2 / 3,
         outer_circle: float = 2 / 3 + 4 * 0.03,
         num_circles: int = 5,
         spline_error_fraction: float = 0.05,
+        plot: bool = False,
     ):
         """Configure temporal-angle sampling circles."""
-        super().__init__(grid_field_spec=None)
+        super().__init__(grid_field_spec=None, plot=plot)
         self.inner_circle = float(inner_circle)
         self.outer_circle = float(outer_circle)
         self.num_circles = int(num_circles)

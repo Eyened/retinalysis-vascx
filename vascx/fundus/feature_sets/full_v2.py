@@ -28,33 +28,33 @@ from vascx.fundus.features.vascular_densities import VascularDensity
 from vascx.shared.aggregators import LengthWeightedAggregator, median
 from vascx.shared.features import FeatureSet
 
-HMF_SUP = GridFieldSpecification(HemifieldGridSpecification(), HemifieldField.Superior)
-HMF_INF = GridFieldSpecification(HemifieldGridSpecification(), HemifieldField.Inferior)
-DISC_FULL = GridFieldSpecification(DiscCenteredGridSpecification(), DiscCenteredRing.FullGrid)
-ELLIPSE_FULL = GridFieldSpecification(EllipseGridSpecification(), EllipseField.FullGrid)
-ETDRS_FULL = GridFieldSpecification(ETDRSGridSpecification(), ETDRSRing.FullGrid)
+HMF_SUP = GridFieldSpecification(HemifieldGridSpecification(description="the visible retina divided into superior and inferior regions by the optic-disc–fovea axis"), HemifieldField.Superior)
+HMF_INF = GridFieldSpecification(HemifieldGridSpecification(description="the visible retina divided into superior and inferior regions by the optic-disc–fovea axis"), HemifieldField.Inferior)
+DISC_FULL = GridFieldSpecification(DiscCenteredGridSpecification(description="an optic-disc-centered annulus extending from the disc margin to 0.6 times the optic-disc–fovea distance beyond it"), DiscCenteredRing.FullGrid)
+ELLIPSE_FULL = GridFieldSpecification(EllipseGridSpecification(description="an ellipse centered midway between the optic disc and fovea, aligned with their axis and scaled to their separation"), EllipseField.FullGrid)
+ETDRS_FULL = GridFieldSpecification(ETDRSGridSpecification(description="a fovea-centered ETDRS grid with ring radii of 0.5, 1.5, and 3.0 mm"), ETDRSRing.FullGrid)
 
 fs_full_v2 = FeatureSet(
     "full_v2",
     [
         # bifurcation angles (full, superior, inferior)
-        BifurcationAngles(aggregator=median),
+        BifurcationAngles(plot=True, aggregator=median),
         BifurcationAngles(grid_field=HMF_SUP, aggregator=median),
         BifurcationAngles(grid_field=HMF_INF, aggregator=median),
 
         # bifurcation counts (full, superior, inferior)
         # Note: we have deprecated BifurcationCount due to low reproducibility scores.
-        BifurcationCount(),
+        BifurcationCount(plot=True),
         BifurcationCount(grid_field=HMF_SUP),
         BifurcationCount(grid_field=HMF_INF),
 
         # caliber (full, superior, inferior)
-        Caliber(aggregator=median),
+        Caliber(plot=True, aggregator=median),
         Caliber(grid_field=HMF_SUP, aggregator=median),
         Caliber(grid_field=HMF_INF, aggregator=median),
 
         # coverage and variance of laplacian over disc-centered full grid
-        Sparsity(mode=SparsityMode.MEAN, grid_field=ELLIPSE_FULL),
+        Sparsity(plot=True, mode=SparsityMode.MEAN, grid_field=ELLIPSE_FULL),
         Sparsity(mode=SparsityMode.MAX, grid_field=ELLIPSE_FULL),
         Sparsity(grid_field=DISC_FULL, mode=SparsityMode.MEAN),
         Sparsity(grid_field=DISC_FULL, mode=SparsityMode.MAX),
@@ -62,12 +62,12 @@ fs_full_v2 = FeatureSet(
         Sparsity(grid_field=ETDRS_FULL, mode=SparsityMode.MAX),
 
 
-        VarianceOfLaplacian(),
+        VarianceOfLaplacian(plot=True),
         VarianceOfLaplacian(grid_field=DISC_FULL),
         VarianceOfLaplacian(grid_field=ETDRS_FULL),
 
         # CRE: temporal variants in sup/inf/full; nasal and full variants on full grid
-        CRE(CREMode.Temporal),
+        CRE(CREMode.Temporal, plot=True),
         CRE(CREMode.Temporal, hemifield=HemifieldField.Superior),
         CRE(CREMode.Temporal, hemifield=HemifieldField.Inferior),
         CRE(CREMode.Nasal),
@@ -75,7 +75,7 @@ fs_full_v2 = FeatureSet(
 
         # tortuosity (segments) — Distance and Curvature
         # whole image (non-normalized median)
-        Tortuosity(
+        Tortuosity(plot=True,
             mode=TortuosityMode.Segments,
             measure=TortuosityMeasure.Distance,
             length_measure=LengthMeasure.Splines,
@@ -132,12 +132,12 @@ fs_full_v2 = FeatureSet(
         ),
 
         # vascular densities (full, superior, inferior)
-        VascularDensity(),
+        VascularDensity(plot=True),
         VascularDensity(grid_field=HMF_SUP),
         VascularDensity(grid_field=HMF_INF),
 
         # disc–fovea distance
-        DiscFoveaDistance(),
+        DiscFoveaDistance(plot=True),
     ],
     description=(
         "Previous comprehensive fundus biomarker set. Prefer full_v3 for new analyses."

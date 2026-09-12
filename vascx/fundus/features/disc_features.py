@@ -28,11 +28,22 @@ class DiscFoveaDistance(RetinaFeature):
     - mode: `center` or `edge` (default `center`).
     """
 
+    general_description = (
+        "Disc–fovea distance describes the anatomical separation between the optic "
+        "disc and fovea."
+    )
+
+    def implementation_description(self, **kwargs) -> str:
+        if self.mode == DiscFoveaDistanceMode.Center:
+            return "Calculated from the optic-disc center to the foveal center."
+        return "Calculated from the nearest optic-disc margin to the foveal center."
+
     def __init__(
         self,
         mode: Union[DiscFoveaDistanceMode, Literal["center", "edge"]] = DiscFoveaDistanceMode.Center,
+        plot: bool = False,
     ):
-        super().__init__()
+        super().__init__(plot=plot)
         self.mode = DiscFoveaDistanceMode(mode)
 
     def compute(self, retina: Retina):

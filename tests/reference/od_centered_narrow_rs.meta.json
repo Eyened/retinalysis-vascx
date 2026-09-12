@@ -1,0 +1,17 @@
+{
+  "feature_set": "od_centered_narrow_rs",
+  "naming": "canonical",
+  "sample_dir": "samples/fundus",
+  "image_ids": [
+    "CHASEDB1_08L",
+    "CHASEDB1_12R",
+    "DRIVE_22",
+    "DRIVE_40",
+    "HRF_04_g",
+    "HRF_07_dr"
+  ],
+  "feature_count": 68,
+  "accepted_at": "2026-09-12T08:47:36.866648+00:00",
+  "accept_reason": "accepted via --accept-vascx-reference",
+  "python_version": "3.12.12"
+}

@@ -32,12 +32,24 @@ class VarianceOfLaplacian(RetinaFeature):
       (applied within the retina mask).
     """
 
+    general_description = (
+        "Laplacian variance describes image focus from the variation in local intensity changes. "
+        "Higher values indicate a sharper image."
+    )
+
+    def implementation_description(self, **kwargs) -> str:
+        return "Calculated from the second spatial derivative of fundus-image intensity."
+
+    def aggregation_description(self, **kwargs) -> str:
+        return "Reported as the variance across the evaluated retinal region."
+
     default_min_area_within_bounds = 0.80
 
     def __init__(
         self,
         grid_field: Optional[BaseGridFieldSpecification] = None,
         min_area_within_bounds: Optional[float] = None,
+        plot: bool = False,
     ):
         """Variance of Laplacian, optionally restricted to an ETDRS grid_field.
 
@@ -47,7 +59,7 @@ class VarianceOfLaplacian(RetinaFeature):
         self.min_area_within_bounds = validate_min_area_within_bounds(
             min_area_within_bounds
         )
-        super().__init__(grid_field_spec=grid_field)
+        super().__init__(grid_field_spec=grid_field, plot=plot)
 
     def compute(self, retina: "Retina"):
         if self.grid_field_spec is None:

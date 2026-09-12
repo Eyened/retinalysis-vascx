@@ -44,6 +44,21 @@ class Sparsity(VesselsLayerFeature):
     - mode: `SparsityMode` controlling aggregation ("mean" or "max").
     """
 
+    general_description = (
+        "Retinal vessel sparsity describes the extent of vessel-free space in the retina. "
+        "Higher values indicate larger vessel-free spaces."
+    )
+
+    def implementation_description(self, **kwargs) -> str:
+        if self.mode == SparsityMode.MEAN:
+            return "Calculated from the distance between each retinal location and the nearest vessel."
+        return "Calculated from the largest distance to the nearest vessel within vessel-free regions."
+
+    def aggregation_description(self, **kwargs) -> str:
+        if self.mode == SparsityMode.MEAN:
+            return "Reported as the mean across evaluated retinal locations."
+        return "Reported as the maximum across evaluated vessel-free regions."
+
     default_min_area_within_bounds = 0.80
 
     def __init__(
@@ -52,6 +67,7 @@ class Sparsity(VesselsLayerFeature):
         mode: "SparsityMode" = SparsityMode.MEAN,
         normalize: bool = True,
         min_area_within_bounds: Optional[float] = None,
+        plot: bool = False,
     ):
         """Coverage of distance transform, optionally restricted to an ETDRS grid field.
 
@@ -62,7 +78,7 @@ class Sparsity(VesselsLayerFeature):
         maxima of the distance transform ("max"). If `normalize` is True, sparsity is
         normalized by the OD-fovea distance.
         """
-        super().__init__(grid_field_spec=grid_field)
+        super().__init__(grid_field_spec=grid_field, plot=plot)
         self.mode = mode
         self.normalize = normalize
         self.min_area_within_bounds = validate_min_area_within_bounds(

@@ -39,6 +39,22 @@ class Caliber(LayerFeature):
       `LengthWeightedAggregator` for length-weighted mean of per-segment median diameters.
     """
 
+    general_description = (
+        "Retinal vessel caliber describes the width of the retinal vasculature."
+    )
+
+    def implementation_description(self, layer_name: str = "vessels", **kwargs) -> str:
+        from .base import get_layer_description
+
+        layer = get_layer_description(layer_name)
+        return (
+            f"Calculated from the median vessel width measured along each eligible "
+            f"{layer} segment."
+        )
+
+    def aggregation_unit(self, **kwargs) -> str:
+        return "eligible vessel segments"
+
     default_min_area_within_bounds = 0.95
 
     def __init__(
@@ -48,6 +64,7 @@ class Caliber(LayerFeature):
         aggregator: Callable = median,
         spline_error_fraction: float = 0.05,
         min_area_within_bounds: Optional[float] = None,
+        plot: bool = False,
     ):
         self.min_numpoints = min_numpoints
         self.aggregator = aggregator
@@ -55,7 +72,7 @@ class Caliber(LayerFeature):
         self.min_area_within_bounds = validate_min_area_within_bounds(
             min_area_within_bounds
         )
-        super().__init__(grid_field_spec=grid_field)
+        super().__init__(grid_field_spec=grid_field, plot=plot)
 
     def _get_segments(self, layer: VesselTreeLayer):
         segments = layer.get_region_segments(self.grid_field_spec)

@@ -10,14 +10,14 @@ from vascx.shared.features import FeatureSet
 fs_bergmann = FeatureSet(
     "bergmann",
     [
-        TemporalAngle(),
-        CRE(),
-        VascularDensity(),
-        Caliber(aggregator=median),
+        TemporalAngle(plot=True),
+        CRE(plot=True),
+        VascularDensity(plot=True),
+        Caliber(plot=True, aggregator=median),
         Caliber(aggregator=std),
-        Tortuosity(length_measure=LengthMeasure.Skeleton, aggregator=median),
+        Tortuosity(plot=True, length_measure=LengthMeasure.Skeleton, aggregator=median),
         # Note: we have deprecated BifurcationCount due to low reproducibility scores.
-        BifurcationCount(),
+        BifurcationCount(plot=True),
     ],
     description=(
         "Compact set aligned with Bergmann et al. analyses: temporal angle, CRE, "

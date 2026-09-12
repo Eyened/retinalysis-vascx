@@ -20,7 +20,8 @@ class FazParameterType(Enum):
 
 @dataclass
 class FazParameter(FAZLayerFeature):
-    def __init__(self, parameter: FazParameterType):
+    def __init__(self, parameter: FazParameterType, *, plot: bool = False):
+        super().__init__(plot=plot)
         self.param = parameter
 
     def compute(self, layer: FAZLayer):

@@ -1,5 +1,6 @@
 {
   "feature_set": "full_v3",
+  "naming": "canonical",
   "sample_dir": "samples/fundus",
   "image_ids": [
     "CHASEDB1_08L",
@@ -10,7 +11,7 @@
     "HRF_07_dr"
   ],
   "feature_count": 75,
-  "accepted_at": "2026-07-24T17:39:03.408139+00:00",
+  "accepted_at": "2026-09-12T08:46:14.942069+00:00",
   "accept_reason": "accepted via --accept-vascx-reference",
   "python_version": "3.12.12"
 }

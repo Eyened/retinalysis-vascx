@@ -9,7 +9,7 @@ from click.testing import CliRunner
 
 from vascx.cli import cli
 from vascx.fundus.feature_sets import *  # noqa: F401,F403
-from vascx.fundus.feature_sets.macula_centered_rs import CIRCLE_CROPPED_INF, fs_macula_centered_rs
+from vascx.fundus.feature_sets.macula_centered import fs_macula_centered_rs
 from vascx.fundus.features.base import get_grid_field_tokens
 from vascx.fundus.features.caliber import Caliber
 from vascx.fundus.features.tortuosity import (
@@ -112,6 +112,7 @@ def test_mapping_uses_selected_machine_and_display_names(tmp_path):
     )
     assert {row["variable"] for row in rows} == {item.name for item in resolved_names.values()}
     assert len({row["display_name"] for row in rows}) == len(rows)
+    assert all(row["description"] for row in rows)
 
     canonical_mapping = json.loads(canonical_path.read_text(encoding="utf-8"))
     canonical_names = make_feature_names(
@@ -136,8 +137,12 @@ def test_resolved_grid_name_keeps_identity_and_drops_shared_parameters():
         for (feature_index, target_name), item in names.items()
         if target_name == "veins"
         and isinstance(list(fs_macula_centered_rs)[feature_index], Caliber)
-        and list(fs_macula_centered_rs)[feature_index].grid_field_spec
-        == CIRCLE_CROPPED_INF
+        and list(fs_macula_centered_rs)[feature_index].grid_field_spec.field
+        == CircleField.Inferior
+        and list(
+            fs_macula_centered_rs
+        )[feature_index].grid_field_spec.grid_spec.name
+        == "crcl"
     )
     assert target.name == "diam_crcl_inferior_veins"
     assert "multiplier" not in target.name
@@ -166,14 +171,14 @@ def test_grid_name_override_is_generic_and_not_a_parameter():
         assert "name" not in tokens
 
 
-def test_calc_biomarkers_writes_matching_json_mapping(tmp_path, monkeypatch):
+def test_calc_biomarkers_writes_output_bundle_metadata(tmp_path, monkeypatch):
     input_path = tmp_path / "segmentations"
     input_path.mkdir()
-    output_csv = tmp_path / "biomarkers.csv"
+    output_folder = tmp_path / "biomarker_report"
 
     monkeypatch.setattr("vascx.cli.make_examples", lambda _path: [{"id": "sample"}])
     monkeypatch.setattr(
-        "vascx.cli.extract_in_parallel",
+        "vascx.utils.analysis.extract_in_parallel",
         lambda **_kwargs: pd.DataFrame({"dummy": [1.0]}, index=["sample"]),
     )
 
@@ -182,20 +187,62 @@ def test_calc_biomarkers_writes_matching_json_mapping(tmp_path, monkeypatch):
         [
             "calc-biomarkers",
             str(input_path),
-            str(output_csv),
-            "--feature_set",
+            str(output_folder),
+            "--feature-set",
             "full_v3",
             "--naming",
             "resolved",
+            "--no-report",
         ],
     )
     assert result.exit_code == 0, result.output
 
-    names_json = output_csv.with_suffix(".names.json")
-    assert output_csv.exists()
-    assert names_json.exists()
+    biomarkers_csv = output_folder / "biomarkers.csv"
+    metadata_csv = output_folder / "data_dictionary.csv"
+    assert biomarkers_csv.exists()
+    assert metadata_csv.exists()
+    assert not (output_folder / "biomarkers.names.json").exists()
+    assert not (output_folder / "README.md").exists()
+
     expected = make_feature_names(
         FeatureSet.get_by_name("full_v3"), _targets, "resolved"
     )
-    mapping = json.loads(names_json.read_text(encoding="utf-8"))
-    assert set(mapping) == {item.name for item in expected.values()}
+    metadata = pd.read_csv(metadata_csv)
+    assert set(metadata["variable"]) == {item.name for item in expected.values()}
+    assert metadata.columns.tolist() == [
+        "variable",
+        "display_name",
+        "description",
+    ]
+    assert metadata["description"].str.len().gt(0).all()
+
+
+def test_calc_biomarkers_rejects_legacy_csv_output_path(tmp_path):
+    input_path = tmp_path / "segmentations"
+    input_path.mkdir()
+
+    result = CliRunner().invoke(
+        cli,
+        [
+            "calc-biomarkers",
+            str(input_path),
+            str(tmp_path / "biomarkers.csv"),
+            "--feature-set",
+            "full_v3",
+        ],
+    )
+
+    assert result.exit_code != 0
+    assert "expects a directory, not a CSV path" in result.output
+
+
+def test_python_output_defaults_to_resolved_names(tmp_path):
+    from vascx.utils.feature_docs import get_biomarker_definitions
+
+    feature_set = FeatureSet.get_by_name("full_v3")
+    expected = {item.name for item in make_feature_names(feature_set, _targets, "resolved").values()}
+    assert set(Retina.make_feature_display_names(feature_set)) == expected
+    assert {item.variable for item in get_biomarker_definitions(feature_set)} == expected
+    output = tmp_path / "default_names.csv"
+    write_variable_display_mapping(feature_set, output)
+    assert set(pd.read_csv(output)["variable"]) == expected

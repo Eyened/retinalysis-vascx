@@ -30,12 +30,23 @@ class BifurcationCount(LayerFeature):
     - grid_field: optional `GridFieldEnum` restricting the count to a predefined retinal region.
     """
 
+    general_description = (
+        "Retinal vessel bifurcation count is the number of vessel branch points."
+    )
+
+    def implementation_description(self, layer_name: str = "vessels", **kwargs) -> str:
+        from .base import get_layer_description
+
+        layer = get_layer_description(layer_name)
+        return f"Calculated by counting eligible {layer} bifurcations."
+
     default_min_area_within_bounds = 1.0
 
     def __init__(
         self,
         grid_field: Optional[BaseGridFieldSpecification] = None,
         min_area_within_bounds: Optional[float] = None,
+        plot: bool = False,
     ):
         """
         Calculation of the number of bifurcation points.
@@ -44,7 +55,7 @@ class BifurcationCount(LayerFeature):
         self.min_area_within_bounds = validate_min_area_within_bounds(
             min_area_within_bounds
         )
-        super().__init__(grid_field_spec=grid_field)
+        super().__init__(grid_field_spec=grid_field, plot=plot)
 
     def _get_bifurcation_points(self, layer: VesselTreeLayer):
         field = self._get_grid_field(layer)

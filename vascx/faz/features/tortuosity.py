@@ -34,8 +34,10 @@ class Tortuosity(FAZLayerFeature):
         min_numpoints: int = 10,
         aggregator=median,
         spline_error_fraction: float | None = None,
+        plot: bool = False,
         **kwargs,
     ):
+        super().__init__(plot=plot)
         self.measure = measure
         self.length_measure = length_measure
         self.min_numpoints = min_numpoints

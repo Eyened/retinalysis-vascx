@@ -47,6 +47,7 @@ class EdgeStrength(VesselsLayerFeature):
         beta: float = default_beta,
         intensity_smooth_sigma: float = default_intensity_smooth_sigma,
         min_area_within_bounds: Optional[float] = None,
+        plot: bool = False,
     ):
         """Edge strength on vessel edges, optionally restricted to a grid field.
 
@@ -70,7 +71,7 @@ class EdgeStrength(VesselsLayerFeature):
         self.min_area_within_bounds = validate_min_area_within_bounds(
             min_area_within_bounds
         )
-        super().__init__(grid_field_spec=grid_field)
+        super().__init__(grid_field_spec=grid_field, plot=plot)
 
     def _green_channel(self, layer: FundusVesselsLayer) -> Optional[np.ndarray]:
         image = layer.retina.image

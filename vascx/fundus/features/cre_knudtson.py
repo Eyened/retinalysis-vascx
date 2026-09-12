@@ -52,7 +52,9 @@ class CREKnudtson(LayerFeature):
         zone_inner_circle: float = 1.0,
         zone_outer_circle: float = 1.5,
         spline_error_fraction: float = 0.05,
+        plot: bool = False,
     ):
+        super().__init__(grid_field_spec=None, plot=plot)
         self.CREMode = CREMode
         self.full_vessels = int(full_vessels)
         self.temporal_nasal_vessels = int(temporal_nasal_vessels)

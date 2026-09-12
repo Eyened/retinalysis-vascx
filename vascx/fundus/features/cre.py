@@ -78,6 +78,30 @@ class CRE(LayerFeature):
     is discarded from the aggregation for robustness.
     """
 
+    general_description = (
+        "Central retinal equivalent caliber summarizes the width of the major "
+        "retinal vessels."
+    )
+
+    def implementation_description(self, layer_name: str = "vessels", **kwargs) -> str:
+        from .base import get_layer_description
+
+        layer = get_layer_description(layer_name)
+        region = {
+            CREMode.Temporal: "temporal",
+            CREMode.Nasal: "nasal",
+            CREMode.Full: "",
+        }[self.CREMode]
+        qualifier = f"{region} " if region else ""
+        return (
+            f"Calculated by combining the largest {qualifier}{layer} vessels crossing "
+            "concentric circles centered on the optic disc using an established "
+            "equivalent-caliber formula."
+        )
+
+    def aggregation_description(self, **kwargs) -> str:
+        return "Reported as the median across valid measurement circles."
+
     def __init__(
         self,
         CREMode: CREMode = CREMode.Temporal,
@@ -88,7 +112,9 @@ class CRE(LayerFeature):
         outer_circle: float = 1.5,
         num_circles: int = 5,
         spline_error_fraction: float = 0.05,
+        plot: bool = False,
     ):
+        super().__init__(grid_field_spec=None, plot=plot)
         self.CREMode = CREMode
         
         self.inner_circle = float(inner_circle)

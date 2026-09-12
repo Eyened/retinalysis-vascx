@@ -1,4 +1,6 @@
 include README.md
 include development.md
-recursive-include samples/fundus *.csv *.png
+include tox.ini
+recursive-include tests *.py
+recursive-include samples/fundus *.csv *.png *.jpg
 recursive-include tests/reference *.json *.yaml *.parquet

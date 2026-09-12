@@ -30,7 +30,7 @@ class FAZRetina(FAZEnface):
     def set_retina(self, retina):
         self.retina = retina
 
-    def calc_features(self, feature_set: FeatureSet, naming: str = "canonical"):
+    def calc_features(self, feature_set: FeatureSet, naming: str = "resolved"):
         all_features = {}
         target_names = lambda _feature: tuple(self.layers.keys())
         feature_names = make_feature_names(feature_set, target_names, naming=naming)

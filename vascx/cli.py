@@ -5,7 +5,6 @@ import click
 import pandas as pd
 import logging
 import numpy as np
-import random
 
 from vascx.inference.model_config import (
     DEFAULT_AV_MODEL,
@@ -16,8 +15,11 @@ from vascx.inference.model_config import (
     MODEL_DIR_FILES,
 )
 
-from .utils.analysis import extract_in_parallel
-from .utils.feature_docs import write_feature_descriptions, write_variable_display_mapping
+from .utils.analysis import extract_biomarkers_to_folder
+from .utils.feature_docs import (
+    write_feature_set_readme,
+    write_variable_display_mapping,
+)
 
 
 def _resolve_model_paths(
@@ -184,8 +186,8 @@ def cli():
     help=(
         "Directory containing manually downloaded model files. Defaults to "
         "VASCX_MODEL_DIR when set. Expected layout: quality/quality.pt, "
-        "artery_vein/av_july24.pt, vessels/vessels_july24.pt, "
-        "disc/disc_july24.pt, fovea/fovea_july24.pt."
+        "artery_vein/av_wsoft_patches_02_finetune.pt, vessels/vessels_may26.pt, "
+        "disc/disc_may26.pt, fovea/fovea_may26.pt."
     ),
 )
 @click.option(
@@ -491,7 +493,7 @@ def make_examples(input_path):
     x_fovea_col, y_fovea_col = _get_fovea_columns(fovea_df)
 
     # Discover candidate IDs from artery_vein folder
-    candidate_files = list(av_dir.glob("*.png"))
+    candidate_files = sorted(av_dir.glob("*.png"))
     candidate_ids = [p.stem for p in candidate_files]
     if not candidate_ids:
         click.echo("No artery_vein PNG files found; nothing to extract.")
@@ -537,12 +539,56 @@ def make_examples(input_path):
 
 @cli.command()
 @click.argument("input_path", type=click.Path(exists=True))
-@click.argument("output_csv", type=click.Path())
-@click.option("--feature_set", required=True, help="Name of the feature set to run")
-@click.option("--n_jobs", "--n-jobs", type=int, default=8, help="Number of extraction workers")
+@click.argument(
+    "output_folder",
+    type=click.Path(file_okay=False, path_type=Path),
+)
+@click.option(
+    "--feature-set",
+    "--feature_set",
+    "feature_set",
+    required=True,
+    help="Name of the feature set to run",
+)
+@click.option(
+    "--n-jobs",
+    "--n_jobs",
+    "n_jobs",
+    type=click.IntRange(min=1),
+    default=8,
+    help="Number of extraction workers",
+)
 @click.option("--logfile", type=click.Path(), default=None, help="Optional log file for warnings")
-@click.option("--plots_folder", type=click.Path(), default=None, help="Optional folder to save per-feature plots")
-@click.option("--sample", type=int, default=None, help="Sample N examples for testing")
+@click.option(
+    "--sample",
+    type=click.IntRange(min=1),
+    default=None,
+    help="Extract only the first N examples for testing.",
+)
+@click.option(
+    "--report/--no-report",
+    default=True,
+    show_default=True,
+    help="Generate README, manifest, and sample biomarker plots.",
+)
+@click.option(
+    "--report-samples",
+    type=click.IntRange(min=0),
+    default=3,
+    show_default=True,
+    help="Number of input images to visualize in the report.",
+)
+@click.option(
+    "--report-image",
+    "report_images",
+    multiple=True,
+    help="Specific image ID to visualize; may be supplied more than once.",
+)
+@click.option(
+    "--overwrite",
+    is_flag=True,
+    help="Replace report-owned files already present in OUTPUT_FOLDER.",
+)
 @click.option(
     "--naming",
     type=click.Choice(["resolved", "canonical"]),
@@ -550,85 +596,138 @@ def make_examples(input_path):
     show_default=True,
     help="Biomarker naming convention for output columns.",
 )
-def calc_biomarkers(input_path, output_csv, feature_set, n_jobs, logfile, plots_folder, sample, naming):
-    """Extract vascular biomarkers from a run_models output folder and save to CSV.
+def calc_biomarkers(
+    input_path,
+    output_folder,
+    feature_set,
+    n_jobs,
+    logfile,
+    sample,
+    report,
+    report_samples,
+    report_images,
+    overwrite,
+    naming,
+):
+    """Extract vascular biomarkers into a self-contained output folder.
 
-    INPUT_PATH is the output directory from 'vascx run-models' containing folders
-    like 'preprocessed_rgb/', 'artery_vein/', 'vessels/', 'disc/' plus 'bounds.csv'
-    and 'fovea.csv'. OUTPUT_CSV is the destination CSV file path for features.
+    INPUT_PATH is the output directory from `vascx run-models` containing
+    `preprocessed_rgb/`, `artery_vein/`, `vessels/`, `disc/`, `bounds.csv`,
+    and `fovea.csv`. OUTPUT_FOLDER receives the biomarker CSV and documentation.
     """
-
     input_path = Path(input_path)
-    output_csv = Path(output_csv)
-    output_csv.parent.mkdir(parents=True, exist_ok=True)
-    
+    output_folder = Path(output_folder)
+    if output_folder.suffix.lower() == ".csv":
+        raise click.ClickException(
+            "OUTPUT_FOLDER now expects a directory, not a CSV path. "
+            "Pass a folder; biomarkers will be written as biomarkers.csv inside it."
+        )
+
     examples = make_examples(input_path)
     if not examples:
-        click.echo("No valid examples assembled; aborting.")
-        return
+        raise click.ClickException("No valid examples assembled; aborting.")
 
-    # Optionally sample a subset for quick tests
-    orig_len = len(examples)
-    if sample is not None:
-        if sample < orig_len:
-            examples = random.sample(examples, sample)
-            click.echo(f"Sampling {sample} of {orig_len} examples")
-        else:
-            click.echo(f"--sample={sample} >= {orig_len}; using all examples")
+    original_count = len(examples)
+    if sample is not None and sample < original_count:
+        examples = examples[:sample]
+        click.echo(f"Using the first {sample} of {original_count} examples")
+    elif sample is not None:
+        click.echo(f"--sample={sample} >= {original_count}; using all examples")
 
-    # Optional logger
+    report_retinas = None
+    if report_images:
+        examples_by_id = {str(example["id"]): example for example in examples}
+        missing = [image_id for image_id in report_images if image_id not in examples_by_id]
+        if missing:
+            raise click.ClickException(
+                "Unknown --report-image ID(s): " + ", ".join(missing)
+            )
+        report_retinas = [examples_by_id[image_id] for image_id in report_images]
+
     logger = None
     if logfile is not None:
-        try:
-            logger = logging.getLogger("vascx.extract")
-            logger.setLevel(logging.INFO)
-            logger.propagate = False
-            # avoid duplicate handlers
-            if not any(isinstance(h, logging.FileHandler) and getattr(h, 'baseFilename', None) == str(Path(logfile)) for h in logger.handlers):
-                fh = logging.FileHandler(logfile)
-                fh.setLevel(logging.WARNING)
-                fh.setFormatter(logging.Formatter("%(asctime)s - %(levelname)s - %(message)s"))
-                logger.addHandler(fh)
-        except Exception as e:
-            raise RuntimeError(f"Warning: could not initialize logfile '{logfile}': {e}") from e
+        logfile_path = Path(logfile)
+        logfile_path.parent.mkdir(parents=True, exist_ok=True)
+        logger = logging.getLogger("vascx.extract")
+        logger.setLevel(logging.INFO)
+        logger.propagate = False
+        resolved_logfile = str(logfile_path.resolve())
+        if not any(
+            isinstance(handler, logging.FileHandler)
+            and getattr(handler, "baseFilename", None) == resolved_logfile
+            for handler in logger.handlers
+        ):
+            handler = logging.FileHandler(logfile_path)
+            handler.setLevel(logging.WARNING)
+            handler.setFormatter(
+                logging.Formatter("%(asctime)s - %(levelname)s - %(message)s")
+            )
+            logger.addHandler(handler)
 
-    # Run extraction
-    click.echo(f"Extracting features using feature set '{feature_set}' with n_jobs={n_jobs}...")
-    df = extract_in_parallel(
-        examples=examples,
-        feature_set_name=feature_set,
-        n_jobs=n_jobs,
-        logger=logger,
-        plots_folder=plots_folder,
-        print_stack_trace=True,
-        naming=naming,
+    click.echo(
+        f"Extracting features using feature set '{feature_set}' with n_jobs={n_jobs}..."
     )
+    try:
+        dataframe = extract_biomarkers_to_folder(
+            retinas=examples,
+            feature_set=feature_set,
+            output_folder=output_folder,
+            n_jobs=n_jobs,
+            logger=logger,
+            print_stack_trace=True,
+            naming=naming,
+            generate_report=report,
+            report_retinas=report_retinas,
+            report_sample_size=report_samples,
+            overwrite=overwrite,
+        )
+    except (FileExistsError, ValueError) as exc:
+        raise click.ClickException(str(exc)) from exc
 
-    # Write feature descriptions to file
-    write_feature_descriptions(feature_set, output_csv.parent / "feature_descriptions.txt")
-    
-    # Save results and the matching machine-name/display-name mapping.
-    df.to_csv(output_csv)
-    names_json = output_csv.with_suffix(".names.json")
-    write_variable_display_mapping(
-        feature_set, names_json, as_json=True, naming=naming
+    click.echo(
+        f"Saved {len(dataframe)} rows of biomarkers to "
+        f"{output_folder / 'biomarkers.csv'}"
     )
-    click.echo(f"Features saved to {output_csv}")
-    click.echo(f"Feature name mapping written to {names_json}")
+    click.echo(f"Data dictionary written to {output_folder}")
+    if report:
+        click.echo(f"Biomarker report written to {output_folder / 'README.md'}")
 
 
 @cli.command()
 @click.argument("output_file", type=click.Path())
-@click.option("--feature_set", required=True, help="Name of the feature set")
-def write_readme(output_file, feature_set):
-    """Write only the feature descriptions to OUTPUT_FILE."""
-    write_feature_descriptions(feature_set, Path(output_file))
-    click.echo(f"Feature descriptions written to {output_file}")
+@click.option(
+    "--feature-set",
+    "--feature_set",
+    "feature_set",
+    required=True,
+    help="Name of the feature set",
+)
+@click.option(
+    "--naming",
+    type=click.Choice(["resolved", "canonical"]),
+    default="resolved",
+    show_default=True,
+    help="Naming convention used in the biomarker table.",
+)
+def write_readme(output_file, feature_set, naming):
+    """Write Markdown documentation for FEATURE_SET to OUTPUT_FILE."""
+    write_feature_set_readme(
+        feature_set,
+        Path(output_file),
+        naming=naming,
+    )
+    click.echo(f"Feature-set README written to {output_file}")
 
 
 @cli.command("write-mapping")
 @click.argument("output_file", type=click.Path())
-@click.option("--feature_set", required=True, help="Name of the feature set")
+@click.option(
+    "--feature-set",
+    "--feature_set",
+    "feature_set",
+    required=True,
+    help="Name of the feature set",
+)
 @click.option("--json", "as_json", is_flag=True, help="Write mapping as JSON instead of CSV.")
 @click.option(
     "--naming",
@@ -638,9 +737,13 @@ def write_readme(output_file, feature_set):
     help="Naming convention for mapping keys and display names.",
 )
 def write_mapping(output_file, feature_set, as_json, naming):
-    """Write mapping from selected variable names to display names for FEATURE_SET."""
+    """Write biomarker names and descriptions for FEATURE_SET.
+
+    JSON preserves the legacy variable-to-display-name mapping. CSV also includes
+    a description column.
+    """
     write_variable_display_mapping(
         feature_set, Path(output_file), as_json=as_json, naming=naming
     )
     output_format = "JSON" if as_json else "CSV"
-    click.echo(f"Variable display mapping written to {output_file} as {output_format}")
+    click.echo(f"Biomarker metadata written to {output_file} as {output_format}")

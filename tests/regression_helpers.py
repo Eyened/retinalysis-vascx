@@ -13,6 +13,8 @@ import numpy as np
 import pandas as pd
 import yaml
 
+from tests import settings
+
 from vascx.fundus.loader import RetinaLoader
 from vascx.shared.features import FeatureSet
 from vascx.utils.analysis import extract_in_parallel
@@ -21,8 +23,6 @@ REPO_ROOT = Path(__file__).resolve().parents[1]
 SAMPLES_DIR = REPO_ROOT / "samples" / "fundus"
 REFERENCE_DIR = REPO_ROOT / "tests" / "reference"
 FEATURE_SET_PACKAGE = "vascx.fundus.feature_sets"
-DEFAULT_ABS_TOL = 1e-4
-DEFAULT_REL_TOL = 1e-3
 MAX_FAILURE_LINES = 100
 
 
@@ -30,12 +30,10 @@ MAX_FAILURE_LINES = 100
 class RegressionConfig:
     """Store comparison overrides for a feature set."""
 
-    abs_tol: float = DEFAULT_ABS_TOL
-    rel_tol: float = DEFAULT_REL_TOL
+    rel_tol: float = settings.BIOMARKER_MAX_PERCENT_CHANGE / 100
     rename_map: dict[str, str] = field(default_factory=dict)
     ignored_missing_features: set[str] = field(default_factory=set)
     ignored_new_features: set[str] = field(default_factory=set)
-    per_feature_tolerances: dict[str, dict[str, float]] = field(default_factory=dict)
 
 
 def discover_feature_set_names() -> list[str]:
@@ -67,21 +65,23 @@ def reference_paths(feature_set_name: str) -> dict[str, Path]:
     }
 
 
-def load_regression_config(feature_set_name: str) -> RegressionConfig:
-    """Load yaml overrides for one feature set."""
+def load_regression_config(
+    feature_set_name: str, max_percent_change: float = settings.BIOMARKER_MAX_PERCENT_CHANGE
+) -> RegressionConfig:
+    """Load schema overrides; the test-time percentage controls all value comparisons."""
+    if not np.isfinite(max_percent_change) or max_percent_change < 0:
+        raise ValueError("max_percent_change must be finite and non-negative")
 
     overrides_path = reference_paths(feature_set_name)["overrides"]
     if not overrides_path.exists():
-        return RegressionConfig()
+        return RegressionConfig(rel_tol=max_percent_change / 100)
 
     raw = yaml.safe_load(overrides_path.read_text(encoding="utf-8")) or {}
     return RegressionConfig(
-        abs_tol=float(raw.get("abs_tol", DEFAULT_ABS_TOL)),
-        rel_tol=float(raw.get("rel_tol", DEFAULT_REL_TOL)),
+        rel_tol=max_percent_change / 100,
         rename_map=dict(raw.get("rename_map", {})),
         ignored_missing_features=set(raw.get("ignored_missing_features", [])),
         ignored_new_features=set(raw.get("ignored_new_features", [])),
-        per_feature_tolerances=dict(raw.get("per_feature_tolerances", {})),
     )
 
 
@@ -98,7 +98,8 @@ def extract_feature_frame(feature_set_name: str) -> pd.DataFrame:
         loader = RetinaLoader.from_folder(SAMPLES_DIR)
         df = extract_in_parallel(
             loader.to_dict(),
-            feature_set_name=feature_set_name,
+            feature_set=feature_set_name,
+            naming="canonical",
             n_jobs=1,
             print_stack_trace=True,
         )
@@ -133,12 +134,9 @@ def write_reference_artifacts(feature_set_name: str, df: pd.DataFrame) -> None:
         paths["overrides"].write_text(
             "\n".join(
                 [
-                    "abs_tol: 1.0e-4",
-                    "rel_tol: 1.0e-3",
                     "rename_map: {}",
                     "ignored_missing_features: []",
                     "ignored_new_features: []",
-                    "per_feature_tolerances: {}",
                     "",
                 ]
             ),
@@ -147,6 +145,7 @@ def write_reference_artifacts(feature_set_name: str, df: pd.DataFrame) -> None:
 
     meta = {
         "feature_set": feature_set_name,
+        "naming": "canonical",
         "sample_dir": str(SAMPLES_DIR.relative_to(REPO_ROOT)),
         "image_ids": normalized.index.tolist(),
         "feature_count": int(normalized.shape[1]),
@@ -173,9 +172,9 @@ def compare_frames(
     reference_images = set(reference.index)
 
     for image_id in sorted(reference_images - current_images):
-        failures.append(f"{feature_set_name} :: <image> :: {image_id} :: missing")
+        failures.append(f"{feature_set_name} :: <image> :: {image_id} :: present in reference, absent from current")
     for image_id in sorted(current_images - reference_images):
-        failures.append(f"{feature_set_name} :: <image> :: {image_id} :: unexpected")
+        failures.append(f"{feature_set_name} :: <image> :: {image_id} :: present in current, absent from reference")
 
     shared_images = sorted(reference_images & current_images)
     current = current.loc[shared_images]
@@ -185,48 +184,78 @@ def compare_frames(
     reference_columns = set(reference.columns) - config.ignored_missing_features
 
     for feature_name in sorted(reference_columns - current_columns):
-        failures.append(f"{feature_set_name} :: {feature_name} :: <schema> :: missing")
+        failures.append(f"{feature_set_name} :: {feature_name} :: <schema> :: variable present in reference, absent from current")
     for feature_name in sorted(current_columns - reference_columns):
-        failures.append(f"{feature_set_name} :: {feature_name} :: <schema> :: unexpected")
+        failures.append(f"{feature_set_name} :: {feature_name} :: <schema> :: variable present in current, absent from reference")
 
     shared_columns = sorted(reference_columns & current_columns)
     current = current[shared_columns]
     reference = reference[shared_columns]
 
     for feature_name in shared_columns:
-        tolerance = config.per_feature_tolerances.get(feature_name, {})
-        abs_tol = float(tolerance.get("abs_tol", config.abs_tol))
-        rel_tol = float(tolerance.get("rel_tol", config.rel_tol))
-
         reference_series = pd.to_numeric(reference[feature_name], errors="coerce")
         current_series = pd.to_numeric(current[feature_name], errors="coerce")
-
-        if _is_integer_like(reference_series) and _is_integer_like(current_series):
-            mismatch_mask = ~(
-                (reference_series == current_series)
-                | (reference_series.isna() & current_series.isna())
+        # Apply the same relative threshold to counts and floating-point biomarkers.
+        reference_values = reference_series.to_numpy(dtype=float)
+        current_values = current_series.to_numpy(dtype=float)
+        with np.errstate(invalid="ignore", over="ignore"):
+            differences = np.abs(current_values - reference_values)
+            limits = config.rel_tol * np.abs(reference_values)
+            # Allow rounding at the boundary (e.g. 1.05 - 1.0), not an absolute floor.
+            within_threshold = (differences <= limits) | np.isclose(
+                differences, limits, rtol=settings.BIOMARKER_BOUNDARY_EPS_MULTIPLIER * np.finfo(float).eps, atol=0,
             )
-        else:
-            mismatch_mask = ~(
-                np.isclose(
-                    reference_series.to_numpy(dtype=float),
-                    current_series.to_numpy(dtype=float),
-                    rtol=rel_tol,
-                    atol=abs_tol,
-                    equal_nan=True,
-                )
-            )
+        finite = np.isfinite(reference_values) & np.isfinite(current_values)
+        equal = (reference_values == current_values) | (
+            np.isnan(reference_values) & np.isnan(current_values)
+        )
+        mismatch_mask = ~(equal | (finite & within_threshold))
 
         if not np.any(mismatch_mask):
             continue
 
         mismatch_index = current.index[np.asarray(mismatch_mask)]
-        for image_id in mismatch_index:
+        if len(mismatch_index) == 1:
+            image_id = mismatch_index[0]
             failures.append(
                 f"{feature_set_name} :: {feature_name} :: {image_id} :: "
-                f"ref={_format_value(reference.loc[image_id, feature_name])} "
-                f"cur={_format_value(current.loc[image_id, feature_name])}"
+                f"ref={_format_value(reference_series.loc[image_id])} "
+                f"curr={_format_value(current_series.loc[image_id])}"
             )
+            continue
+
+        failed_reference = reference_series.loc[mismatch_index]
+        failed_current = current_series.loc[mismatch_index]
+        # A missing/non-finite value has no meaningful absolute difference.
+        # Select the largest measurable difference and report undefined pairs separately.
+        with np.errstate(invalid="ignore"):
+            differences = (failed_current - failed_reference).abs()
+        measurable = differences.dropna()
+        if measurable.empty:
+            worst = "largest absolute difference unavailable (all failing pairs contain NaN)"
+        else:
+            image_id = measurable.idxmax()
+            worst = (
+                f"largest absolute difference: image={image_id} "
+                f"ref={_format_value(failed_reference.loc[image_id])} "
+                f"curr={_format_value(failed_current.loc[image_id])} "
+                f"abs_diff={_format_value(measurable.loc[image_id])}"
+            )
+        undefined = differences.index[differences.isna()]
+        if len(undefined):
+            image_id = undefined[0]
+            worst += (
+                f"; {len(undefined)} failing pair(s) with undefined difference, "
+                f"example image={image_id} ref={_format_value(failed_reference.loc[image_id])} "
+                f"curr={_format_value(failed_current.loc[image_id])}"
+            )
+        failures.append(
+            f"{feature_set_name} :: {feature_name} :: "
+            f"{len(mismatch_index)}/{len(shared_images)} images differ; "
+            f"means over failing images (excluding NaN): "
+            f"ref={_format_value(failed_reference.mean())} "
+            f"curr={_format_value(failed_current.mean())}; {worst}"
+        )
 
     return failures
 
@@ -245,17 +274,10 @@ def assert_matches_reference(
 
     shown_failures = failures[:MAX_FAILURE_LINES]
     remainder = len(failures) - len(shown_failures)
-    lines = [f"{len(failures)} regression mismatches in {feature_set_name}", *shown_failures]
+    lines = [f"{len(failures)} regression issues in {feature_set_name} (allowed change: {config.rel_tol * 100:g}%)", *shown_failures]
     if remainder > 0:
         lines.append(f"... and {remainder} more")
     raise AssertionError("\n".join(lines))
-
-
-def _is_integer_like(series: pd.Series) -> bool:
-    values = series.dropna().to_numpy(dtype=float)
-    if values.size == 0:
-        return False
-    return bool(np.all(np.isclose(values, np.round(values), atol=0.0, rtol=0.0)))
 
 
 def _format_value(value: Any) -> str:

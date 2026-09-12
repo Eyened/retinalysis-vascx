@@ -228,12 +228,27 @@ class Retina(Fundus):
 
         return res
 
+    def feature_targets(self, feature):
+        """Return the concrete target name/object pairs for a feature."""
+        if isinstance(feature, RetinaFeature):
+            return [("retina", self)]
+        if isinstance(feature, LayerFeature):
+            return [
+                (layer.name, layer) for layer in self.get_layers(VesselTreeLayer)
+            ]
+        if isinstance(feature, VesselsLayerFeature):
+            return [
+                (layer.name, layer)
+                for layer in self.get_layers(FundusVesselsLayer)
+            ]
+        return []
+
     def calc_features(
         self,
         feature_set: FeatureSet,
         plots_folder: Optional[str] = None,
         raise_on_error: bool = False,
-        naming: str = "canonical",
+        naming: str = "resolved",
     ):
         all_features = {}
         seen_names: Dict[str, object] = {}
@@ -248,17 +263,10 @@ class Retina(Fundus):
             feature_set._vascx_name_cache = name_cache
         for feature_index, feature in enumerate(feature_set):
             feature_label = feature.__class__.__name__
-            if isinstance(feature, RetinaFeature):
-                targets = [("retina", self)]
-            elif isinstance(feature, LayerFeature):
-                targets = [
-                    (layer.name, layer) for layer in self.get_layers(VesselTreeLayer)
-                ]
-            elif isinstance(feature, VesselsLayerFeature):
-                targets = [
-                    (layer.name, layer) for layer in self.get_layers(FundusVesselsLayer)
-                ]
-            else:
+            targets = self.feature_targets(feature)
+            if not isinstance(
+                feature, (RetinaFeature, LayerFeature, VesselsLayerFeature)
+            ):
                 continue
 
             if len(targets) == 0:
@@ -285,7 +293,7 @@ class Retina(Fundus):
                     plots_folder is not None and res is not None
                 ):  # only save plots if the feature was computed successfully
                     fig, ax = plt.subplots(1, 1, figsize=(8, 8), dpi=300)
-                    feature.plot(ax, target)
+                    feature.plot(ax, target, computed_value=res)
                     fname_prefix = str(self.id) if self.id is not None else "sample"
                     plot_name = feature_names[(feature_index, target_name)].name
                     fname = f"{fname_prefix}_{plot_name}.png"
@@ -298,7 +306,7 @@ class Retina(Fundus):
 
     @classmethod
     def make_feature_display_names(
-        cls, feature_set: FeatureSet, naming: str = "canonical"
+        cls, feature_set: FeatureSet, naming: str = "resolved"
     ) -> Dict[str, str]:
         names = make_feature_names(feature_set, cls._target_names_for_feature, naming=naming)
         return {item.name: item.display_name for item in names.values()}

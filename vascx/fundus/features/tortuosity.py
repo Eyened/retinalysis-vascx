@@ -62,6 +62,32 @@ class Tortuosity(LayerFeature):
     - aggregator: callable aggregator returning a single scalar over per-entity values.
     """
 
+    general_description = (
+        "Retinal vessel tortuosity describes the degree to which vessels deviate "
+        "from a straight course. Higher values indicate more tortuous vessels."
+    )
+
+    def implementation_description(self, layer_name: str = "vessels", **kwargs) -> str:
+        from .base import get_layer_description
+
+        layer = get_layer_description(layer_name)
+        subject = "resolved vessels" if self.mode == TortuosityMode.Vessels else "vessel segments"
+        measure = getattr(self.measure, "value", self.measure)
+        measure_name = getattr(self.measure, "name", str(measure)).lower()
+        if measure in {TortuosityMeasure.Distance.value, "distance"} or measure_name == "distance":
+            return (
+                f"Calculated for {layer} {subject} as path length divided by the "
+                "straight-line distance between endpoints."
+            )
+        if measure in {TortuosityMeasure.Curvature.value, "curvature"} or measure_name == "curvature":
+            return f"Calculated by integrating curvature along {layer} {subject}."
+        return f"Calculated from changes in direction along {layer} {subject}."
+
+    def aggregation_unit(self, **kwargs) -> str:
+        if self.mode == TortuosityMode.Vessels:
+            return "eligible resolved vessels"
+        return "eligible vessel segments"
+
     default_min_area_within_bounds = 0.80
 
     # Ideas
@@ -81,6 +107,7 @@ class Tortuosity(LayerFeature):
         aggregator: Callable = median,
         spline_error_fraction: Optional[float] = None,
         min_area_within_bounds: Optional[float] = None,
+        plot: bool = False,
     ):
         """Configure tortuosity computation and optional segment filtering.
 
@@ -99,7 +126,7 @@ class Tortuosity(LayerFeature):
         self.min_area_within_bounds = validate_min_area_within_bounds(
             min_area_within_bounds
         )
-        super().__init__(grid_field_spec=grid_field)
+        super().__init__(grid_field_spec=grid_field, plot=plot)
         self.aggregator = aggregator
 
     @staticmethod

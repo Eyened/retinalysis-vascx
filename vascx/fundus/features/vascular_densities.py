@@ -29,18 +29,30 @@ class VascularDensity(LayerFeature):
     - grid_field: optional grid field specification; if None, density is over the full retina mask.
     """
 
+    general_description = (
+        "Retinal vascular density is the proportion of the evaluated retinal area "
+        "occupied by blood vessels. Higher values indicate greater vessel coverage."
+    )
+
+    def implementation_description(self, layer_name: str = "vessels", **kwargs) -> str:
+        from .base import get_layer_description
+
+        layer = get_layer_description(layer_name)
+        return f"Calculated as the area occupied by {layer} vessels divided by the evaluated retinal area."
+
     default_min_area_within_bounds = 1.0
 
     def __init__(
         self,
         grid_field: Optional[BaseGridFieldSpecification] = None,
         min_area_within_bounds: Optional[float] = None,
+        plot: bool = False,
     ):
         """Configure optional grid region; default is full retina (no grid field)."""
         self.min_area_within_bounds = validate_min_area_within_bounds(
             min_area_within_bounds
         )
-        super().__init__(grid_field_spec=grid_field)
+        super().__init__(grid_field_spec=grid_field, plot=plot)
 
     def get_mask(self, layer: VesselTreeLayer):
         if self.grid_field_spec is None:

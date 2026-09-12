@@ -24,7 +24,7 @@ dependencies = [
   "sortedcontainers==2.4.0",
   "scikit-image>=0.21,<1",
   "retinalysis-enface==2.0.0",
-  "retinalysis-inference==0.8.0",
+  "retinalysis-inference==0.9.0; sys_platform != 'emscripten'",
   "networkx>=3,<4",
   "numba>=0.58,<1; sys_platform != 'emscripten'"
 ]

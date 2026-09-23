@@ -52,12 +52,6 @@ conda install pytorch torchvision torchaudio pytorch-cuda=11.8 -c pytorch -c nvi
 pip install retinalysis-vascx
 ```
 
-VascX declares `retinalysis-enface==2.0.0` and, on native Python platforms,
-`retinalysis-inference==0.8.0` as dependencies. Inference is excluded on
-Emscripten/Pyodide, so installing VascX there does not pull in the Python
-inference dependency chain (including MONAI and PyTorch). Browser inference
-is handled separately by ONNX Runtime in JavaScript.
-
 > [!TIP]
 > To be able to directly modify VascX code to eg. customise biomarkers or develop new ones, clone and install the Python package in development mode instead:
 > ```

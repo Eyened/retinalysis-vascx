@@ -387,7 +387,7 @@ with $t_i$ any of the measures above.
 
 ![](samples/figures/tortuosity.png)
 
-**CRE (Central Retinal Equivalents).** Concentric circles centered at the optic disc are intersected with the vessel network. At each radius $r$, up to $M$ crossings with the largest segment median diameters are retained and recursively reduced via the Hubbard rule with a modality‑dependent constant $c$ (arteries: 0.88; veins: 0.95):
+**CRE (Central Retinal Equivalents).** Concentric circles centered at the optic disc are intersected with the vessel network. At each radius $r$, up to $M$ crossings with the largest segment median diameters are retained and recursively reduced via the Knudtson pairwise formula with a modality‑dependent constant $c$ (arteries: 0.88; veins: 0.95):
 
 $$
  d \leftarrow c\,\sqrt{d_1^2 + d_2^2}

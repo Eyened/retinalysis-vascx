@@ -1,3 +1,5 @@
 rename_map: {}
 ignored_missing_features: []
-ignored_new_features: []
+ignored_new_features:
+  - full_cre_knudtson_arteries
+  - full_cre_knudtson_veins

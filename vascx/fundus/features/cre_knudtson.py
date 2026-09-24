@@ -44,6 +44,19 @@ class CREKnudtson(LayerFeature):
     the 4 largest eligible Zone B vessel segments. Diameters are segment medians.
     """
 
+    general_description = "Central retinal equivalent caliber summarizes the width of major retinal vessels."
+
+    def implementation_description(self, layer_name: str = "vessels", **kwargs) -> str:
+        from .base import get_layer_description
+
+        layer = get_layer_description(layer_name)
+        region = "" if self.CREMode == CREMode.Full else f"{self.CREMode.value} "
+        return (
+            f"Calculated from the {self.target_vessels} largest {region}{layer} "
+            "vessel segments intersecting Zone B, using segment median diameters "
+            "and the Knudtson pairwise formula."
+        )
+
     def __init__(
         self,
         CREMode: CREMode = CREMode.Temporal,

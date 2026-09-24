@@ -62,7 +62,7 @@ class CRE(LayerFeature):
 
     Computation: across concentric radii around the disc, identifies intersecting segments, optionally
     filters by a superior/inferior hemifield, retains the largest `max_vessels` by `median_diameter`
-    (mode defaults: 6 full, 4 temporal/nasal), and recursively combines diameters using the Hubbard reduction (√(d₁² + d₂²)) scaled by artery/vein
+    (mode defaults: 6 full, 4 temporal/nasal), and recursively combines diameters using the Knudtson pairwise formula (√(d₁² + d₂²)) scaled by artery/vein
     constants (c=0.88 for arteries, c=0.95 for veins). Returns the median equivalent diameter across radii.
 
     Args (constructor):

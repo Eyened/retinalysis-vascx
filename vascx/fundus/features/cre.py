@@ -28,6 +28,8 @@ def recursive_cre(lst, cte):
     if len(lst) == 1:
         return lst[0]
 
+    lst = sorted(lst)
+
     # Initialize a new list to store sums of pairs
     new_list = []
 
@@ -351,8 +353,7 @@ class CRE(LayerFeature):
         )
 
     def recursive_cre(self, calibers: List[float], cte: float):
-        sc = sorted(calibers)
-        return recursive_cre(sc, cte)
+        return recursive_cre(calibers, cte)
 
     def compute_cre_for_circle(self, layer: VesselTreeLayer, circle: Circle):
         if layer.name == "arteries":

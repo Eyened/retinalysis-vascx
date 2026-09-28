@@ -362,6 +362,10 @@ class Tortuosity(LayerFeature):
         return tokens
 
     def _plot(self, ax, layer: VesselTreeLayer, **kwargs):
+        """White paths trace the analyzed vessel segments. Green chords join their
+        endpoints, marked in green and red. The configured measurement region is
+        outlined when present.
+        """
         segments = self.get_segments(layer)
 
         vessels = Vessels(layer, segments)

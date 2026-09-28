@@ -22,11 +22,14 @@ if TYPE_CHECKING:
 
 
 def recursive_cre(lst, cte):
+    """Combine smallest/largest calibers, re-sorting at every reduction round."""
     if len(lst) == 0:
         return None
     # Base case: if the list is reduced to a single element, return that element
     if len(lst) == 1:
         return lst[0]
+
+    lst = sorted(lst)
 
     # Initialize a new list to store sums of pairs
     new_list = []
@@ -351,8 +354,7 @@ class CRE(LayerFeature):
         )
 
     def recursive_cre(self, calibers: List[float], cte: float):
-        sc = sorted(calibers)
-        return recursive_cre(sc, cte)
+        return recursive_cre(calibers, cte)
 
     def compute_cre_for_circle(self, layer: VesselTreeLayer, circle: Circle):
         if layer.name == "arteries":

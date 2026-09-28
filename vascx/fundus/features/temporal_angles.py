@@ -292,6 +292,10 @@ class TemporalAngle(LayerFeature):
         return tokens
 
     def _plot(self, ax, layer, **kwargs):
+        """White circles show the sampling radii around the optic disc. Green rays join
+        the disc center to selected vessel crossings, and green shading marks the valid
+        sampling region.
+        """
         pairs, segments, circles = [], [], []
 
         for fractional_distance in self.get_circle_fractions():

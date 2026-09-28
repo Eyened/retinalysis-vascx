@@ -997,6 +997,10 @@ class Sharpness(VesselsLayerFeature):
         return tokens
 
     def _plot(self, ax, layer: FundusVesselsLayer, **kwargs):
+        """Vessel centerlines are colored by their edge-spread width. The color bar gives
+        ESF sigma in pixels; smaller values indicate sharper vessel edges. The
+        configured region is outlined when present.
+        """
         layer.plot(ax=ax, image=True, bounds=True, skeleton=False, mask=False)
         field = self._get_grid_field(layer)
         if field is not None:

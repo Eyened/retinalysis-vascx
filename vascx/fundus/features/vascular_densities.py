@@ -95,6 +95,9 @@ class VascularDensity(LayerFeature):
         return ["vd"]
 
     def _plot(self, ax, layer: VesselTreeLayer, **kwargs):
+        """The vessel mask is overlaid on the fundus image, with image bounds and the
+        configured region showing the area used for vascular density.
+        """
         field = self._get_grid_field(layer)
         return layer.plot(
             ax=ax,

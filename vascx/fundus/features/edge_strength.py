@@ -206,6 +206,9 @@ class EdgeStrength(VesselsLayerFeature):
         return tokens
 
     def _plot(self, ax, layer: FundusVesselsLayer, **kwargs):
+        """The cyan overlay marks the vessel-edge evaluation band on the fundus image. The
+        configured measurement region is outlined when present.
+        """
         layer.plot(ax=ax, image=True, bounds=True, skeleton=False, mask=False)
 
         band = self._evaluation_mask(layer)

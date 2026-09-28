@@ -90,6 +90,10 @@ class VarianceOfLaplacian(RetinaFeature):
         return ["lapl"]
 
     def _plot(self, ax, retina: "Retina", **kwargs):
+        """The grayscale map shows contrast-enhanced absolute Laplacian magnitude to
+        visualize image edges. Image bounds and the configured measurement region are
+        overlaid; displayed intensities are not the reported variance.
+        """
         L = retina.laplacian.astype(np.float32)  # may contain NaNs outside mask
         mask = np.isfinite(L)
 

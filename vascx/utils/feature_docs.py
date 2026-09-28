@@ -147,32 +147,69 @@ def write_feature_set_readme(
         if plots:
             lines.append("- `plots/`: composite sample visualizations for selected biomarkers.")
 
-    lines.extend(
-        [
-            "",
-            "## Biomarkers",
-            "",
-            "| Variable | Display name | Description | Sample plots |",
-            "| --- | --- | --- | --- |",
-        ]
-    )
+    # Group from complete structured names, before feature-set resolution
+    # removes constant parameters. Region and layer belong to each entry.
+    groups = {}
     for item in definitions:
-        links = ", ".join(
-            f"[{_markdown_cell(image_id)}]({path})"
-            for image_id, path in plots.get(item.variable, ())
-        )
-        lines.append(
-            "| "
-            + " | ".join(
-                [
-                    f"`{_markdown_cell(item.variable)}`",
-                    _markdown_cell(item.display_name),
-                    _markdown_cell(item.description),
-                    links,
-                ]
+        feature = fs.features[item.feature_index]
+        parts = tuple(feature.name_parts(layer_name=item.target))
+        common = tuple(part for part in parts if part.key not in {
+            "grid", "grid_parameters", "field", "field_parameters", "layer"
+        })
+        key = (type(feature), tuple((part.key, part.tokens) for part in common))
+        groups.setdefault(key, []).append((item, feature, common, parts))
+
+    lines.extend(["", "## Biomarkers"])
+    for entries in groups.values():
+        _, feature, common, _ = entries[0]
+        title = " ".join(part.display for part in common
+                         if part.display and not part.annotation).strip()
+        parameters = "; ".join(part.display for part in common
+                               if part.display and part.annotation)
+        if parameters:
+            title += f" ({parameters})"
+        lines.extend(["", f"### {title or type(feature).__name__}", ""])
+        # Describe the method once, without claiming that every entry is arterial
+        # or belongs to the first region encountered in the feature set.
+        description = " ".join(part.strip() for part in (
+            feature.general_description,
+            feature.implementation_description(layer_name="vessels"),
+            feature.aggregation_description(layer_name="vessels"),
+        ) if part and part.strip())
+        # The neutral layer label is "retinal vessel"; some implementation
+        # templates already append "vessels" or "vessel segments" themselves.
+        description = (description.replace("retinal vessel vessels", "retinal vessels")
+                       .replace("retinal vessel vessel segments", "retinal vessel segments")
+                       .replace("retinal vessel resolved vessels", "resolved retinal vessels"))
+        lines.extend([description or "No publication description available.", "",
+                      "Computed combinations:", ""])
+        regions = {}
+        for item, instance, _, parts in entries:
+            region = instance.region_description(layer_name=item.target)
+            # Preserve geometric parameters even if the hand-written region
+            # description omits a configured crop fraction or radius.
+            parameters = "; ".join(part.display for part in parts
+                                   if part.key in {"grid_parameters", "field_parameters"}
+                                   and part.display)
+            label = region + (f" Parameters: {parameters}." if parameters else "")
+            regions.setdefault(label, []).append(item)
+        for region, items in regions.items():
+            combinations = "; ".join(
+                f"{item.target}: `{item.variable}`" for item in items
             )
-            + " |"
-        )
+            lines.append(f"- {region} {combinations}.")
+        # A composite artery/vein plot can be referenced by multiple variables.
+        # Link it once within the section, with all matching variables named.
+        section_plots = {}
+        for item, _, _, _ in entries:
+            for label, path in plots.get(item.variable, ()):
+                section_plots.setdefault((label, path), []).append(item.variable)
+        if section_plots:
+            lines.extend(["", "Sample plots:", ""])
+            for (label, path), variables in section_plots.items():
+                names = ", ".join(f"`{variable}`" for variable in variables)
+                lines.append(f"- [{_markdown_cell(label)}]({path}) — {names}")
+        lines.append("")
 
     output_path.write_text("\n".join(lines).rstrip() + "\n", encoding="utf-8")
     return output_path

@@ -205,6 +205,10 @@ class Sparsity(VesselsLayerFeature):
         return tokens
 
     def _plot(self, ax, layer: FundusVesselsLayer, **kwargs):
+        """The color map shows distance to the nearest vessel within the measurement
+        region, excluding the foveal mask. In maximum-sparsity mode, cyan markers
+        identify the candidate local maxima.
+        """
         layer.plot(ax=ax, image=True, bounds=True)
         dt = self._normalize_distance_transform(layer.distance_transform, layer)
         fovea_mask = self.get_fovea_mask(layer)

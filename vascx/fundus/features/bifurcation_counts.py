@@ -87,6 +87,9 @@ class BifurcationCount(LayerFeature):
         return ["bifurcation", "count"]
 
     def _plot(self, ax, layer: VesselTreeLayer, **kwargs):
+        """White crosses mark eligible vessel bifurcations over the fundus image. The
+        configured measurement region is outlined when present.
+        """
         field = self._get_grid_field(layer)
         ax = layer.plot(
             ax=ax,

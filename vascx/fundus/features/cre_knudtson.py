@@ -275,6 +275,10 @@ class CREKnudtson(LayerFeature):
         ]
 
     def _plot(self, ax, layer: "VesselTreeLayer", **kwargs):
+        """Selected vessels are shown in distinct colors with diameter labels. Solid and
+        dashed white circles mark the inner and outer zone boundaries; the selected
+        vessel count is shown on the image.
+        """
         selected_segments = self.get_selected_segments(layer)
         layer.retina.plot(ax=ax, image=True, bounds=True, av=False)
 

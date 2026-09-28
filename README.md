@@ -399,7 +399,7 @@ $$
  d \leftarrow c\,\sqrt{d_1^2 + d_2^2}
 $$
 
-applied pairwise until a single equivalent caliber $d_r$ remains. The final CRE is the median of $\{d_r\}$ across radii.
+applied to the smallest and largest calibers, re-sorting after each round and carrying forward the middle caliber unchanged for odd-length lists, until a single equivalent caliber $d_r$ remains. The final CRE is the median of $\{d_r\}$ across radii.
 
 ![](samples/figures/cre.png)
 

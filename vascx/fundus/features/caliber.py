@@ -158,6 +158,10 @@ class Caliber(LayerFeature):
         return tokens
 
     def _plot(self, ax, layer: VesselTreeLayer, **kwargs):
+        """White paths follow the analyzed vessel centerlines. Short white cross-sections
+        show sampled vessel widths. The configured measurement region is outlined when
+        present.
+        """
         segments = self._get_segments(layer)
         vessels = Vessels(layer, segments)
         ax = vessels.plot(

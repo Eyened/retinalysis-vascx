@@ -11,6 +11,7 @@ from rtnls_enface.grids.specifications import (
 from vascx.fundus.features.bifurcation_angles import BifurcationAngles
 from vascx.fundus.features.caliber import Caliber
 from vascx.fundus.features.cre import CRE, CREMode
+from vascx.fundus.features.cre_knudtson import CREKnudtson
 from vascx.fundus.features.disc_features import DiscFoveaDistance, DiscFoveaDistanceMode
 from vascx.fundus.features.luminance import Luminance
 from vascx.fundus.features.sharpness import Sharpness
@@ -61,6 +62,7 @@ def make_set(name: str, description: str, grid_description: str, center: float=1
             CRE(CREMode.Temporal, max_vessels=6),
             CRE(CREMode.Temporal, hemifield=HemifieldField.Superior),
             CRE(CREMode.Temporal, hemifield=HemifieldField.Inferior),
+            CREKnudtson(CREMode.Full),
 
             # tortuosity (segments) — Distance and Curvature
             # whole image (length-weighted normalized)

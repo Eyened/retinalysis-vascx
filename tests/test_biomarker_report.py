@@ -1,5 +1,6 @@
 from pathlib import Path
 
+import pandas as pd
 import pytest
 
 from tests.regression_helpers import SAMPLES_DIR
@@ -20,6 +21,11 @@ def test_biomarker_report_smoke(feature_set_name: str, tmp_path: Path) -> None:
         report_sample_size=2,
     )
     assert not frame.empty
+    knudtson_columns = ["full_cre_knudtson_arteries", "full_cre_knudtson_veins"]
+    assert set(knudtson_columns).issubset(frame.columns)
+    assert frame[knudtson_columns].notna().any().all()
     for name in ["biomarkers.csv", "data_dictionary.csv", "README.md", "report.json"]:
         assert (output / name).is_file(), f"Missing report artifact: {name}"
+    dictionary = pd.read_csv(output / "data_dictionary.csv").set_index("variable")
+    assert dictionary.loc[knudtson_columns, "description"].str.contains("Zone B").all()
     assert any((output / "plots").glob("*.png")), "Report contains no plots"

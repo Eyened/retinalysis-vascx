@@ -260,6 +260,20 @@ def render_biomarker_plots(
                     (link_label, relative_path)
                 )
 
+    # Derived measurements share their source explanations without new grids.
+    from vascx.fundus.features.derived import DerivedFeature
+    indices = {id(feature): i for i, feature in enumerate(feature_set)}
+    for i, feature in enumerate(feature_set):
+        if not isinstance(feature, DerivedFeature):
+            continue
+        links = []
+        for dep in feature.dependencies.values():
+            source_index = indices.get(id(dep.feature))
+            if source_index is not None:
+                source_name = names[(source_index, dep.target)].name
+                links.extend(plot_paths.get(source_name, []))
+        if links:
+            plot_paths[names[(i, "retina")].name] = list(dict.fromkeys(links))
     return plot_paths
 
 

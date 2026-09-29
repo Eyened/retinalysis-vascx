@@ -1,0 +1,11 @@
+{
+  "source_sha256": "85b7615c2b14834868ab74bea2119ad733b21a016b7fa177be9d5766baef2182",
+  "pages": {
+    "docs/about.md": "a32383e051678a75ed8152f4944133069af5231f06e38ea8395f800758e36062",
+    "docs/usage/installation.md": "a0eaf006b0945d48884f6fb2a1ba9894bf2442ed262a84dc6c9bab3debbfd67a",
+    "docs/usage/usage.md": "3dfee6b782de70fea4b740f5b73171ce1756c3c99db08d518f505b0b39758b7e",
+    "docs/usage/advanced.md": "2788c0c7517a19d4da350779c13555006ce8aa168232ab4ee865ca46cba5501e",
+    "docs/outputs/csv.md": "8e3eaf219303eb70d48dbd34f530695afaf51bde14f2af1ee10889cc6a5c21ac",
+    "docs/outputs/explanations.md": "d8bed767e75f37d1d5d86a39d62cba60c49d5e6a6949cdf89ed6255c86379463"
+  }
+}

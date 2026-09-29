@@ -1,0 +1,133 @@
+feature_set,field,device_a,device_b,variable,category,icc,ci_low,ci_high,n_pairs,n_images,status,missing_measurement_pairs
+macula_centered_rs,F2,TOPCON 3D OCT-1000,TOPCON TRC-50EX + DXC-950P,tort_dist_max_segment_len_0p2_crcl_arteries,tortuosity,,,,33,66,insufficient_pairs,425
+macula_centered_rs,F2,TOPCON 3D OCT-1000,TOPCON TRC-50EX + DXC-950P,tort_dist_max_segment_len_0p2_crcl_veins,tortuosity,,,,33,66,insufficient_pairs,425
+macula_centered_rs,F2,TOPCON 3D OCT-1000,TOPCON TRC-50EX + DXC-950P,tort_curv_crcl_arteries,tortuosity,,,,33,66,insufficient_pairs,425
+macula_centered_rs,F2,TOPCON 3D OCT-1000,TOPCON TRC-50EX + DXC-950P,tort_curv_crcl_veins,tortuosity,,,,33,66,insufficient_pairs,425
+macula_centered_rs,F2,TOPCON 3D OCT-1000,TOPCON TRC-50EX + DXC-950P,tort_dist_max_segment_len_0p15_etdrs_arteries,tortuosity,,,,33,66,insufficient_pairs,425
+macula_centered_rs,F2,TOPCON 3D OCT-1000,TOPCON TRC-50EX + DXC-950P,tort_dist_max_segment_len_0p15_etdrs_veins,tortuosity,,,,33,66,insufficient_pairs,425
+macula_centered_rs,F2,TOPCON 3D OCT-1000,TOPCON TRC-50EX + DXC-950P,tort_dist_max_segment_len_0p2_etdrs_arteries,tortuosity,,,,33,66,insufficient_pairs,425
+macula_centered_rs,F2,TOPCON 3D OCT-1000,TOPCON TRC-50EX + DXC-950P,tort_dist_max_segment_len_0p2_etdrs_veins,tortuosity,,,,33,66,insufficient_pairs,425
+macula_centered_rs,F2,TOPCON 3D OCT-1000,TOPCON TRC-50EX + DXC-950P,tort_dist_max_segment_len_0p25_etdrs_arteries,tortuosity,,,,33,66,insufficient_pairs,425
+macula_centered_rs,F2,TOPCON 3D OCT-1000,TOPCON TRC-50EX + DXC-950P,tort_dist_max_segment_len_0p25_etdrs_veins,tortuosity,,,,33,66,insufficient_pairs,425
+macula_centered_rs,F2,TOPCON 3D OCT-1000,TOPCON TRC-50EX + DXC-950P,tort_curv_etdrs_arteries,tortuosity,,,,33,66,insufficient_pairs,425
+macula_centered_rs,F2,TOPCON 3D OCT-1000,TOPCON TRC-50EX + DXC-950P,tort_curv_etdrs_veins,tortuosity,,,,33,66,insufficient_pairs,425
+macula_centered_rs,F2,TOPCON 3D OCT-1000 MARK II,TOPCON TRC-50EX + DXC-950P,tort_dist_max_segment_len_0p2_crcl_arteries,tortuosity,0.9373078694134528,0.9,0.96,65,130,ok,667
+macula_centered_rs,F2,TOPCON 3D OCT-1000 MARK II,TOPCON TRC-50EX + DXC-950P,tort_dist_max_segment_len_0p2_crcl_veins,tortuosity,0.8912485326099586,0.77,0.94,65,130,ok,667
+macula_centered_rs,F2,TOPCON 3D OCT-1000 MARK II,TOPCON TRC-50EX + DXC-950P,tort_curv_crcl_arteries,tortuosity,0.8558524119079877,0.37,0.95,65,130,ok,667
+macula_centered_rs,F2,TOPCON 3D OCT-1000 MARK II,TOPCON TRC-50EX + DXC-950P,tort_curv_crcl_veins,tortuosity,0.8392984747065915,0.26,0.94,65,130,ok,667
+macula_centered_rs,F2,TOPCON 3D OCT-1000 MARK II,TOPCON TRC-50EX + DXC-950P,tort_dist_max_segment_len_0p15_etdrs_arteries,tortuosity,0.9032363562250386,0.85,0.94,65,130,ok,667
+macula_centered_rs,F2,TOPCON 3D OCT-1000 MARK II,TOPCON TRC-50EX + DXC-950P,tort_dist_max_segment_len_0p15_etdrs_veins,tortuosity,0.859855804642345,0.74,0.92,65,130,ok,667
+macula_centered_rs,F2,TOPCON 3D OCT-1000 MARK II,TOPCON TRC-50EX + DXC-950P,tort_dist_max_segment_len_0p2_etdrs_arteries,tortuosity,0.8630556656706202,0.79,0.91,65,130,ok,667
+macula_centered_rs,F2,TOPCON 3D OCT-1000 MARK II,TOPCON TRC-50EX + DXC-950P,tort_dist_max_segment_len_0p2_etdrs_veins,tortuosity,0.8171215055809762,0.71,0.89,65,130,ok,667
+macula_centered_rs,F2,TOPCON 3D OCT-1000 MARK II,TOPCON TRC-50EX + DXC-950P,tort_dist_max_segment_len_0p25_etdrs_arteries,tortuosity,0.8575608214519679,0.78,0.91,65,130,ok,667
+macula_centered_rs,F2,TOPCON 3D OCT-1000 MARK II,TOPCON TRC-50EX + DXC-950P,tort_dist_max_segment_len_0p25_etdrs_veins,tortuosity,0.7897292055058938,0.65,0.87,65,130,ok,667
+macula_centered_rs,F2,TOPCON 3D OCT-1000 MARK II,TOPCON TRC-50EX + DXC-950P,tort_curv_etdrs_arteries,tortuosity,0.8520134583699079,0.68,0.92,65,130,ok,667
+macula_centered_rs,F2,TOPCON 3D OCT-1000 MARK II,TOPCON TRC-50EX + DXC-950P,tort_curv_etdrs_veins,tortuosity,0.8550234697589654,0.37,0.95,65,130,ok,667
+macula_centered_rs,F2,TOPCON 3D OCT-2000 FA Plus,TOPCON TRC-50EX + DXC-950P,tort_dist_max_segment_len_0p2_crcl_arteries,tortuosity,0.9509266694701667,0.93,0.97,237,474,ok,2490
+macula_centered_rs,F2,TOPCON 3D OCT-2000 FA Plus,TOPCON TRC-50EX + DXC-950P,tort_dist_max_segment_len_0p2_crcl_veins,tortuosity,0.9108822767828617,0.85,0.94,237,474,ok,2490
+macula_centered_rs,F2,TOPCON 3D OCT-2000 FA Plus,TOPCON TRC-50EX + DXC-950P,tort_curv_crcl_arteries,tortuosity,0.9022194118333238,0.53,0.96,237,474,ok,2490
+macula_centered_rs,F2,TOPCON 3D OCT-2000 FA Plus,TOPCON TRC-50EX + DXC-950P,tort_curv_crcl_veins,tortuosity,0.8558163688156889,0.1,0.95,237,474,ok,2490
+macula_centered_rs,F2,TOPCON 3D OCT-2000 FA Plus,TOPCON TRC-50EX + DXC-950P,tort_dist_max_segment_len_0p15_etdrs_arteries,tortuosity,0.9030123626407301,0.86,0.93,237,474,ok,2490
+macula_centered_rs,F2,TOPCON 3D OCT-2000 FA Plus,TOPCON TRC-50EX + DXC-950P,tort_dist_max_segment_len_0p15_etdrs_veins,tortuosity,0.9229948381199581,0.89,0.94,237,474,ok,2490
+macula_centered_rs,F2,TOPCON 3D OCT-2000 FA Plus,TOPCON TRC-50EX + DXC-950P,tort_dist_max_segment_len_0p2_etdrs_arteries,tortuosity,0.9383907100549583,0.92,0.95,237,474,ok,2490
+macula_centered_rs,F2,TOPCON 3D OCT-2000 FA Plus,TOPCON TRC-50EX + DXC-950P,tort_dist_max_segment_len_0p2_etdrs_veins,tortuosity,0.8864495629800442,0.85,0.91,237,474,ok,2490
+macula_centered_rs,F2,TOPCON 3D OCT-2000 FA Plus,TOPCON TRC-50EX + DXC-950P,tort_dist_max_segment_len_0p25_etdrs_arteries,tortuosity,0.9304174351035956,0.91,0.95,237,474,ok,2490
+macula_centered_rs,F2,TOPCON 3D OCT-2000 FA Plus,TOPCON TRC-50EX + DXC-950P,tort_dist_max_segment_len_0p25_etdrs_veins,tortuosity,0.8694064282574416,0.83,0.9,237,474,ok,2490
+macula_centered_rs,F2,TOPCON 3D OCT-2000 FA Plus,TOPCON TRC-50EX + DXC-950P,tort_curv_etdrs_arteries,tortuosity,0.893313740747887,0.73,0.95,237,474,ok,2490
+macula_centered_rs,F2,TOPCON 3D OCT-2000 FA Plus,TOPCON TRC-50EX + DXC-950P,tort_curv_etdrs_veins,tortuosity,0.9033175098983508,0.55,0.96,237,474,ok,2490
+macula_centered_rs,F2,TOPCON 3D OCT-2000 FA Plus,TOPCON TRC-50IX + D7100,tort_dist_max_segment_len_0p2_crcl_arteries,tortuosity,,,,0,0,insufficient_pairs,0
+macula_centered_rs,F2,TOPCON 3D OCT-2000 FA Plus,TOPCON TRC-50IX + D7100,tort_dist_max_segment_len_0p2_crcl_veins,tortuosity,,,,0,0,insufficient_pairs,0
+macula_centered_rs,F2,TOPCON 3D OCT-2000 FA Plus,TOPCON TRC-50IX + D7100,tort_curv_crcl_arteries,tortuosity,,,,0,0,insufficient_pairs,0
+macula_centered_rs,F2,TOPCON 3D OCT-2000 FA Plus,TOPCON TRC-50IX + D7100,tort_curv_crcl_veins,tortuosity,,,,0,0,insufficient_pairs,0
+macula_centered_rs,F2,TOPCON 3D OCT-2000 FA Plus,TOPCON TRC-50IX + D7100,tort_dist_max_segment_len_0p15_etdrs_arteries,tortuosity,,,,0,0,insufficient_pairs,0
+macula_centered_rs,F2,TOPCON 3D OCT-2000 FA Plus,TOPCON TRC-50IX + D7100,tort_dist_max_segment_len_0p15_etdrs_veins,tortuosity,,,,0,0,insufficient_pairs,0
+macula_centered_rs,F2,TOPCON 3D OCT-2000 FA Plus,TOPCON TRC-50IX + D7100,tort_dist_max_segment_len_0p2_etdrs_arteries,tortuosity,,,,0,0,insufficient_pairs,0
+macula_centered_rs,F2,TOPCON 3D OCT-2000 FA Plus,TOPCON TRC-50IX + D7100,tort_dist_max_segment_len_0p2_etdrs_veins,tortuosity,,,,0,0,insufficient_pairs,0
+macula_centered_rs,F2,TOPCON 3D OCT-2000 FA Plus,TOPCON TRC-50IX + D7100,tort_dist_max_segment_len_0p25_etdrs_arteries,tortuosity,,,,0,0,insufficient_pairs,0
+macula_centered_rs,F2,TOPCON 3D OCT-2000 FA Plus,TOPCON TRC-50IX + D7100,tort_dist_max_segment_len_0p25_etdrs_veins,tortuosity,,,,0,0,insufficient_pairs,0
+macula_centered_rs,F2,TOPCON 3D OCT-2000 FA Plus,TOPCON TRC-50IX + D7100,tort_curv_etdrs_arteries,tortuosity,,,,0,0,insufficient_pairs,0
+macula_centered_rs,F2,TOPCON 3D OCT-2000 FA Plus,TOPCON TRC-50IX + D7100,tort_curv_etdrs_veins,tortuosity,,,,0,0,insufficient_pairs,0
+macula_centered_rs,F2,TOPCON TRC-50EX + DXC-950P,TOPCON TRC-50IX + D7100,tort_dist_max_segment_len_0p2_crcl_arteries,tortuosity,,,,0,0,insufficient_pairs,0
+macula_centered_rs,F2,TOPCON TRC-50EX + DXC-950P,TOPCON TRC-50IX + D7100,tort_dist_max_segment_len_0p2_crcl_veins,tortuosity,,,,0,0,insufficient_pairs,0
+macula_centered_rs,F2,TOPCON TRC-50EX + DXC-950P,TOPCON TRC-50IX + D7100,tort_curv_crcl_arteries,tortuosity,,,,0,0,insufficient_pairs,0
+macula_centered_rs,F2,TOPCON TRC-50EX + DXC-950P,TOPCON TRC-50IX + D7100,tort_curv_crcl_veins,tortuosity,,,,0,0,insufficient_pairs,0
+macula_centered_rs,F2,TOPCON TRC-50EX + DXC-950P,TOPCON TRC-50IX + D7100,tort_dist_max_segment_len_0p15_etdrs_arteries,tortuosity,,,,0,0,insufficient_pairs,0
+macula_centered_rs,F2,TOPCON TRC-50EX + DXC-950P,TOPCON TRC-50IX + D7100,tort_dist_max_segment_len_0p15_etdrs_veins,tortuosity,,,,0,0,insufficient_pairs,0
+macula_centered_rs,F2,TOPCON TRC-50EX + DXC-950P,TOPCON TRC-50IX + D7100,tort_dist_max_segment_len_0p2_etdrs_arteries,tortuosity,,,,0,0,insufficient_pairs,0
+macula_centered_rs,F2,TOPCON TRC-50EX + DXC-950P,TOPCON TRC-50IX + D7100,tort_dist_max_segment_len_0p2_etdrs_veins,tortuosity,,,,0,0,insufficient_pairs,0
+macula_centered_rs,F2,TOPCON TRC-50EX + DXC-950P,TOPCON TRC-50IX + D7100,tort_dist_max_segment_len_0p25_etdrs_arteries,tortuosity,,,,0,0,insufficient_pairs,0
+macula_centered_rs,F2,TOPCON TRC-50EX + DXC-950P,TOPCON TRC-50IX + D7100,tort_dist_max_segment_len_0p25_etdrs_veins,tortuosity,,,,0,0,insufficient_pairs,0
+macula_centered_rs,F2,TOPCON TRC-50EX + DXC-950P,TOPCON TRC-50IX + D7100,tort_curv_etdrs_arteries,tortuosity,,,,0,0,insufficient_pairs,0
+macula_centered_rs,F2,TOPCON TRC-50EX + DXC-950P,TOPCON TRC-50IX + D7100,tort_curv_etdrs_veins,tortuosity,,,,0,0,insufficient_pairs,0
+macula_centered_rs,F2,TOPCON 3D OCT-2000 FA Plus,TOPCON TRC-50DX + D7100,tort_dist_max_segment_len_0p2_crcl_arteries,tortuosity,,,,0,0,insufficient_pairs,0
+macula_centered_rs,F2,TOPCON 3D OCT-2000 FA Plus,TOPCON TRC-50DX + D7100,tort_dist_max_segment_len_0p2_crcl_veins,tortuosity,,,,0,0,insufficient_pairs,0
+macula_centered_rs,F2,TOPCON 3D OCT-2000 FA Plus,TOPCON TRC-50DX + D7100,tort_curv_crcl_arteries,tortuosity,,,,0,0,insufficient_pairs,0
+macula_centered_rs,F2,TOPCON 3D OCT-2000 FA Plus,TOPCON TRC-50DX + D7100,tort_curv_crcl_veins,tortuosity,,,,0,0,insufficient_pairs,0
+macula_centered_rs,F2,TOPCON 3D OCT-2000 FA Plus,TOPCON TRC-50DX + D7100,tort_dist_max_segment_len_0p15_etdrs_arteries,tortuosity,,,,0,0,insufficient_pairs,0
+macula_centered_rs,F2,TOPCON 3D OCT-2000 FA Plus,TOPCON TRC-50DX + D7100,tort_dist_max_segment_len_0p15_etdrs_veins,tortuosity,,,,0,0,insufficient_pairs,0
+macula_centered_rs,F2,TOPCON 3D OCT-2000 FA Plus,TOPCON TRC-50DX + D7100,tort_dist_max_segment_len_0p2_etdrs_arteries,tortuosity,,,,0,0,insufficient_pairs,0
+macula_centered_rs,F2,TOPCON 3D OCT-2000 FA Plus,TOPCON TRC-50DX + D7100,tort_dist_max_segment_len_0p2_etdrs_veins,tortuosity,,,,0,0,insufficient_pairs,0
+macula_centered_rs,F2,TOPCON 3D OCT-2000 FA Plus,TOPCON TRC-50DX + D7100,tort_dist_max_segment_len_0p25_etdrs_arteries,tortuosity,,,,0,0,insufficient_pairs,0
+macula_centered_rs,F2,TOPCON 3D OCT-2000 FA Plus,TOPCON TRC-50DX + D7100,tort_dist_max_segment_len_0p25_etdrs_veins,tortuosity,,,,0,0,insufficient_pairs,0
+macula_centered_rs,F2,TOPCON 3D OCT-2000 FA Plus,TOPCON TRC-50DX + D7100,tort_curv_etdrs_arteries,tortuosity,,,,0,0,insufficient_pairs,0
+macula_centered_rs,F2,TOPCON 3D OCT-2000 FA Plus,TOPCON TRC-50DX + D7100,tort_curv_etdrs_veins,tortuosity,,,,0,0,insufficient_pairs,0
+macula_centered_rs,F2,TOPCON 3D OCT-2000 FA Plus,TOPCON DRI OCT Triton plus,tort_dist_max_segment_len_0p2_crcl_arteries,tortuosity,,,,0,0,insufficient_pairs,0
+macula_centered_rs,F2,TOPCON 3D OCT-2000 FA Plus,TOPCON DRI OCT Triton plus,tort_dist_max_segment_len_0p2_crcl_veins,tortuosity,,,,0,0,insufficient_pairs,0
+macula_centered_rs,F2,TOPCON 3D OCT-2000 FA Plus,TOPCON DRI OCT Triton plus,tort_curv_crcl_arteries,tortuosity,,,,0,0,insufficient_pairs,0
+macula_centered_rs,F2,TOPCON 3D OCT-2000 FA Plus,TOPCON DRI OCT Triton plus,tort_curv_crcl_veins,tortuosity,,,,0,0,insufficient_pairs,0
+macula_centered_rs,F2,TOPCON 3D OCT-2000 FA Plus,TOPCON DRI OCT Triton plus,tort_dist_max_segment_len_0p15_etdrs_arteries,tortuosity,,,,0,0,insufficient_pairs,0
+macula_centered_rs,F2,TOPCON 3D OCT-2000 FA Plus,TOPCON DRI OCT Triton plus,tort_dist_max_segment_len_0p15_etdrs_veins,tortuosity,,,,0,0,insufficient_pairs,0
+macula_centered_rs,F2,TOPCON 3D OCT-2000 FA Plus,TOPCON DRI OCT Triton plus,tort_dist_max_segment_len_0p2_etdrs_arteries,tortuosity,,,,0,0,insufficient_pairs,0
+macula_centered_rs,F2,TOPCON 3D OCT-2000 FA Plus,TOPCON DRI OCT Triton plus,tort_dist_max_segment_len_0p2_etdrs_veins,tortuosity,,,,0,0,insufficient_pairs,0
+macula_centered_rs,F2,TOPCON 3D OCT-2000 FA Plus,TOPCON DRI OCT Triton plus,tort_dist_max_segment_len_0p25_etdrs_arteries,tortuosity,,,,0,0,insufficient_pairs,0
+macula_centered_rs,F2,TOPCON 3D OCT-2000 FA Plus,TOPCON DRI OCT Triton plus,tort_dist_max_segment_len_0p25_etdrs_veins,tortuosity,,,,0,0,insufficient_pairs,0
+macula_centered_rs,F2,TOPCON 3D OCT-2000 FA Plus,TOPCON DRI OCT Triton plus,tort_curv_etdrs_arteries,tortuosity,,,,0,0,insufficient_pairs,0
+macula_centered_rs,F2,TOPCON 3D OCT-2000 FA Plus,TOPCON DRI OCT Triton plus,tort_curv_etdrs_veins,tortuosity,,,,0,0,insufficient_pairs,0
+macula_centered_rs,F2,TOPCON DRI OCT Triton plus,TOPCON TRC-50DX + D7100,tort_dist_max_segment_len_0p2_crcl_arteries,tortuosity,,,,0,0,insufficient_pairs,0
+macula_centered_rs,F2,TOPCON DRI OCT Triton plus,TOPCON TRC-50DX + D7100,tort_dist_max_segment_len_0p2_crcl_veins,tortuosity,,,,0,0,insufficient_pairs,0
+macula_centered_rs,F2,TOPCON DRI OCT Triton plus,TOPCON TRC-50DX + D7100,tort_curv_crcl_arteries,tortuosity,,,,0,0,insufficient_pairs,0
+macula_centered_rs,F2,TOPCON DRI OCT Triton plus,TOPCON TRC-50DX + D7100,tort_curv_crcl_veins,tortuosity,,,,0,0,insufficient_pairs,0
+macula_centered_rs,F2,TOPCON DRI OCT Triton plus,TOPCON TRC-50DX + D7100,tort_dist_max_segment_len_0p15_etdrs_arteries,tortuosity,,,,0,0,insufficient_pairs,0
+macula_centered_rs,F2,TOPCON DRI OCT Triton plus,TOPCON TRC-50DX + D7100,tort_dist_max_segment_len_0p15_etdrs_veins,tortuosity,,,,0,0,insufficient_pairs,0
+macula_centered_rs,F2,TOPCON DRI OCT Triton plus,TOPCON TRC-50DX + D7100,tort_dist_max_segment_len_0p2_etdrs_arteries,tortuosity,,,,0,0,insufficient_pairs,0
+macula_centered_rs,F2,TOPCON DRI OCT Triton plus,TOPCON TRC-50DX + D7100,tort_dist_max_segment_len_0p2_etdrs_veins,tortuosity,,,,0,0,insufficient_pairs,0
+macula_centered_rs,F2,TOPCON DRI OCT Triton plus,TOPCON TRC-50DX + D7100,tort_dist_max_segment_len_0p25_etdrs_arteries,tortuosity,,,,0,0,insufficient_pairs,0
+macula_centered_rs,F2,TOPCON DRI OCT Triton plus,TOPCON TRC-50DX + D7100,tort_dist_max_segment_len_0p25_etdrs_veins,tortuosity,,,,0,0,insufficient_pairs,0
+macula_centered_rs,F2,TOPCON DRI OCT Triton plus,TOPCON TRC-50DX + D7100,tort_curv_etdrs_arteries,tortuosity,,,,0,0,insufficient_pairs,0
+macula_centered_rs,F2,TOPCON DRI OCT Triton plus,TOPCON TRC-50DX + D7100,tort_curv_etdrs_veins,tortuosity,,,,0,0,insufficient_pairs,0
+macula_centered_rs,F2,TOPCON DRI OCT Triton plus - Fundus,TOPCON TRC-50DX + D7100,tort_dist_max_segment_len_0p2_crcl_arteries,tortuosity,,,,0,0,insufficient_pairs,0
+macula_centered_rs,F2,TOPCON DRI OCT Triton plus - Fundus,TOPCON TRC-50DX + D7100,tort_dist_max_segment_len_0p2_crcl_veins,tortuosity,,,,0,0,insufficient_pairs,0
+macula_centered_rs,F2,TOPCON DRI OCT Triton plus - Fundus,TOPCON TRC-50DX + D7100,tort_curv_crcl_arteries,tortuosity,,,,0,0,insufficient_pairs,0
+macula_centered_rs,F2,TOPCON DRI OCT Triton plus - Fundus,TOPCON TRC-50DX + D7100,tort_curv_crcl_veins,tortuosity,,,,0,0,insufficient_pairs,0
+macula_centered_rs,F2,TOPCON DRI OCT Triton plus - Fundus,TOPCON TRC-50DX + D7100,tort_dist_max_segment_len_0p15_etdrs_arteries,tortuosity,,,,0,0,insufficient_pairs,0
+macula_centered_rs,F2,TOPCON DRI OCT Triton plus - Fundus,TOPCON TRC-50DX + D7100,tort_dist_max_segment_len_0p15_etdrs_veins,tortuosity,,,,0,0,insufficient_pairs,0
+macula_centered_rs,F2,TOPCON DRI OCT Triton plus - Fundus,TOPCON TRC-50DX + D7100,tort_dist_max_segment_len_0p2_etdrs_arteries,tortuosity,,,,0,0,insufficient_pairs,0
+macula_centered_rs,F2,TOPCON DRI OCT Triton plus - Fundus,TOPCON TRC-50DX + D7100,tort_dist_max_segment_len_0p2_etdrs_veins,tortuosity,,,,0,0,insufficient_pairs,0
+macula_centered_rs,F2,TOPCON DRI OCT Triton plus - Fundus,TOPCON TRC-50DX + D7100,tort_dist_max_segment_len_0p25_etdrs_arteries,tortuosity,,,,0,0,insufficient_pairs,0
+macula_centered_rs,F2,TOPCON DRI OCT Triton plus - Fundus,TOPCON TRC-50DX + D7100,tort_dist_max_segment_len_0p25_etdrs_veins,tortuosity,,,,0,0,insufficient_pairs,0
+macula_centered_rs,F2,TOPCON DRI OCT Triton plus - Fundus,TOPCON TRC-50DX + D7100,tort_curv_etdrs_arteries,tortuosity,,,,0,0,insufficient_pairs,0
+macula_centered_rs,F2,TOPCON DRI OCT Triton plus - Fundus,TOPCON TRC-50DX + D7100,tort_curv_etdrs_veins,tortuosity,,,,0,0,insufficient_pairs,0
+macula_centered_rs,F2,TOPCON 3D OCT-2000 FA Plus,TOPCON DRI OCT Triton plus - Fundus,tort_dist_max_segment_len_0p2_crcl_arteries,tortuosity,,,,0,0,insufficient_pairs,0
+macula_centered_rs,F2,TOPCON 3D OCT-2000 FA Plus,TOPCON DRI OCT Triton plus - Fundus,tort_dist_max_segment_len_0p2_crcl_veins,tortuosity,,,,0,0,insufficient_pairs,0
+macula_centered_rs,F2,TOPCON 3D OCT-2000 FA Plus,TOPCON DRI OCT Triton plus - Fundus,tort_curv_crcl_arteries,tortuosity,,,,0,0,insufficient_pairs,0
+macula_centered_rs,F2,TOPCON 3D OCT-2000 FA Plus,TOPCON DRI OCT Triton plus - Fundus,tort_curv_crcl_veins,tortuosity,,,,0,0,insufficient_pairs,0
+macula_centered_rs,F2,TOPCON 3D OCT-2000 FA Plus,TOPCON DRI OCT Triton plus - Fundus,tort_dist_max_segment_len_0p15_etdrs_arteries,tortuosity,,,,0,0,insufficient_pairs,0
+macula_centered_rs,F2,TOPCON 3D OCT-2000 FA Plus,TOPCON DRI OCT Triton plus - Fundus,tort_dist_max_segment_len_0p15_etdrs_veins,tortuosity,,,,0,0,insufficient_pairs,0
+macula_centered_rs,F2,TOPCON 3D OCT-2000 FA Plus,TOPCON DRI OCT Triton plus - Fundus,tort_dist_max_segment_len_0p2_etdrs_arteries,tortuosity,,,,0,0,insufficient_pairs,0
+macula_centered_rs,F2,TOPCON 3D OCT-2000 FA Plus,TOPCON DRI OCT Triton plus - Fundus,tort_dist_max_segment_len_0p2_etdrs_veins,tortuosity,,,,0,0,insufficient_pairs,0
+macula_centered_rs,F2,TOPCON 3D OCT-2000 FA Plus,TOPCON DRI OCT Triton plus - Fundus,tort_dist_max_segment_len_0p25_etdrs_arteries,tortuosity,,,,0,0,insufficient_pairs,0
+macula_centered_rs,F2,TOPCON 3D OCT-2000 FA Plus,TOPCON DRI OCT Triton plus - Fundus,tort_dist_max_segment_len_0p25_etdrs_veins,tortuosity,,,,0,0,insufficient_pairs,0
+macula_centered_rs,F2,TOPCON 3D OCT-2000 FA Plus,TOPCON DRI OCT Triton plus - Fundus,tort_curv_etdrs_arteries,tortuosity,,,,0,0,insufficient_pairs,0
+macula_centered_rs,F2,TOPCON 3D OCT-2000 FA Plus,TOPCON DRI OCT Triton plus - Fundus,tort_curv_etdrs_veins,tortuosity,,,,0,0,insufficient_pairs,0
+macula_centered_rs,F2,TOPCON TRC-50EX + DXC-950P,TOPCON TRC-50VT - Analog Fundus Camera,tort_dist_max_segment_len_0p2_crcl_arteries,tortuosity,0.9367250984493511,0.92,0.95,369,738,ok,3521
+macula_centered_rs,F2,TOPCON TRC-50EX + DXC-950P,TOPCON TRC-50VT - Analog Fundus Camera,tort_dist_max_segment_len_0p2_crcl_veins,tortuosity,0.9474486174839809,0.9,0.97,369,738,ok,3521
+macula_centered_rs,F2,TOPCON TRC-50EX + DXC-950P,TOPCON TRC-50VT - Analog Fundus Camera,tort_curv_crcl_arteries,tortuosity,0.896407730722575,0.73,0.95,369,738,ok,3521
+macula_centered_rs,F2,TOPCON TRC-50EX + DXC-950P,TOPCON TRC-50VT - Analog Fundus Camera,tort_curv_crcl_veins,tortuosity,0.8810642550702175,0.34,0.96,369,738,ok,3521
+macula_centered_rs,F2,TOPCON TRC-50EX + DXC-950P,TOPCON TRC-50VT - Analog Fundus Camera,tort_dist_max_segment_len_0p15_etdrs_arteries,tortuosity,0.9028732156508774,0.88,0.92,369,738,ok,3521
+macula_centered_rs,F2,TOPCON TRC-50EX + DXC-950P,TOPCON TRC-50VT - Analog Fundus Camera,tort_dist_max_segment_len_0p15_etdrs_veins,tortuosity,0.8930085257849855,0.86,0.91,369,738,ok,3521
+macula_centered_rs,F2,TOPCON TRC-50EX + DXC-950P,TOPCON TRC-50VT - Analog Fundus Camera,tort_dist_max_segment_len_0p2_etdrs_arteries,tortuosity,0.8992853620849114,0.88,0.92,369,738,ok,3521
+macula_centered_rs,F2,TOPCON TRC-50EX + DXC-950P,TOPCON TRC-50VT - Analog Fundus Camera,tort_dist_max_segment_len_0p2_etdrs_veins,tortuosity,0.8960447753050564,0.87,0.92,369,738,ok,3521
+macula_centered_rs,F2,TOPCON TRC-50EX + DXC-950P,TOPCON TRC-50VT - Analog Fundus Camera,tort_dist_max_segment_len_0p25_etdrs_arteries,tortuosity,0.8983131612842398,0.88,0.92,369,738,ok,3521
+macula_centered_rs,F2,TOPCON TRC-50EX + DXC-950P,TOPCON TRC-50VT - Analog Fundus Camera,tort_dist_max_segment_len_0p25_etdrs_veins,tortuosity,0.8776550915498654,0.84,0.9,369,738,ok,3521
+macula_centered_rs,F2,TOPCON TRC-50EX + DXC-950P,TOPCON TRC-50VT - Analog Fundus Camera,tort_curv_etdrs_arteries,tortuosity,0.8714382461053334,0.8,0.91,359,718,ok,3531
+macula_centered_rs,F2,TOPCON TRC-50EX + DXC-950P,TOPCON TRC-50VT - Analog Fundus Camera,tort_curv_etdrs_veins,tortuosity,0.8871333973895025,0.7,0.94,369,738,ok,3521

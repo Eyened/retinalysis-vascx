@@ -39,7 +39,7 @@ def make_set(name: str, description: str, grid_description: str, center: float=1
     CIRCLE_CROPPED_SUP = GridFieldSpecification(CIRCLE_CROPPED_GRID, CircleField.Superior)
     CIRCLE_CROPPED_INF = GridFieldSpecification(CIRCLE_CROPPED_GRID, CircleField.Inferior)
 
-    return FeatureSet(
+    result = FeatureSet(
         name,
         [
             TemporalAngle(plot=True),
@@ -136,6 +136,13 @@ def make_set(name: str, description: str, grid_description: str, center: float=1
         ],
         description=description,
     )
+
+    if name == "macula_centered_rs":
+        from vascx.fundus.features.derived import AVR
+        sources = [feature for feature in result if isinstance(feature, CRE)
+                   and feature.max_vessels == feature.default_max_vessels()]
+        result.features.extend(AVR(source) for source in sources)
+    return result
 
 
 fs_macula_centered = make_set(

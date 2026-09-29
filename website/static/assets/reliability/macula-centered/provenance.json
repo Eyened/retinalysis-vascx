@@ -1,0 +1,83 @@
+{
+  "feature_set": "macula_centered_rs",
+  "evaluated_vascx_version": "1.1.2.dev2+gf9ff26462",
+  "version_confirmation": "confirmed_by_export_owner",
+  "release": "2026_06",
+  "field": "F2",
+  "naming": "resolved",
+  "normalization_reference": "TOPCON TRC-50EX + DXC-950P",
+  "icc": {
+    "type": "ICC(2,1)",
+    "confidence_level": 0.95,
+    "minimum_pairs": 60,
+    "excluded_device_pairs": [
+      [
+        "TOPCON DRI OCT Triton plus",
+        "TOPCON DRI OCT Triton plus - Fundus"
+      ]
+    ]
+  },
+  "sources": {
+    "canonical_csv_sha256": "ff03803fd8341d9a441f3ab2bc48963558eb7c7505f19c3b1e6e1d4b3ee3b396",
+    "pairs_sha256": "63e1340b7b1407596fa645042982a4f4be88ecc7417a4bfe444dc3520dc9e1e3",
+    "report_sha256": "96a15b30a6d5592a09c99f753e909b1a1c8b7d76720e0f7242b68b3643a31236",
+    "dictionary_sha256": "3454011482d9d84e4db453a012cd8d36fac2251737a5148a931d5cb092f9618a",
+    "report_manifest_sha256": "79deb47a8e9bd70c1d9b39b5beda464806e1b7f786763994ca74c87d16165d70",
+    "explanation_sha256": {
+      "plots/temporal_angle_arteries.png": "e26b475f1cf9173b3c8a5bf1cacba802276ad50874fb8563e5762ae1a3638da1",
+      "plots/bifangle_crcl_full_arteries.png": "d56f98eb186493778a9b5b3ad9d7ab3ca69a366c43aff8492bdfb4697900619a",
+      "plots/diam_crcl_full_arteries.png": "a3d5ce3f13607b79b628da35af2c175f8c5dc0a03e7b8c6fa056f7e750938c40",
+      "plots/cre_arteries.png": "80c4398dd0663ae1e57c28032b35b7b0f6b734c1585aef02bd848a4ae246851b",
+      "plots/tort_dist_max_segment_len_0p2_crcl_arteries.png": "1630aca98152f45bb1e166cf27b2f2a1cbaaa2941222c86fb5ebc09309f53fd0",
+      "plots/vd_crcl_full_arteries.png": "650e091e285a88eb2589379675be62b0353dca1519c030813a3dac1e1e58747b",
+      "plots/disc_fovea_distance_center.png": "f5ffa730a65ee3ce361732dbff82fdbe4290132de2eacdb897c3b2a9a0ee6faf",
+      "plots/sparsity.png": "3ffc43beb452ba24e4e590c142f7cc4e14ad98833db4fbaa9fd93073d13e4184",
+      "plots/sharpness_crcl.png": "77a9b2b34191bdd2e5ab10ea688609c272b70277c5e04ef85e1a9a7c8d4b9faa",
+      "plots/luminance.png": "3f4652f7ec7d378d44805b928257eeaad8d8baeef50ea0a138b2daf86db0e4ff"
+    }
+  },
+  "generator": {
+    "sha256": "298585d8d7c832c21e7bfa6d976f531d2373e72702ee549ec1447538706a1634",
+    "config_sha256": "ab758172653f849e5bde39a5295aeebacddcbe05126a036e9f7ff2ab6f8b7fc8",
+    "native_derived_sha256": "fae560f184eeee19957654f0c318ab5b13b14646b341ad287c465348e1d25de8",
+    "vascx_revision": "b9a00a8e7a2ed63ebc974f4f636bcdc2ff5b3c88",
+    "vascx_source_sha256": "c670039f6385c3c591c834fe238484ccd03335262e300e1c1dcbb4cccb3bca28",
+    "packages": {
+      "numpy": "2.0.0",
+      "pandas": "2.3.3",
+      "pingouin": "0.5.5",
+      "matplotlib": "3.10.8",
+      "retinalysis-vascx": "1.1.2.dev2+gf9ff26462",
+      "retinalysis-enface": "1.0.4"
+    }
+  },
+  "derived": {
+    "avr_cre": {
+      "inputs": [
+        "cre_arteries",
+        "cre_veins"
+      ],
+      "origin": "historical_post_processing",
+      "validated": true
+    },
+    "avr_cre_hf_superior": {
+      "inputs": [
+        "cre_hf_superior_arteries",
+        "cre_hf_superior_veins"
+      ],
+      "origin": "historical_post_processing",
+      "validated": true
+    },
+    "avr_cre_hf_inferior": {
+      "inputs": [
+        "cre_hf_inferior_arteries",
+        "cre_hf_inferior_veins"
+      ],
+      "origin": "historical_post_processing",
+      "validated": true
+    }
+  },
+  "known_omissions": [
+    "luminance"
+  ]
+}

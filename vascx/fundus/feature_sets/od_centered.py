@@ -43,7 +43,7 @@ def make_set(name: str, description: str, grid_description: str, multiplier: flo
     DISC_TEMP = GridFieldSpecification(DISC_GRID, DiscCenteredHemifield.Temporal)
     DISC_NASAL = GridFieldSpecification(DISC_GRID, DiscCenteredHemifield.Nasal)
     
-    return FeatureSet(
+    result = FeatureSet(
         name,
         [
             TemporalAngle(plot=True),
@@ -187,6 +187,12 @@ def make_set(name: str, description: str, grid_description: str, multiplier: flo
         ],
         description=description,
     )
+    if name == "od_centered_rs":
+        from vascx.fundus.features.derived import AVR
+        result.features.extend(AVR(source) for source in list(result)
+                               if isinstance(source, CRE))
+    return result
+
 
 fs_od_centered = make_set(
     name="od_centered",

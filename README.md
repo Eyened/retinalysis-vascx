@@ -1,6 +1,6 @@
 ## Updates
-- 12/09/2026: New [VascX app available](https://eyened.github.io/retinalysis-vascx-app/). It runs VascX in the browser using GPU acceleration and visualizes biomarkers. Running time is about ~10s per image on a Mac M4/M5 laptop.
-- 12/09/2026: New convnextv2 segmentation models are available and new defaults in VascX. They have better performance and run faster than the previous UNet ensembles. Both are available in Huggingface.
+- 12/09/2026: New [VascX app available](https://eyened.github.io/retinalysis-vascx-app/). It runs VascX in the browser using GPU and visualizes biomarkers. Running time is about ~10s per image on a Mac M4/M5 laptop, and much slower on CPU. It is meant as a demo and for small runs with <500 images. For best performance on larger sets, use the Python package with a GPU.
+- 12/09/2026: New convnextv2 segmentation models are available and they are the new default models in VascX. They have better performance and run faster than the previous UNet ensembles.
 - 10/06/2026: Updated README with more complete information on interpreting outputs and advanced use cases.
 - 04/06/2026: We have fixed some remaining missing dependencies that meant run-models was not working correctly with vascx.
 
@@ -51,12 +51,6 @@ conda install pytorch torchvision torchaudio pytorch-cuda=11.8 -c pytorch -c nvi
 ```
 pip install retinalysis-vascx
 ```
-
-VascX declares `retinalysis-enface==2.0.0` and, on native Python platforms,
-`retinalysis-inference==0.8.0` as dependencies. Inference is excluded on
-Emscripten/Pyodide, so installing VascX there does not pull in the Python
-inference dependency chain (including MONAI and PyTorch). Browser inference
-is handled separately by ONNX Runtime in JavaScript.
 
 > [!TIP]
 > To be able to directly modify VascX code to eg. customise biomarkers or develop new ones, clone and install the Python package in development mode instead:
@@ -393,7 +387,7 @@ with $t_i$ any of the measures above.
 
 ![](samples/figures/tortuosity.png)
 
-**CRE (Central Retinal Equivalents).** Concentric circles centered at the optic disc are intersected with the vessel network. At each radius $r$, up to $M$ crossings with the largest segment median diameters are retained and recursively reduced via the Hubbard rule with a modality‑dependent constant $c$ (arteries: 0.88; veins: 0.95):
+**CRE (Central Retinal Equivalents).** Concentric circles centered at the optic disc are intersected with the vessel network. At each radius $r$, up to $M$ crossings with the largest segment median diameters are retained and recursively reduced via the Knudtson pairwise formula with a modality‑dependent constant $c$ (arteries: 0.88; veins: 0.95):
 
 $$
  d \leftarrow c\,\sqrt{d_1^2 + d_2^2}

@@ -144,6 +144,10 @@ class BifurcationAngles(LayerFeature):
         return tokens
 
     def _plot(self, ax, layer: VesselTreeLayer, **kwargs):
+        """White lines and arcs mark the angles between eligible daughter branches. Labels
+        give individual angles in degrees; the vessel network and configured region
+        provide context.
+        """
         field = self._get_grid_field(layer)
         ax = layer.plot(
             ax=ax,

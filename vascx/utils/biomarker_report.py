@@ -4,6 +4,8 @@ import hashlib
 import json
 import re
 import warnings
+from inspect import getdoc
+from textwrap import fill
 from datetime import datetime, timezone
 from importlib.metadata import PackageNotFoundError, version
 from pathlib import Path
@@ -77,21 +79,39 @@ def _render_feature_panel(
     image_id: str,
     variable: str,
     dataframe: Optional[pd.DataFrame],
+    plot_caption: bool = True,
 ) -> bool:
     """Render one feature target, returning whether the panel succeeded."""
     value = _dataframe_value(dataframe, image_id, variable)
-    if value is not _MISSING and _is_missing_value(value):
-        _clear_plot_axis(ax)
-        return False
-    plot_kwargs = {} if value is _MISSING else {"computed_value": value}
+    # Missing measurements still deserve a visual panel. Passing None also
+    # avoids recomputing a known missing result merely to draw the image.
+    plot_kwargs = {} if value is _MISSING else {
+        "computed_value": None if _is_missing_value(value) else value
+    }
+    plot_kwargs["plot_caption"] = plot_caption
     try:
         feature.plot(ax, target, **plot_kwargs)
     except Exception as exc:
         warnings.warn(
             f"Could not render report plot for {image_id}/{variable}: {exc}"
         )
+        ax.clear()
+        retina = getattr(target, "retina", target)
+        image = getattr(retina, "image", None)
+        if image is not None:
+            ax.imshow(image)
+        else:
+            ax.set_facecolor("0.15")
+        label = "N/A" if _is_missing_value(value) else feature._format_value(value)
+        ax.text(0.01, 0.99, label + " — visualization unavailable",
+                transform=ax.transAxes, ha="left", va="top", color="white",
+                fontsize=8, bbox=dict(facecolor="black", alpha=0.7))
+        if image is None:
+            ax.text(0.5, 0.5, "Image unavailable", transform=ax.transAxes,
+                    ha="center", va="center", color="black")
+        # The failed overlay's caption would be misleading on a fallback image.
         _clear_plot_axis(ax)
-        return False
+        return True
     _clear_plot_axis(ax)
     return True
 
@@ -104,8 +124,14 @@ def render_biomarker_plots(
     dataframe: Optional[pd.DataFrame] = None,
     naming: str = "resolved",
     plot_groups: Optional[Mapping[str, str]] = None,
+    sample_size: Optional[int] = None,
 ) -> PlotPaths:
-    """Render one composite sample figure per selected feature configuration."""
+    """Render sample grids: three A/V pairs or four single-layer images by default.
+
+    An explicit sample_size overrides both defaults, per plot group.
+    """
+    if sample_size is not None and sample_size < 0:
+        raise ValueError("sample_size must be non-negative")
     root = Path(output_folder)
     plots_folder = root / "plots"
     plots_folder.mkdir(parents=True, exist_ok=True)
@@ -136,10 +162,14 @@ def render_biomarker_plots(
             variables: List[str] = []
             rendered = 0
 
+            limit = sample_size if sample_size is not None else (3 if paired_layers else 4)
+            sample_targets = sample_targets[:limit]
+
             if paired_layers:
                 nrows = max(1, len(sample_targets))
                 fig, axes = plt.subplots(
-                    nrows, 2, figsize=(8, 4 * nrows), dpi=200, squeeze=False
+                    nrows, 2, figsize=(8, 4 * nrows), dpi=200, squeeze=False,
+                    layout="constrained"
                 )
                 for row, (image_id, _retina, targets) in enumerate(sample_targets):
                     target_lookup = dict(targets)
@@ -160,6 +190,7 @@ def render_biomarker_plots(
                                 image_id=image_id,
                                 variable=item.name,
                                 dataframe=dataframe,
+                                plot_caption=False,
                             )
                         )
             else:
@@ -170,7 +201,8 @@ def render_biomarker_plots(
                 ]
                 nrows = max(1, (len(panels) + 1) // 2)
                 fig, axes = plt.subplots(
-                    nrows, 2, figsize=(8, 4 * nrows), dpi=200, squeeze=False
+                    nrows, 2, figsize=(8, 4 * nrows), dpi=200, squeeze=False,
+                    layout="constrained"
                 )
                 for ax, panel in zip(axes.ravel(), panels):
                     image_id, target_name, target = panel
@@ -185,10 +217,12 @@ def render_biomarker_plots(
                             image_id=image_id,
                             variable=item.name,
                             dataframe=dataframe,
+                            plot_caption=False,
                         )
                     )
 
-            for ax in fig.axes:
+            # Do not clear colorbar axes: their scales explain the overlays.
+            for ax in axes.ravel():
                 _clear_plot_axis(ax)
 
             if rendered == 0 or not variables:
@@ -197,9 +231,25 @@ def render_biomarker_plots(
 
             suffix = f"_{_safe_path_component(group)}" if group else ""
             plot_path = plots_folder / f"{_safe_path_component(variables[0])}{suffix}.png"
-            fig.subplots_adjust(
-                left=0, right=1, bottom=0, top=1, wspace=0.01, hspace=0.01
-            )
+            # One caption per composite, sourced from the same plotting
+            # docstring used by standalone feature plots.
+            caption = getdoc(feature._plot) if feature._plot.__doc__ else None
+            if paired_layers:
+                column_caption = (
+                    "The left column displays the explanatory plots for arteries, "
+                    "and the right column for veins."
+                )
+                caption = f"{caption} {column_caption}" if caption else column_caption
+            if caption:
+                wrapped = fill(" ".join(caption.split()), width=110)
+                lines = wrapped.count("\n") + 1
+                caption_height = 0.18 * lines + 0.25
+                fig.set_figheight(4 * nrows + caption_height)
+                caption_fraction = caption_height / fig.get_figheight()
+                fig.text(0.02, 0.02, wrapped, ha="left", va="bottom",
+                         fontsize=9, gid="biomarker-caption")
+                fig.get_layout_engine().set(rect=(0, caption_fraction, 1, 1 - caption_fraction))
+            fig.get_layout_engine().set(w_pad=0.08, h_pad=0.08, hspace=0.02)
             fig.savefig(plot_path, dpi=200, bbox_inches="tight", pad_inches=0)
             plt.close(fig)
 

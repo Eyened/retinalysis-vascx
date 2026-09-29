@@ -75,6 +75,9 @@ class Luminance(RetinaFeature):
         return []
 
     def _plot(self, ax, retina: "Retina", **kwargs):
+        """Grayscale luminance is shown within the visible retinal mask, with image bounds
+        overlaid.
+        """
         if retina.image is None:
             return ax
         luma = to_luminance(retina.image)

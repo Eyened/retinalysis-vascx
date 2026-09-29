@@ -1,7 +1,8 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from inspect import signature
+from inspect import getdoc, signature
+from textwrap import fill
 from typing import TYPE_CHECKING, Any, Iterable, List, Sequence, Tuple
 
 from .naming import (
@@ -19,6 +20,21 @@ if TYPE_CHECKING:
 
 
 _MISSING = object()
+
+
+def _add_plot_caption(ax, plot_method) -> None:
+    """Render the plotting implementation's docstring below its image panel."""
+    caption = getdoc(plot_method) if plot_method.__doc__ else None
+    if not caption:
+        return
+    # A stable artist ID also allows callers to find or replace the caption.
+    for artist in list(ax.texts):
+        if artist.get_gid() == "biomarker-caption":
+            artist.remove()
+    width_inches = ax.get_position().width * ax.figure.get_figwidth()
+    wrapped = fill(" ".join(caption.split()), width=max(28, int(width_inches * 14)))
+    ax.text(0.0, -0.035, wrapped, transform=ax.transAxes, ha="left", va="top",
+            fontsize=8, color="black", clip_on=False, gid="biomarker-caption")
 
 
 class FeatureSet:
@@ -137,7 +153,7 @@ class Feature(ABC):
 
     def _format_value(self, value: Any) -> str:
         """Format a value for display."""
-        if value is None:
+        if value is None or (isinstance(value, (float, np.floating)) and np.isnan(value)):
             return "N/A"
         if isinstance(value, np.generic):
             display_value = value.item()
@@ -186,8 +202,12 @@ class Feature(ABC):
         return plot(**plot_kwargs)
 
     def plot(self, ax: 'Axes', layer: Any, **kwargs: Any) -> 'Axes':
-        """Compute value, delegate drawing to _plot, annotate value at upper-left, return ax."""
+        """Draw the biomarker, its value, and the caption from ``_plot.__doc__``.
+
+        Pass ``plot_caption=False`` to omit the caption in custom layouts.
+        """
         plot_fovea = kwargs.pop("plot_fovea", True)
+        plot_caption = kwargs.pop("plot_caption", True)
         computed_value = kwargs.pop("computed_value", _MISSING)
         value = (
             self.compute(layer, **kwargs)
@@ -201,7 +221,9 @@ class Feature(ABC):
         # Display values starting from top-left, going down
         y_start = 0.99
         formatted_value = self._format_value(value)
-        ax.text(0.01, y_start, formatted_value, transform=ax.transAxes, ha='left', va='top', color='white', fontsize=8)
+        ax.text(0.01, y_start, formatted_value, transform=ax.transAxes, ha='left', va='top', color='white', fontsize=8, bbox=dict(facecolor='black', alpha=0.5, edgecolor='none'))
+        if plot_caption:
+            _add_plot_caption(ax, self._plot)
 
         return ax
 
@@ -219,8 +241,8 @@ class Feature(ABC):
         matplotlib.use("Agg", force=True)
         from matplotlib import pyplot as plt
 
-        fig, ax = plt.subplots(1, 1, figsize=figsize, dpi=dpi)
-        self.plot(ax=ax, layer=layer, **kwargs)
+        fig, ax = plt.subplots(1, 1, figsize=figsize, dpi=dpi, layout="constrained")
+        self.plot(ax, layer, **kwargs)
         if axis_off:
             ax.set_axis_off()
         return fig

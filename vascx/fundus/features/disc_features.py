@@ -73,5 +73,8 @@ class DiscFoveaDistance(RetinaFeature):
         return []
 
     def _plot(self, ax, retina: Retina, **kwargs):
+        """The fundus image shows the optic disc and fovea landmarks used to measure their
+        separation, together with the image bounds.
+        """
         retina.plot(ax=ax, image=True, disc=True, fovea=True, bounds=True, av=False)
         return ax

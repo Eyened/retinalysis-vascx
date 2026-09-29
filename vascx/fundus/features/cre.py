@@ -22,6 +22,7 @@ if TYPE_CHECKING:
 
 
 def recursive_cre(lst, cte):
+    """Combine smallest/largest calibers, re-sorting at every reduction round."""
     if len(lst) == 0:
         return None
     # Base case: if the list is reduced to a single element, return that element

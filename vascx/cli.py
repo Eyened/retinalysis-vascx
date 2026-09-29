@@ -574,9 +574,8 @@ def make_examples(input_path):
 @click.option(
     "--report-samples",
     type=click.IntRange(min=0),
-    default=3,
-    show_default=True,
-    help="Number of input images to visualize in the report.",
+    default=None,
+    help="Images per report grid (default: 3 for A/V features, 4 for other features).",
 )
 @click.option(
     "--report-image",

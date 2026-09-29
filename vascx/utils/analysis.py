@@ -215,7 +215,7 @@ def extract_biomarkers_to_folder(
     write_biomarker_values: bool = True,
     report_retinas: Optional[Sequence] = None,
     report_plot_groups: Optional[Mapping[str, str]] = None,
-    report_sample_size: int = 3,
+    report_sample_size: Optional[int] = None,
     overwrite: bool = False,
 ) -> pd.DataFrame:
     """Extract biomarkers and write a self-contained output folder.
@@ -224,8 +224,10 @@ def extract_biomarkers_to_folder(
     constructed retina objects. Metadata is always written. README, manifest,
     and plot generation can be disabled with `generate_report=False`.
     `report_plot_groups` optionally separates samples into distinct composite figures.
+    By default, each group shows three samples for A/V features and four for
+    other features. An explicit `report_sample_size` overrides both counts.
     """
-    if report_sample_size < 0:
+    if report_sample_size is not None and report_sample_size < 0:
         raise ValueError("report_sample_size must be non-negative")
 
     inputs = list(retinas)
@@ -265,8 +267,17 @@ def extract_biomarkers_to_folder(
         return dataframe
 
     if report_retinas is None:
-        sample_inputs = inputs[:report_sample_size]
-        sample_ids = identifiers[:report_sample_size]
+        # Keep enough images per group for either grid layout.
+        pool_size = 4 if report_sample_size is None else report_sample_size
+        group_counts = {}
+        sample_inputs, sample_ids = [], []
+        for identifier, retina_input in zip(identifiers, inputs):
+            group = str((report_plot_groups or {}).get(identifier, ""))
+            if group_counts.get(group, 0) >= pool_size:
+                continue
+            sample_inputs.append(retina_input)
+            sample_ids.append(identifier)
+            group_counts[group] = group_counts.get(group, 0) + 1
     else:
         sample_inputs = list(report_retinas)
         sample_ids = [
@@ -288,6 +299,7 @@ def extract_biomarkers_to_folder(
         dataframe=dataframe,
         naming=naming,
         plot_groups=report_plot_groups,
+        sample_size=report_sample_size,
     )
     write_feature_set_readme(
         resolved_feature_set,

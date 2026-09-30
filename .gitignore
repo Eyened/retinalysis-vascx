@@ -19,3 +19,15 @@ __pycache__
 !/samples/fundus/original
 /paper/
 /dist/
+
+# Website dependencies and generated build/test artifacts.
+/website/node_modules/
+/website/build/
+/website/.docusaurus/
+/website/.cache/
+/website/.playwright/
+/website/playwright-report/
+/website/test-results/
+/website/coverage/
+/website/*.log
+/website/*.tsbuildinfo

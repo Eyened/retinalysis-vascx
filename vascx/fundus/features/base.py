@@ -23,7 +23,6 @@ if TYPE_CHECKING:
 
 
 _MISSING = object()
-DEFAULT_MIN_GRID_FIELD_DISC_MARGIN_PX = 25.0
 
 
 def normalize_name_token(value: str) -> str:
@@ -209,7 +208,7 @@ def get_grid_field_tokens(spec: Optional[BaseGridFieldSpecification]) -> List[st
 _PARAMETER_MARKERS = {
     "delta", "max_angle", "min_bifurcations", "spline_error_fraction",
     "min_numpoints", "max_segment_len", "max_tortuosity", "length",
-    "max_vessels", "min_circles", "inner_circle", "outer_circle",
+    "max_vessels", "min_vessels", "min_circles", "inner_circle", "outer_circle",
     "num_circles", "full_vessels", "temporal_nasal_vessels",
     "multiplier", "center", "radius_multiplier", "band_crop_fraction",
     "min_area_within_bounds",
@@ -566,24 +565,10 @@ def grid_field_fraction_in_bounds(
     return frac
 
 
-def disc_visible_bounds_margin_px(retina: "Retina") -> Optional[float]:
-    """Return the optic disc margin to visible bounds in pixels."""
-    if retina.disc is None:
-        return None
-    return retina.disc.distance_to_visible_bounds()
-
-
 def grid_field_passes_qc(
     retina: "Retina",
     grid_field_spec: BaseGridFieldSpecification,
     min_fraction_in_bounds: float = 1.0,
-    min_disc_margin_px: float = DEFAULT_MIN_GRID_FIELD_DISC_MARGIN_PX,
 ) -> bool:
-    """Return whether a grid field is sufficiently visible for feature computation."""
-    if grid_field_fraction_in_bounds(retina, grid_field_spec) < min_fraction_in_bounds:
-        return False
-
-    margin = disc_visible_bounds_margin_px(retina)
-    if margin is None:
-        return False
-    return margin >= min_disc_margin_px
+    """Test coverage of the complete requested region, without a disc margin."""
+    return grid_field_fraction_in_bounds(retina, grid_field_spec) >= min_fraction_in_bounds

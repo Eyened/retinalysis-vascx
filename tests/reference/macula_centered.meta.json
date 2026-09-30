@@ -8,10 +8,16 @@
     "DRIVE_22",
     "DRIVE_40",
     "HRF_04_g",
-    "HRF_07_dr"
+    "HRF_07_dr",
+    "RAV_418381",
+    "RAV_443723",
+    "RAV_520114",
+    "RAV_520582",
+    "RAV_546983",
+    "RAV_585808"
   ],
-  "feature_count": 52,
-  "accepted_at": "2026-09-12T08:46:38.654361+00:00",
+  "feature_count": 50,
+  "accepted_at": "2026-09-30T22:50:01.851553+00:00",
   "accept_reason": "accepted via --accept-vascx-reference",
   "python_version": "3.12.12"
 }

@@ -68,8 +68,6 @@ fs_full_v2 = FeatureSet(
 
         # CRE: temporal variants in sup/inf/full; nasal and full variants on full grid
         CRE(CREMode.Temporal, plot=True),
-        CRE(CREMode.Temporal, hemifield=HemifieldField.Superior),
-        CRE(CREMode.Temporal, hemifield=HemifieldField.Inferior),
         CRE(CREMode.Nasal),
         CRE(CREMode.Full),
 

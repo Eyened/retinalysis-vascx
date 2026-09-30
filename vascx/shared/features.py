@@ -22,9 +22,8 @@ if TYPE_CHECKING:
 _MISSING = object()
 
 
-def _add_plot_caption(ax, plot_method) -> None:
+def _add_plot_caption(ax, caption: str) -> None:
     """Render the plotting implementation's docstring below its image panel."""
-    caption = getdoc(plot_method) if plot_method.__doc__ else None
     if not caption:
         return
     # A stable artist ID also allows callers to find or replace the caption.
@@ -201,6 +200,10 @@ class Feature(ABC):
 
         return plot(**plot_kwargs)
 
+    def plot_description(self) -> str:
+        """Return the explanatory caption for the configured measurement."""
+        return getdoc(self._plot) or ""
+
     def plot(self, ax: 'Axes', layer: Any, **kwargs: Any) -> 'Axes':
         """Draw the biomarker, its value, and the caption from ``_plot.__doc__``.
 
@@ -223,7 +226,7 @@ class Feature(ABC):
         formatted_value = self._format_value(value)
         ax.text(0.01, y_start, formatted_value, transform=ax.transAxes, ha='left', va='top', color='white', fontsize=8, bbox=dict(facecolor='black', alpha=0.5, edgecolor='none'))
         if plot_caption:
-            _add_plot_caption(ax, self._plot)
+            _add_plot_caption(ax, self.plot_description())
 
         return ax
 

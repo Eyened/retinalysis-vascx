@@ -234,11 +234,11 @@ class Segment:
         return Point(*np.mean(self.skeleton, axis=0))
 
     def orientation(self):
-        d1 = self.start.distance_to(self.layer.retina.disc.center_of_mass)
-        d2 = self.end.distance_to(self.layer.retina.disc.center_of_mass)
+        d1 = self.start.distance_to(self.layer.retina.disc.center)
+        d2 = self.end.distance_to(self.layer.retina.disc.center)
 
         line1 = Line(
-            self.layer.retina.disc.center_of_mass, self.layer.retina.fovea_location
+            self.layer.retina.disc.center, self.layer.retina.fovea_location
         )
 
         if d1 < d2:
@@ -252,9 +252,9 @@ class Segment:
         if self.layer.retina.fovea_location is None or self.layer.retina.disc is None:
             return None
         line1 = Line(
-            self.layer.retina.disc.center_of_mass, self.layer.retina.fovea_location
+            self.layer.retina.disc.center, self.layer.retina.fovea_location
         )
-        line2 = Line(self.layer.retina.disc.center_of_mass, self.mean_position())
+        line2 = Line(self.layer.retina.disc.center, self.mean_position())
         return line1.angle_to(line2)
 
     def __eq__(self, other):

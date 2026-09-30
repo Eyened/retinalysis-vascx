@@ -97,8 +97,6 @@ class Caliber(LayerFeature):
             ):
                 return None
         segments = self._get_segments(layer)
-        if isinstance(self.aggregator, LengthWeightedAggregator) and len(segments) < 5:
-            return None
 
         calibers = [
             s.get_median_diameter(error_fraction=self.spline_error_fraction)

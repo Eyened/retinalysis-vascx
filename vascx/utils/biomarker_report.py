@@ -4,7 +4,6 @@ import hashlib
 import json
 import re
 import warnings
-from inspect import getdoc
 from textwrap import fill
 from datetime import datetime, timezone
 from importlib.metadata import PackageNotFoundError, version
@@ -233,7 +232,7 @@ def render_biomarker_plots(
             plot_path = plots_folder / f"{_safe_path_component(variables[0])}{suffix}.png"
             # One caption per composite, sourced from the same plotting
             # docstring used by standalone feature plots.
-            caption = getdoc(feature._plot) if feature._plot.__doc__ else None
+            caption = feature.plot_description()
             if paired_layers:
                 column_caption = (
                     "The left column displays the explanatory plots for arteries, "

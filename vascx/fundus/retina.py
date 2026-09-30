@@ -74,7 +74,7 @@ class Retina(Fundus):
         if self.disc is None:
             return None
         yy, xx = self.yy_xx
-        center = self.disc.center_of_mass
+        center = self.disc.center
         return (yy - center.y) ** 2 + (xx - center.x) ** 2
 
     # Cache each pixel's angle relative to the disc-to-fovea axis.
@@ -84,7 +84,7 @@ class Retina(Fundus):
             return None
 
         yy, xx = self.yy_xx
-        disc_center = self.disc.center_of_mass
+        disc_center = self.disc.center
         fy, fx = self.fovea_location.tuple
         vy, vx = fy - disc_center.y, fx - disc_center.x
         norm_v = np.hypot(vx, vy) + 1e-6
@@ -176,6 +176,7 @@ class Retina(Fundus):
         return self.layers["vessels"]
 
     def load_disc(self, path_or_array: Union[None, str, Path, np.ndarray]):
+        self._invalidate_disc_caches()
         if path_or_array is None:
             self.disc_path = None
             self.disc = None
@@ -195,7 +196,7 @@ class Retina(Fundus):
         disc_mask = _normalize_disc_mask(disc_mask)
 
         try:
-            self.disc = OpticDisc(disc_mask, fundus=self)
+            self.disc = OpticDisc(disc_mask, fundus=self, size=disc_mask.shape[0])
             self.disc.mask = _as_binary_uint8_mask(self.disc.mask)
         except InvalidDiscMaskException:
             warnings.warn("Invalid disc mask. Setting disc to None")

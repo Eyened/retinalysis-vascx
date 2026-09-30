@@ -11,6 +11,7 @@ from rtnls_enface.base import Circle, Line, Point
 from vascx.shared.vessels import Vessels
 
 from .base import LayerFeature
+from ._region_coverage import circle_region_in_bounds
 
 if TYPE_CHECKING:
     from vascx.fundus.layer import VesselTreeLayer
@@ -79,7 +80,7 @@ class TemporalAngle(LayerFeature):
         disc = layer.retina.disc
         assert disc is not None
 
-        disc_center = disc.center_of_mass
+        disc_center = disc.center
         radius = (
             disc_center.distance_to(layer.retina.fovea_location) * fractional_distance
         )
@@ -98,15 +99,15 @@ class TemporalAngle(LayerFeature):
         fovea = layer.retina.fovea_location
         if disc is None or fovea is None:
             raise ValueError("Disc and fovea location are required for temporal angles")
-        return Line(disc.center_of_mass, fovea)
+        return Line(disc.center, fovea)
 
     def _get_circle_mask(self, layer: VesselTreeLayer, circle: Circle) -> np.ndarray:
         retina = layer.retina
         disc = retina.disc
         if (
             disc is not None
-            and np.isclose(circle.center.y, disc.center_of_mass.y)
-            and np.isclose(circle.center.x, disc.center_of_mass.x)
+            and np.isclose(circle.center.y, disc.center.y)
+            and np.isclose(circle.center.x, disc.center.x)
             and getattr(retina, "disc_center_dist_sq", None) is not None
         ):
             return retina.disc_center_dist_sq <= circle.r**2
@@ -118,13 +119,14 @@ class TemporalAngle(LayerFeature):
         yy, xx = yy_xx
         return (yy - circle.center.y) ** 2 + (xx - circle.center.x) ** 2 <= circle.r**2
 
-    def _get_temporal_half_plane_mask(self, layer: VesselTreeLayer) -> np.ndarray:
+    def _get_temporal_half_plane_mask(self, layer: VesselTreeLayer, yy_xx=None) -> np.ndarray:
         retina = layer.retina
         disc = retina.disc
         if disc is None:
             raise ValueError("Disc is required for temporal angles")
 
-        yy_xx = getattr(retina, "yy_xx", None)
+        if yy_xx is None:
+            yy_xx = getattr(retina, "yy_xx", None)
         if yy_xx is None:
             h, w = retina.resolution
             yy_xx = (np.arange(h)[:, None], np.arange(w)[None, :])
@@ -132,8 +134,8 @@ class TemporalAngle(LayerFeature):
 
         axis = np.array(
             [
-                disc.temporal_point.y - disc.center_of_mass.y,
-                disc.temporal_point.x - disc.center_of_mass.x,
+                disc.temporal_point.y - disc.center.y,
+                disc.temporal_point.x - disc.center.x,
             ],
             dtype=float,
         )
@@ -149,12 +151,12 @@ class TemporalAngle(LayerFeature):
         ) & self._get_temporal_half_plane_mask(layer)
 
     def circle_region_in_bounds(self, layer: VesselTreeLayer, circle: Circle) -> bool:
-        roi_mask = layer.retina.roi_mask
-        if roi_mask is None:
-            return True
-
-        region_mask = self.get_valid_region_mask(layer, circle)
-        return not np.any(region_mask & ~roi_mask.astype(bool))
+        return circle_region_in_bounds(
+            circle, layer.retina.resolution, layer.retina.roi_mask,
+            lambda y, x: ((y - circle.center.y)**2 + (x - circle.center.x)**2
+                          <= circle.r**2)
+            & self._get_temporal_half_plane_mask(layer, (y, x)),
+        )
 
     def _point_in_mask(self, point: Point, mask: np.ndarray) -> bool:
         y = int(np.rint(point.y))
@@ -208,7 +210,7 @@ class TemporalAngle(LayerFeature):
     def get_pair(
         self, layer: VesselTreeLayer, intersections: List[Tuple[Segment, float]]
     ):
-        od_center = layer.retina.disc.center_of_mass
+        od_center = layer.retina.disc.center
         pairs = []
         for (s1, t1), (s2, t2) in combinations(intersections, 2):
             p1 = Point(
@@ -327,7 +329,7 @@ class TemporalAngle(LayerFeature):
         overlay[..., 3] = largest_region_mask.astype(float) * 0.12
         ax.imshow(overlay)
 
-        od = layer.retina.disc.center_of_mass
+        od = layer.retina.disc.center
 
         for circle in circles:
             # ax.add_patch(

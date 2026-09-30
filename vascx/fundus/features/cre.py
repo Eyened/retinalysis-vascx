@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import warnings
 from enum import Enum
 from typing import TYPE_CHECKING, List, Optional, Tuple
 
@@ -16,6 +17,7 @@ from vascx.shared.segment import Segment
 from vascx.shared.vessels import Vessels
 
 from .base import LayerFeature
+from ._region_coverage import circle_region_in_bounds
 
 if TYPE_CHECKING:
     from vascx.fundus.layer import VesselTreeLayer
@@ -57,10 +59,19 @@ class CREMode(str, Enum):
     Full = "full"
 
 
-class CRE(LayerFeature):
-    """Central retinal equivalents with temporal/nasal/full modes and optional hemifield filtering.
+class CREMeasure(str, Enum):
+    Circles = "circles"
+    ARIC = "aric"
 
-    Representation: uses circle–segment intersections around the optic disc and each segment's
+
+class CRE(LayerFeature):
+    """Central retinal equivalents for full, temporal, nasal, superior, or inferior regions.
+
+    The default ``measure=CREMeasure.Circles`` retains the historical calculation.
+    ``measure=CREMeasure.ARIC`` selects trunks in Zone B and combines their
+    safeguarded whole-segment median calibers once. See ``get_aric_result`` for QC.
+
+    Representation (Circles): uses circle–segment intersections around the optic disc and each segment's
     `median_diameter`.
 
     Computation: across concentric radii around the disc, identifies intersecting segments, optionally
@@ -71,11 +82,17 @@ class CRE(LayerFeature):
     Args (constructor):
     - CREMode: `CREMode` selection for temporal, nasal, or full orientation constraint.
     - max_vessels: keep up to this many largest-caliber intersecting segments per circle.
-    - hemifield: optional `HemifieldField` to restrict to superior or inferior hemifield.
+    - hemifield: superior/inferior restriction, supported only with `CREMode.Full`.
     - min_circles: minimum number of valid circles required; else returns None.
     - inner_circle: inner CRE circle radius in optic-disc-diameter multiples.
     - outer_circle: outer CRE circle radius in optic-disc-diameter multiples.
     - num_circles: total number of circles sampled between inner and outer radii, inclusive.
+    - measure: Circles (default) or ARIC. Circle-count parameters apply only to Circles.
+    - min_vessels: ARIC minimum count; defaults to 4 for full and 2 for regional
+      measurements, capped by max_vessels. ARIC defaults to at most 6 full or 3
+      regional trunks, flags fewer-than-target counts, and preserves usable short trunks.
+    - min_area_within_bounds: ARIC minimum visible fraction of the requested annulus;
+      defaults to 1.0. This conservative automatic QC rule is a VascX addition.
 
     Notes: each circle must be fully within the retinal mask; if any part is out-of-bounds, that circle
     is discarded from the aggregation for robustness.
@@ -96,6 +113,16 @@ class CRE(LayerFeature):
             CREMode.Full: "",
         }[self.CREMode]
         qualifier = f"{region} " if region else ""
+        if self.measure == CREMeasure.ARIC:
+            return (
+                f"Calculated from up to {self.max_vessels} largest eligible {qualifier}{layer} "
+                "trunks selected in the measurement annulus, using the standard VascX "
+                "whole-segment median widths and the Knudtson pairwise formula. "
+                "Calibers include measurements outside the annulus and assume minor tapering. "
+                "Ungradable trunks may be "
+                "replaced by their daughters with a quality flag; parents and daughters "
+                "are never counted together. This is an automated ARIC-style measurement."
+            )
         return (
             f"Calculated by combining the largest {qualifier}{layer} vessels crossing "
             "concentric circles centered on the optic disc using an established "
@@ -103,6 +130,11 @@ class CRE(LayerFeature):
         )
 
     def aggregation_description(self, **kwargs) -> str:
+        if self.measure == CREMeasure.ARIC:
+            return (
+                f"Reported as one equivalent caliber from {self.required_aric_vessels} "
+                f"to {self.max_vessels} eligible vessels; no averaging across circles."
+            )
         return "Reported as the median across valid measurement circles."
 
     def __init__(
@@ -116,9 +148,16 @@ class CRE(LayerFeature):
         num_circles: int = 5,
         spline_error_fraction: float = 0.05,
         plot: bool = False,
+        *,
+        measure: CREMeasure = CREMeasure.Circles,
+        min_vessels: Optional[int] = None,
+        min_area_within_bounds: float = 1.0,
     ):
         super().__init__(grid_field_spec=None, plot=plot)
         self.CREMode = CREMode
+        self.measure = CREMeasure(measure)
+        self.min_vessels = min_vessels
+        self.min_area_within_bounds = float(min_area_within_bounds)
         
         self.inner_circle = float(inner_circle)
         self.outer_circle = float(outer_circle)
@@ -129,6 +168,12 @@ class CRE(LayerFeature):
         if self.outer_circle < self.inner_circle:
             raise ValueError(
                 "outer_circle must be greater than or equal to inner_circle"
+            )
+        if (self.CREMode != "full"
+                and hemifield in (HemifieldField.Superior, HemifieldField.Inferior)):
+            raise ValueError(
+                "CRE does not support temporal/nasal combined with superior/inferior; "
+                "use CREMode.Full with hemifield for a standalone superior/inferior region"
             )
         if hemifield is None:
             self.hemifield_spec = None
@@ -143,8 +188,38 @@ class CRE(LayerFeature):
             else int(max_vessels)
         )
 
+        if self.measure == CREMeasure.ARIC:
+            if not (np.isfinite(self.inner_circle) and np.isfinite(self.outer_circle)
+                    and 0 < self.inner_circle < self.outer_circle):
+                raise ValueError("ARIC requires finite 0 < inner_circle < outer_circle")
+            if self.max_vessels < 1:
+                raise ValueError("max_vessels must be positive")
+            if min_vessels is not None and (
+                isinstance(min_vessels, bool) or int(min_vessels) != min_vessels
+                or not 1 <= min_vessels <= self.max_vessels
+            ):
+                raise ValueError("min_vessels must be an integer between 1 and max_vessels")
+            if not 0 <= self.min_area_within_bounds <= 1:
+                raise ValueError("min_area_within_bounds must be between 0 and 1")
+
+    @property
+    def required_aric_vessels(self) -> int:
+        if self.min_vessels is not None:
+            return int(self.min_vessels)
+        return min(2 if self.is_regional else 4, self.max_vessels)
+
+    @property
+    def is_regional(self) -> bool:
+        """Whether a temporal, nasal, superior, or inferior restriction is active."""
+        return self.CREMode != CREMode.Full or (
+            self.hemifield_spec is not None
+            and self.hemifield_spec.field in (HemifieldField.Superior, HemifieldField.Inferior)
+        )
+
     def default_max_vessels(self) -> int:
-        """Return the mode-specific default number of vessels to reduce."""
+        """Return the method- and region-specific default vessel count."""
+        if self.measure == CREMeasure.ARIC:
+            return 3 if self.is_regional else 6
         if self.CREMode == CREMode.Full:
             max_vessels = 6
         else:
@@ -158,7 +233,7 @@ class CRE(LayerFeature):
         disc = layer.retina.disc
         assert disc is not None
 
-        disc_center = disc.center_of_mass
+        disc_center = disc.center
         radius = 2 * disc.circle.r * od_multiple
 
         circle = Circle(center=disc_center, r=radius)
@@ -177,7 +252,7 @@ class CRE(LayerFeature):
         if retina.disc is None or retina.fovea_location is None:
             return None
 
-        disc_center = retina.disc.center_of_mass
+        disc_center = retina.disc.center
         fovea = retina.fovea_location
         vy = fovea.y - disc_center.y
         vx = fovea.x - disc_center.x
@@ -261,46 +336,53 @@ class CRE(LayerFeature):
         if cached_mask is not None:
             return cached_mask
 
-        retina = layer.retina
-        cy, cx = circle.center.tuple
-        disc_center = None if retina.disc is None else retina.disc.center_of_mass
-
-        # Retina caches store reusable per-image geometry shared by CRE variants.
-        if (
-            disc_center is not None
-            and np.isclose(cy, disc_center.y)
-            and np.isclose(cx, disc_center.x)
-            and retina.disc_center_dist_sq is not None
-        ):
-            circle_mask = retina.disc_center_dist_sq <= circle.r**2
-        else:
-            yy, xx = retina.yy_xx
-            circle_mask = (xx - cx) ** 2 + (yy - cy) ** 2 <= circle.r**2
-
-        angle_deg = retina.disc_fovea_angle_deg
-        if angle_deg is None:
-            fod_mask = np.ones_like(circle_mask, dtype=bool)
-        else:
-            if self.CREMode == CREMode.Temporal:
-                temporal_mask = self._temporal_fod_mask(layer)
-                if temporal_mask is None:
-                    fod_mask = np.ones_like(circle_mask, dtype=bool)
-                else:
-                    fod_mask = temporal_mask
-            elif self.CREMode == CREMode.Nasal:
-                fod_mask = angle_deg > 80.0
-            else:
-                fod_mask = np.ones_like(circle_mask, dtype=bool)
-
-        mask = circle_mask & fod_mask
-
-        # The per-layer mask cache remains mode- and hemifield-specific.
-        if self.hemifield_spec is not None:
-            hemi_field = retina.get_grid_field(self.hemifield_spec)
-            mask &= hemi_field.mask.astype(bool)
-
+        yy, xx = layer.retina.yy_xx
+        mask = self._region_mask_at(layer, circle, yy, xx, image_canvas=True)
         layer._cre_binary_mask_cache[cache_key] = mask
         return mask
+
+    def _region_mask_at(self, layer, circle, yy, xx, *, image_canvas=False):
+        """Unclipped requested geometry on any source-coordinate canvas."""
+        retina = layer.retina
+        center = retina.disc.center
+        if image_canvas and circle.center == center:
+            distance_sq = retina.disc_center_dist_sq
+        else:
+            distance_sq = (yy - circle.center.y)**2 + (xx - circle.center.x)**2
+        mask = distance_sq <= circle.r**2
+        if retina.fovea_location is not None:
+            if self.CREMode == CREMode.Temporal:
+                angles = self._temporal_angle_deg(layer, yy, xx)
+                if angles is not None:
+                    mask &= angles < 85.0
+            elif self.CREMode == CREMode.Nasal:
+                if image_canvas:
+                    angles = retina.disc_fovea_angle_deg
+                else:
+                    vy = retina.fovea_location.y - center.y
+                    vx = retina.fovea_location.x - center.x
+                    dy, dx = yy - center.y, xx - center.x
+                    cosine = (dx*vx + dy*vy) / ((np.hypot(dx, dy) + 1e-6)
+                                               * (np.hypot(vx, vy) + 1e-6))
+                    angles = np.degrees(np.arccos(np.clip(cosine, -1, 1)))
+                mask &= angles > 80.0
+        if self.hemifield_spec is not None:
+            # Hemifield grid masks already include ROI clipping. Use their
+            # geometric dividing line so missing area still counts against QC.
+            grid = retina.get_grid(self.hemifield_spec.grid_spec)
+            px, py = grid._perp_unit
+            superior = (xx - grid._center.x)*px + (yy - grid._center.y)*py < 0
+            if self.hemifield_spec.field == HemifieldField.Superior:
+                mask &= superior
+            elif self.hemifield_spec.field == HemifieldField.Inferior:
+                mask &= ~superior
+        return mask
+
+    def circle_region_in_bounds(self, layer, circle) -> bool:
+        return circle_region_in_bounds(
+            circle, layer.retina.resolution, layer.retina.roi_mask,
+            lambda y, x: self._region_mask_at(layer, circle, y, x),
+        )
 
     def get_filtered_segments(self, layer: VesselTreeLayer, circle: Circle):
         # to speed it up only at the segments with one endpoint inside and one outside of the circle
@@ -364,21 +446,10 @@ class CRE(LayerFeature):
         else:
             raise ValueError("Unrecognized layer type for CRE computation")
         # Build mask and enforce full containment within retina bounds
-        mask = self.__get_binary_mask(
-            layer, circle.resize(layer.retina.disc.circle.r / 5.0)
-        )
-        total = int(np.count_nonzero(mask))
-        if total == 0:
+        requested_circle = circle.resize(layer.retina.disc.circle.r / 5.0)
+        if not self.circle_region_in_bounds(layer, requested_circle):
             return None, []
-        try:
-            retina_mask = layer.retina.mask.astype(bool)
-        except Exception:
-            retina_mask = None
-        if retina_mask is not None:
-            in_bounds = np.count_nonzero(mask & retina_mask)
-            if in_bounds < total:
-                # Discard this circle if any part is out of bounds
-                return None, []
+        mask = self.__get_binary_mask(layer, requested_circle)
 
         intersections = self.get_intersections(layer, circle)
         # Filter intersections by on-mask (True) values
@@ -415,7 +486,25 @@ class CRE(LayerFeature):
         calibers = [s.get_median_diameter(self.spline_error_fraction) for s in segments]
         return self.recursive_cre(calibers, cte), selected_intersections
 
+    def get_aric_result(self, layer: VesselTreeLayer):
+        """Return selected trunks, segment median calibers, coverage, and quality flags."""
+        from ._cre_aric import measure_aric
+
+        return measure_aric(self, layer)
+
     def compute(self, layer: VesselTreeLayer):
+        if self.measure == CREMeasure.ARIC:
+            result = self.get_aric_result(layer)
+            if result.flags:
+                warnings.warn(f"ARIC CRE ({self.canonical_name(layer_name=layer.name)}): "
+                              + "; ".join(result.flags), stacklevel=2)
+            if not result.valid:
+                return None
+            if layer.name not in ("arteries", "veins"):
+                raise ValueError("Unrecognized layer type for CRE computation")
+            cte = 0.88 if layer.name == "arteries" else 0.95
+            value = recursive_cre([m.median_diameter for m in result.selected], cte)
+            return layer.retina.scale_length_measurement(value)
         cres = []
         for od_multiple in self.get_circle_multiples():
             circle = self.get_circle(layer, od_multiple)
@@ -435,27 +524,35 @@ class CRE(LayerFeature):
         field = get_grid_field_suffix(self.hemifield_spec)
         layer = get_layer_suffix(layer_name)
         mode = self.CREMode.name
-        return f"{mode} CRE{field}{layer}"
+        measure = " ARIC" if self.measure == CREMeasure.ARIC else ""
+        return f"{mode} CRE{measure}{field}{layer}"
 
     def name_prefix_tokens(self) -> list[str]:
         return [self.CREMode.value]
 
     def feature_name_tokens(self) -> list[str]:
-        return ["cre"]
+        # A separate naming family keeps existing resolved CRE names stable when
+        # full/nasal ARIC variants are added to a temporal-only feature set.
+        return ["cre", "aric"] if self.measure == CREMeasure.ARIC else ["cre"]
 
     def parameter_name_tokens(self) -> list[str]:
         from .base import format_name_value
 
         tokens: list[str] = []
+        if self.measure == CREMeasure.ARIC:
+            if self.min_vessels is not None:
+                tokens.extend(["min_vessels", str(self.min_vessels)])
+            if self.min_area_within_bounds != 1.0:
+                tokens.extend(["min_area_within_bounds", format_name_value(self.min_area_within_bounds)])
         if self.max_vessels != self.default_max_vessels():
             tokens.extend(["max_vessels", str(self.max_vessels)])
-        if self.min_circles != 2:
+        if self.measure == CREMeasure.Circles and self.min_circles != 2:
             tokens.extend(["min_circles", str(self.min_circles)])
         if self.inner_circle != 1.0:
             tokens.extend(["inner_circle", str(self.inner_circle)])
         if self.outer_circle != 1.5:
             tokens.extend(["outer_circle", str(self.outer_circle)])
-        if self.num_circles != 5:
+        if self.measure == CREMeasure.Circles and self.num_circles != 5:
             tokens.extend(["num_circles", str(self.num_circles)])
         if self.spline_error_fraction != 0.05:
             tokens.extend(
@@ -477,10 +574,37 @@ class CRE(LayerFeature):
             *get_layer_tokens(layer_name),
         ]
 
+    def region_description(self, **kwargs) -> str:
+        if self.measure != CREMeasure.ARIC:
+            return super().region_description(**kwargs)
+        label = "Zone B" if (self.inner_circle, self.outer_circle) == (1.0, 1.5) else "the configured annulus"
+        text = (f"Trunks selected in {label}, {self.inner_circle:g}–{self.outer_circle:g} optic-disc "
+                "diameters from the disc center.")
+        if self.CREMode != CREMode.Full or self.hemifield_spec is not None:
+            text += " Regional restrictions are VascX adaptations of the full-field ARIC protocol."
+        if self.hemifield_spec is not None:
+            text += f" Restricted to the {self.hemifield_spec.field.name.lower()} hemifield."
+        text += f" Requires at least {100 * self.min_area_within_bounds:g}% visibility of the requested annulus region."
+        return text
+
+    def plot_description(self) -> str:
+        if self.measure == CREMeasure.ARIC:
+            return (
+                "Green marks the measurement region. Colored paths show "
+                "selected trunk sections in the region; labels give safeguarded whole-segment "
+                "median widths. Dashed paths "
+                "mark daughter substitutions; gray paths are unselected candidates. "
+                "The panel reports coverage, vessel count, and quality flags."
+            )
+        return super().plot_description()
+
     def _plot(self, ax, layer: VesselTreeLayer, **kwargs):
         """This plot shows the circles used to compute CRE,
         the segments used in the CRE computation and the CRE next to each circle
         """
+        if self.measure == CREMeasure.ARIC:
+            from ._cre_aric import plot_aric
+            return plot_aric(self, ax, layer, **kwargs)
         segments, circles, cres, points = [], [], [], []
         # Optionally overlay hemifield axis
         if self.hemifield_spec is not None:

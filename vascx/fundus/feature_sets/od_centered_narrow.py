@@ -45,14 +45,6 @@ def make_set(
     return FeatureSet(
         name,
         [
-
-            # caliber (full, superior, inferior, left, right)
-            Caliber(plot=True, grid_field=OD_FULL, aggregator=LengthWeightedAggregator()),
-            Caliber(grid_field=OD_SUP, aggregator=LengthWeightedAggregator()),
-            Caliber(grid_field=OD_INF, aggregator=LengthWeightedAggregator()),
-            Caliber(grid_field=OD_LEFT, aggregator=LengthWeightedAggregator()),
-            Caliber(grid_field=OD_RIGHT, aggregator=LengthWeightedAggregator()),
-
             # CRE: full mode only (temporal/nasal require fovea)
             CRE(CREMode.Full, plot=True, inner_circle=0.8, outer_circle=1.275, min_circles=2),
 

@@ -275,8 +275,6 @@ class Tortuosity(LayerFeature):
 
     def raw(self, layer: VesselTreeLayer):
         segments = self.get_segments(layer)
-        if isinstance(self.aggregator, LengthWeightedAggregator) and len(segments) < 5:
-            return None
 
         vals = [self._compute_for_segment(vessel) for vessel in segments]
 

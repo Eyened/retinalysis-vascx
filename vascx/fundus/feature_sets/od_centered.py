@@ -14,7 +14,7 @@ from rtnls_enface.grids.specifications import (
 
 from vascx.fundus.features.bifurcation_angles import BifurcationAngles
 from vascx.fundus.features.caliber import Caliber
-from vascx.fundus.features.cre import CRE, CREMode
+from vascx.fundus.features.cre import CRE, CREMeasure, CREMode
 from vascx.fundus.features.disc_features import DiscFoveaDistance, DiscFoveaDistanceMode
 from vascx.fundus.features.luminance import Luminance
 from vascx.fundus.features.sharpness import Sharpness
@@ -62,10 +62,17 @@ def make_set(name: str, description: str, grid_description: str, multiplier: flo
             Caliber(grid_field=DISC_TEMP, aggregator=LengthWeightedAggregator()),
             Caliber(grid_field=DISC_NASAL, aggregator=LengthWeightedAggregator()),
 
-            # CRE: temporal variants in sup/inf/full; nasal and full variants on full grid
+            # CRE: full, nasal, and temporal regions
             CRE(CREMode.Full, plot=True, min_circles=2),
             CRE(CREMode.Nasal, min_circles=2),
             CRE(CREMode.Temporal, min_circles=2),
+
+            # ARIC-style trunks; regional variants extend the full-field protocol.
+            CRE(CREMode.Full, measure=CREMeasure.ARIC, plot=True),
+            CRE(CREMode.Nasal, measure=CREMeasure.ARIC),
+            CRE(CREMode.Temporal, measure=CREMeasure.ARIC),
+            CRE(CREMode.Full, measure=CREMeasure.ARIC, hemifield=HemifieldField.Superior),
+            CRE(CREMode.Full, measure=CREMeasure.ARIC, hemifield=HemifieldField.Inferior),
 
             # tortuosity (segments) — Distance and Curvature
             # whole image (length-weighted normalized)

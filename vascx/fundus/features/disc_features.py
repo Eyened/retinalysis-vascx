@@ -21,8 +21,8 @@ class DiscFoveaDistance(RetinaFeature):
     model outputs to compute geometric relationships.
 
     Computation: Calculates the Euclidean distance between the fovea and either the optic disc
-    center of mass (`center`) or the optic disc edge point closest to the fovea (`edge`). For
-    `center`, returns None unless the disc is more than 15 px from visible bounds.
+    reconstructed ellipse center (`center`) or its nearest boundary point (`edge`),
+    including for clipped discs.
 
     Options:
     - mode: `center` or `edge` (default `center`).
@@ -52,8 +52,6 @@ class DiscFoveaDistance(RetinaFeature):
             raise ValueError("Disc or fovea location not set")
 
         if self.mode == DiscFoveaDistanceMode.Center:
-            if retina.disc.distance_to_visible_bounds() <= 15:
-                return None
             return retina.disc_fovea_distance
 
         edge_point = retina.disc.closest_point(retina.fovea_location)

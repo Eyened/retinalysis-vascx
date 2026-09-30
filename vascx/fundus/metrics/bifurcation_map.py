@@ -80,7 +80,7 @@ class BifurcationAP(LayerMetric):
         gt_keypoints = [node for node in gt.nodes if isinstance(node, node_type)]
         detections = [node for node in layer.nodes if isinstance(node, node_type)]
         fod_distance = gt.retina.fovea_location.distance_to(
-            gt.retina.disc.center_of_mass
+            gt.retina.disc.center
         )
 
         return match_keypoints(
@@ -103,7 +103,7 @@ class BifurcationAP(LayerMetric):
         self, gt: VesselTreeLayer, layer: VesselTreeLayer, oks_threshold=0.75
     ):
         fod_distance = gt.retina.fovea_location.distance_to(
-            gt.retina.disc.center_of_mass
+            gt.retina.disc.center
         )
 
         matches, metrics = match_keypoints(
@@ -145,7 +145,7 @@ class BifurcationAP(LayerMetric):
         gt_keypoints = [node for node in gt.nodes if isinstance(node, node_type)]
         detections = [node for node in layer.nodes if isinstance(node, node_type)]
         fod_distance = gt.retina.fovea_location.distance_to(
-            gt.retina.disc.center_of_mass
+            gt.retina.disc.center
         )
 
         matches, metrics = match_keypoints(

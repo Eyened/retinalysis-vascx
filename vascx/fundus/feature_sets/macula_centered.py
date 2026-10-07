@@ -13,6 +13,7 @@ from vascx.fundus.features.caliber import Caliber
 from vascx.fundus.features.cre import CRE, CREMeasure, CREMode
 from vascx.fundus.features.disc_features import DiscFoveaDistance, DiscFoveaDistanceMode
 from vascx.fundus.features.luminance import Luminance
+from vascx.fundus.features.rps import BackgroundLab
 from vascx.fundus.features.sharpness import Sharpness
 from vascx.fundus.features.sparsity import Sparsity, SparsityMode
 from vascx.fundus.features.temporal_angles import TemporalAngle
@@ -134,6 +135,9 @@ def make_set(name: str, description: str, grid_description: str, center: float=1
             Sharpness(plot=True, grid_field=CIRCLE_CROPPED_FIELD),
             Sharpness(grid_field=ETDRS_FULL),
             Luminance(plot=True),
+            BackgroundLab("l", plot=True),
+            BackgroundLab("a"),
+            BackgroundLab("b"),
         ],
         description=description,
     )

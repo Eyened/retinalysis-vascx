@@ -352,6 +352,40 @@ $$
 
 ![](samples/figures/vascular_density.png)
 
+**FractalDimension.** Generalized dimensions `q=0`, `q=1`, and `q=2` describe
+how vessel coverage and vessel-pixel distribution scale with box size. For box
+masses $m_i > 0$, let $p_i = m_i / \sum_j m_j$. D0, D1, and D2 are the slopes
+against $-\log(s)$ of $\log(N)$, $-\sum_i p_i\log(p_i)$, and
+$-\log(\sum_i p_i^2)$, respectively. The dimensions are unitless finite-scale
+estimates; no OD-fovea normalization is applied.
+
+Defaults use the filled binary vessel mask, an image-origin-aligned grid, and
+powers-of-two box sizes starting at 4 pixels and ending at half the shorter
+bounding-box extent of the visible analysis region. At least four scales are
+required. All nonempty boxes count, including fully occupied boxes and boxes
+crossing the region or image boundary; only vessel pixels inside the region
+contribute mass. Explicit grid fields require full coverage by default, using
+the existing `min_area_within_bounds` precedence. Empty masks, inadequate coverage,
+and insufficient scales return missing values. No rotations, occupancy filtering,
+or post-fit ordering/clamping are applied. These choices draw on AutoMorph's
+dyadic box counting and PVBM's generalized dimensions but reproduce neither
+package exactly. The scale range, mask representation and region must be kept
+consistent when comparing estimates.
+
+`FractalDimension(q=0, grid_field=...)` selects one scalar output.
+`representation="skeleton"` instead measures centerline pixels (skeletonized
+before region clipping); `min_box_size` and `max_box_fraction` configure the
+scale range. Nondefault settings appear in canonical names. `get_result(layer)`
+returns the three dimensions, box sizes/counts, scale curves, fit coefficients,
+R-squared values and any missing-value reason. Results are shared between q
+selectors on the same immutable layer. Coarse box sums reuse finer sums; plotting
+uses the same cached fits.
+
+Only the **sparsity** feature set includes these features: D0/D1/D2 for arteries
+and veins over the whole retina and the existing ellipse, disc-centered and
+ETDRS regions. Its D0 panel for each region displays all three values and fits,
+alongside a cyan vessel-mask overlay and gold counted boxes at one scale.
+
 **BifurcationCount.** The count of branching points in the directed graph (stage‑3). Let $\mathcal{B}$ be the set of bifurcation nodes with positions $p_b$:
 
 $$
@@ -451,6 +485,16 @@ $$
 $$
 Var\{ L(x) : x \in R \}.
 $$
+
+**Sharpness.** Estimates vessel-edge blur width (ESF sigma) from perpendicular
+intensity profiles. By default, a segment of length `L` uses
+`min(8, max(4, ceil(16 * L / D)))` candidate profiles, uniformly distributed in
+the spline parameter from one endpoint to the other. `D` is the OD–fovea distance
+in pixels; without a fovea, use 2.5 times the area-equivalent optic-disc diameter;
+without a usable disc, use half the shorter image dimension. Profile rejection
+for bounds, neighboring vessels, or invalid fits can leave fewer than four valid
+measurements. `Sharpness(n_profiles=12)` retains the previous fixed-count sampling
+for comparisons. Per-segment median sigma values are weighted by segment length.
 
 **DiscFoveaDistance.** With optic disc center $c_{OD}$ and fovea position $p_f$,
 

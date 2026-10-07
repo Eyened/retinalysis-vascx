@@ -8,6 +8,7 @@ from rtnls_enface.grids.specifications import (
     GridFieldSpecification,
 )
 
+from vascx.fundus.features.fractal_dimension import FractalDimension
 from vascx.fundus.features.sparsity import Sparsity, SparsityMode
 from vascx.fundus.features.variance_of_laplacian import VarianceOfLaplacian
 from vascx.fundus.features.vascular_densities import VascularDensity
@@ -47,9 +48,16 @@ fs_sparsity = FeatureSet(
         VascularDensity(grid_field=ELLIPSE_FULL),
         VascularDensity(grid_field=DISC_FULL),
         VascularDensity(grid_field=ETDRS_FULL),
+        # Three scalar outputs share one calculation and one report panel per region.
+        *[
+            FractalDimension(q=q, grid_field=region, plot=(q == 0))
+            for region in (None, ELLIPSE_FULL, DISC_FULL, ETDRS_FULL)
+            for q in (0, 1, 2)
+        ],
     ],
     description=(
         "Experimental set of vessel sparsity biomarkers with matching variance-of-Laplacian "
-        "and vascular density measures on ellipse, disc-centered, and ETDRS grids."
+        "and vascular density measures, plus generalized fractal dimensions D0/D1/D2, "
+        "on the whole retina and ellipse, disc-centered, and ETDRS grids."
     ),
 )

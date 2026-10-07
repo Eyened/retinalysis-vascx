@@ -213,6 +213,7 @@ _PARAMETER_MARKERS = {
     "multiplier", "center", "radius_multiplier", "band_crop_fraction",
     "min_area_within_bounds",
     "zone_inner_circle", "zone_outer_circle",
+    "min_box_size", "max_box_fraction",
 }
 
 

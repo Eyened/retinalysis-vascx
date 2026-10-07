@@ -17,6 +17,7 @@ from vascx.fundus.features.caliber import Caliber
 from vascx.fundus.features.cre import CRE, CREMeasure, CREMode
 from vascx.fundus.features.disc_features import DiscFoveaDistance, DiscFoveaDistanceMode
 from vascx.fundus.features.luminance import Luminance
+from vascx.fundus.features.rps import BackgroundLab
 from vascx.fundus.features.sharpness import Sharpness
 from vascx.fundus.features.sparsity import Sparsity, SparsityMode
 from vascx.fundus.features.tortuosity import (
@@ -191,6 +192,9 @@ def make_set(name: str, description: str, grid_description: str, multiplier: flo
             ),
             Sharpness(plot=True, grid_field=DISC_FULL),
             Luminance(plot=True),
+            BackgroundLab("l", plot=True),
+            BackgroundLab("a"),
+            BackgroundLab("b"),
         ],
         description=description,
     )

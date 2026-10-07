@@ -5,7 +5,7 @@ from pathlib import Path
 from typing import Dict, List, Mapping, Optional, Sequence, Tuple, Union
 
 from vascx.shared.features import FeatureSet
-from vascx.shared.naming import make_feature_names
+from vascx.shared.naming import make_feature_names, make_output_names
 
 
 @dataclass(frozen=True)
@@ -17,6 +17,9 @@ class BiomarkerDefinition:
     description: str
     feature_index: int
     target: str
+    component: str = ""
+    units: str = ""
+    feature_group: str = ""
 
 
 def _resolve_feature_set(feature_set: Union[FeatureSet, str]) -> FeatureSet:
@@ -38,17 +41,21 @@ def get_biomarker_definitions(
     from vascx.fundus.retina import Retina
 
     fs = _resolve_feature_set(feature_set)
-    names = make_feature_names(fs, Retina._target_names_for_feature, naming=naming)
+    names = make_output_names(fs, Retina._target_names_for_feature, naming=naming)
+    groups = make_feature_names(fs, Retina._target_names_for_feature, naming=naming)
     definitions = []
-    for (feature_index, target), item in names.items():
+    for (feature_index, target, component), item in names.items():
         feature = fs.features[feature_index]
         definitions.append(
             BiomarkerDefinition(
                 variable=item.name,
                 display_name=item.display_name,
-                description=feature.description(layer_name=target),
+                description=feature.output_description(component, layer_name=target),
                 feature_index=feature_index,
                 target=target,
+                component=component,
+                units=next(o.units for o in feature.output_schema() if o.key == component),
+                feature_group=groups[(feature_index, target)].name,
             )
         )
     return definitions
@@ -77,7 +84,7 @@ def write_variable_display_mapping(
 
     with out.open("w", newline="", encoding="utf-8") as handle:
         writer = csv.DictWriter(
-            handle, fieldnames=["variable", "display_name", "description"]
+            handle, fieldnames=["variable", "display_name", "description", "feature_group", "component", "units"]
         )
         writer.writeheader()
         for item in definitions:
@@ -86,6 +93,9 @@ def write_variable_display_mapping(
                     "variable": item.variable,
                     "display_name": item.display_name,
                     "description": item.description,
+                    "feature_group": item.feature_group,
+                    "component": item.component,
+                    "units": item.units,
                 }
             )
 
@@ -97,7 +107,7 @@ def write_biomarker_metadata(
     out_path: Union[str, Path],
     naming: str = "resolved",
 ) -> Path:
-    """Write variable, display name, and description columns to CSV."""
+    """Write column descriptions, component groups, and units to CSV."""
     return write_variable_display_mapping(
         feature_set, out_path, as_json=False, naming=naming
     )
@@ -142,7 +152,7 @@ def write_feature_set_readme(
         if include_biomarker_values:
             lines.append("- `biomarkers.csv`: extracted values with one row per image.")
         lines.append(
-            "- `data_dictionary.csv`: variable names, display names, and descriptions."
+            "- `data_dictionary.csv`: variable names, display names, descriptions, component groups, and units."
         )
         if plots:
             lines.append("- `plots/`: composite sample visualizations for selected biomarkers.")
@@ -198,6 +208,11 @@ def write_feature_set_readme(
                 f"{item.target}: `{item.variable}`" for item in items
             )
             lines.append(f"- {region} {combinations}.")
+        if feature.is_vector:
+            lines.extend(["", "Components:", "", "| Component | Units | Description |",
+                          "| --- | --- | --- |"])
+            for output in feature.output_schema():
+                lines.append(f"| `{output.key}` | {_markdown_cell(output.units)} | {_markdown_cell(output.description)} |")
         # A composite artery/vein plot can be referenced by multiple variables.
         # Link it once within the section, with all matching variables named.
         section_plots = {}

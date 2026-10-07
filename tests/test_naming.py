@@ -21,7 +21,7 @@ from vascx.fundus.features.tortuosity import (
 from vascx.fundus.retina import Retina
 from vascx.shared.aggregators import LengthWeightedAggregator
 from vascx.shared.features import FeatureSet
-from vascx.shared.naming import make_feature_names
+from vascx.shared.naming import make_feature_names, make_output_names
 from rtnls_enface.grids.circle import CircleField
 from rtnls_enface.grids.specifications import (
     CircleGridSpecification,
@@ -107,7 +107,7 @@ def test_mapping_uses_selected_machine_and_display_names(tmp_path):
 
     with resolved_path.open(newline="", encoding="utf-8") as handle:
         rows = list(csv.DictReader(handle))
-    resolved_names = make_feature_names(
+    resolved_names = make_output_names(
         FeatureSet.get_by_name(feature_set_name), _targets, "resolved"
     )
     assert {row["variable"] for row in rows} == {item.name for item in resolved_names.values()}
@@ -115,7 +115,7 @@ def test_mapping_uses_selected_machine_and_display_names(tmp_path):
     assert all(row["description"] for row in rows)
 
     canonical_mapping = json.loads(canonical_path.read_text(encoding="utf-8"))
-    canonical_names = make_feature_names(
+    canonical_names = make_output_names(
         FeatureSet.get_by_name(feature_set_name), _targets, "canonical"
     )
     assert set(canonical_mapping) == {item.name for item in canonical_names.values()}
@@ -204,7 +204,7 @@ def test_calc_biomarkers_writes_output_bundle_metadata(tmp_path, monkeypatch):
     assert not (output_folder / "biomarkers.names.json").exists()
     assert not (output_folder / "README.md").exists()
 
-    expected = make_feature_names(
+    expected = make_output_names(
         FeatureSet.get_by_name("full_v3"), _targets, "resolved"
     )
     metadata = pd.read_csv(metadata_csv)
@@ -213,6 +213,9 @@ def test_calc_biomarkers_writes_output_bundle_metadata(tmp_path, monkeypatch):
         "variable",
         "display_name",
         "description",
+        "feature_group",
+        "component",
+        "units",
     ]
     assert metadata["description"].str.len().gt(0).all()
 
@@ -240,7 +243,7 @@ def test_python_output_defaults_to_resolved_names(tmp_path):
     from vascx.utils.feature_docs import get_biomarker_definitions
 
     feature_set = FeatureSet.get_by_name("full_v3")
-    expected = {item.name for item in make_feature_names(feature_set, _targets, "resolved").values()}
+    expected = {item.name for item in make_output_names(feature_set, _targets, "resolved").values()}
     assert set(Retina.make_feature_display_names(feature_set)) == expected
     assert {item.variable for item in get_biomarker_definitions(feature_set)} == expected
     output = tmp_path / "default_names.csv"

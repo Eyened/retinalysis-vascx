@@ -15,7 +15,7 @@ class DiscFoveaDistanceMode(str, Enum):
 
 
 class DiscFoveaDistance(RetinaFeature):
-    """Scalar OD–fovea distance from Retina.
+    """Legacy scalar OD–fovea distance; built-in sets now use ODMorphology.
 
     Representation: Uses Retina optic disc and fovea spatial coordinates from the segmentation
     model outputs to compute geometric relationships.
@@ -76,3 +76,6 @@ class DiscFoveaDistance(RetinaFeature):
         """
         retina.plot(ax=ax, image=True, disc=True, fovea=True, bounds=True, av=False)
         return ax
+
+# Public compound optic-disc feature.
+from .od_morphology import ODMorphology

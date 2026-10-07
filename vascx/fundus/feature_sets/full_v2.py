@@ -15,7 +15,7 @@ from vascx.fundus.features.bifurcation_angles import BifurcationAngles
 from vascx.fundus.features.bifurcation_counts import BifurcationCount
 from vascx.fundus.features.caliber import Caliber
 from vascx.fundus.features.cre import CRE, CREMode
-from vascx.fundus.features.disc_features import DiscFoveaDistance
+from vascx.fundus.features.od_morphology import ODMorphology
 from vascx.fundus.features.sparsity import Sparsity, SparsityMode
 from vascx.fundus.features.tortuosity import (
     LengthMeasure,
@@ -134,8 +134,8 @@ fs_full_v2 = FeatureSet(
         VascularDensity(grid_field=HMF_SUP),
         VascularDensity(grid_field=HMF_INF),
 
-        # disc–fovea distance
-        DiscFoveaDistance(plot=True),
+        # optic disc features
+        ODMorphology(plot=True),
     ],
     description=(
         "Previous comprehensive fundus biomarker set. Prefer full_v3 for new analyses."

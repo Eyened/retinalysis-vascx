@@ -19,7 +19,7 @@ from vascx.fundus.features.base import LayerFeature, RetinaFeature, VesselsLayer
 from vascx.fundus.layer import VesselTreeLayer
 from vascx.fundus.vessels_layer import FundusVesselsLayer
 from vascx.shared.features import FeatureSet
-from vascx.shared.naming import make_feature_names
+from vascx.shared.naming import make_feature_names, make_output_names
 from vascx.shared.segment import Segment
 from vascx.utils import load_av_segmentation
 
@@ -250,6 +250,7 @@ class Retina(Fundus):
         plots_folder: Optional[str] = None,
         raise_on_error: bool = False,
         naming: str = "resolved",
+        structured: bool = False,
     ):
         all_features = {}
         seen_names: Dict[str, object] = {}
@@ -257,11 +258,12 @@ class Retina(Fundus):
         cache_key = (self.__class__, str(naming))
         feature_names = name_cache.get(cache_key)
         if feature_names is None:
-            feature_names = make_feature_names(
+            feature_names = make_output_names(
                 feature_set, self._target_names_for_feature, naming=naming
             )
             name_cache[cache_key] = feature_names
             feature_set._vascx_name_cache = name_cache
+        group_names = make_feature_names(feature_set, self._target_names_for_feature, naming=naming)
         for feature_index, feature in enumerate(feature_set):
             feature_label = feature.__class__.__name__
             targets = self.feature_targets(feature)
@@ -286,9 +288,16 @@ class Retina(Fundus):
                     )
                     res = None
 
-                feature_name = feature_names[(feature_index, target_name)].name
-                self._register_canonical_name(seen_names, feature_name, feature)
-                all_features[feature_name] = res
+                # Invalid output shape is a programming error, not a missing measurement.
+                values = feature.output_values(res)
+                if structured:
+                    group = group_names[(feature_index, target_name)].name
+                    all_features[group] = np.asarray(values) if feature.is_vector else values[0]
+                else:
+                    for output, value in zip(feature.output_schema(), values):
+                        feature_name = feature_names[(feature_index, target_name, output.key)].name
+                        self._register_canonical_name(seen_names, feature_name, feature)
+                        all_features[feature_name] = value
 
                 if (
                     plots_folder is not None and res is not None
@@ -296,7 +305,7 @@ class Retina(Fundus):
                     fig, ax = plt.subplots(1, 1, figsize=(8, 8), dpi=300)
                     feature.plot(ax, target, computed_value=res)
                     fname_prefix = str(self.id) if self.id is not None else "sample"
-                    plot_name = feature_names[(feature_index, target_name)].name
+                    plot_name = group_names[(feature_index, target_name)].name
                     fname = f"{fname_prefix}_{plot_name}.png"
                     fig.savefig(
                         Path(plots_folder) / fname, dpi=200, bbox_inches="tight"
@@ -309,7 +318,7 @@ class Retina(Fundus):
     def make_feature_display_names(
         cls, feature_set: FeatureSet, naming: str = "resolved"
     ) -> Dict[str, str]:
-        names = make_feature_names(feature_set, cls._target_names_for_feature, naming=naming)
+        names = make_output_names(feature_set, cls._target_names_for_feature, naming=naming)
         return {item.name: item.display_name for item in names.values()}
 
     def plot(

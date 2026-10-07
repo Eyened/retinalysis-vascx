@@ -30,21 +30,22 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Literal
+from typing import TYPE_CHECKING
 
 import numpy as np
 from skimage.color import rgb2lab
 
 from .base import RetinaFeature
+from vascx.shared.features import FeatureOutput
 
 if TYPE_CHECKING:
     from vascx.fundus.retina import Retina
 
 
 class BackgroundLab(RetinaFeature):
-    """Median L*, a*, or b* over VascX's retinal background mask.
+    """Median L*, a*, and b* over VascX's retinal background mask.
 
-    Instantiate once per channel to export three scalar biomarker columns.
+    Returns a fixed [L*, a*, b*] vector, exported as three scalar columns.
     Uses unenhanced RGB and ``Retina.background_mask``: excludes artery/vein
     masks, the optic disc, and darkest pixels, dilates the exclusions, and
     clips to the visible retina. Missing RGB, AV layers, disc, or background
@@ -61,15 +62,18 @@ class BackgroundLab(RetinaFeature):
         "input to the retinal pigmentation score (RPS)."
     )
 
-    def __init__(self, channel: Literal["l", "a", "b"] = "l", *, plot: bool = False):
-        super().__init__(plot=plot)
-        if channel not in ("l", "a", "b"):
-            raise ValueError("channel must be 'l', 'a', or 'b'")
-        self.channel = channel
+    outputs = (
+        FeatureOutput("l", "L*", "Median CIELAB lightness over retinal background pixels."),
+        FeatureOutput("a", "a*", "Median CIELAB green–red coordinate over retinal background pixels."),
+        FeatureOutput("b", "b*", "Median CIELAB blue–yellow coordinate over retinal background pixels."),
+    )
 
-    def compute(self, retina: "Retina") -> float | None:
+    def __init__(self, *, plot: bool = False):
+        super().__init__(plot=plot)
+
+    def compute(self, retina: "Retina") -> np.ndarray:
         if retina.image is None:
-            return None
+            return np.full(3, np.nan)
         image = np.asarray(retina.image)
         if image.ndim != 3 or image.shape[2] != 3:
             raise ValueError("BackgroundLab requires an RGB image with three channels")
@@ -77,21 +81,19 @@ class BackgroundLab(RetinaFeature):
         if image.shape[:2] != mask.shape:
             raise ValueError("RGB image and background mask must have matching shapes")
         if not np.any(mask):
-            return None
+            return np.full(3, np.nan)
         # Convert pixels before taking the median (Lab is nonlinear).
         lab = rgb2lab(image[mask])
-        return float(np.median(lab[:, ("l", "a", "b").index(self.channel)]))
+        return np.median(lab, axis=0)
 
     def feature_name_tokens(self) -> list[str]:
-        # Keep the channel in the feature identity under both naming conventions.
-        return ["background", "lab", self.channel]
+        return ["background", "lab"]
 
     def parameter_name_tokens(self) -> list[str]:
         return []
 
     def display_name(self, key: str = None, **kwargs) -> str:
-        channel = "L" if self.channel == "l" else self.channel
-        return f"Background {channel}* - IM"
+        return "Background Lab - IM"
 
     def implementation_description(self, **kwargs) -> str:
         return (

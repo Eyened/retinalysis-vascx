@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from enum import Enum
 from typing import TYPE_CHECKING, Callable, Dict, Iterable, Optional, Sequence, Tuple
 
@@ -30,6 +30,7 @@ class FeatureName:
     target_name: str
     name: str
     display_name: str
+    component: str = ""
 
 
 def coerce_naming_convention(value: NamingConvention | str) -> NamingConvention:
@@ -74,32 +75,27 @@ def _join_display_parts(parts: Sequence[NamePart], active_keys: set[str]) -> str
     return main
 
 
-def make_feature_names(
+def _make_names(
     feature_set: "FeatureSet",
     target_names_for_feature: Callable[["Feature"], Iterable[str]],
     naming: NamingConvention | str = NamingConvention.CANONICAL,
-) -> Dict[Tuple[int, str], FeatureName]:
+    *, expand_outputs: bool = False,
+) -> Dict[Tuple[int, str] | Tuple[int, str, str], FeatureName]:
     """Build canonical or feature-set-resolved names for a feature set."""
 
     convention = coerce_naming_convention(naming)
     records = []
+    identities = []
     for feature_index, feature in enumerate(feature_set):
         for target_name in target_names_for_feature(feature):
-            parts = tuple(feature.name_parts(layer_name=target_name))
-            if not any(part.family for part in parts):
-                parts = (
-                    NamePart(
-                        key=parts[0].key,
-                        tokens=parts[0].tokens,
-                        display=parts[0].display,
-                        annotation=parts[0].annotation,
-                        family=True,
-                        always_keep=parts[0].always_keep,
-                        resolution_scope=parts[0].resolution_scope,
-                    ),
-                    *parts[1:],
-                )
-            records.append((feature_index, target_name, feature, parts))
+            components = [item.key for item in feature.output_schema()] if expand_outputs else [""]
+            for component in components:
+                parts = tuple(feature.output_name_parts(component, layer_name=target_name))
+                if not any(part.family for part in parts):
+                    parts = (replace(parts[0], family=True), *parts[1:])
+                records.append((feature_index, target_name, feature, parts))
+                identities.append((feature_index, target_name, component) if expand_outputs
+                                  else (feature_index, target_name))
 
     canonical_names: Dict[str, Tuple[int, Feature]] = {}
     for feature_index, _, feature, parts in records:
@@ -196,28 +192,36 @@ def make_feature_names(
         if not changed:
             raise ValueError("Resolved feature names are not unique within the feature set")
 
-    result: Dict[Tuple[int, str], FeatureName] = {}
-    display_groups: Dict[str, list[Tuple[int, str]]] = {}
+    result = {}
+    display_groups = {}
     for index, (feature_index, target_name, _, parts) in enumerate(records):
         name = _join_name_parts(parts, active[index])
         display = _join_display_parts(parts, active[index]) or name
-        result[(feature_index, target_name)] = FeatureName(
-            feature_index=feature_index,
-            target_name=target_name,
-            name=name,
-            display_name=display,
-        )
-        display_groups.setdefault(display, []).append((feature_index, target_name))
-
-    for display, keys in display_groups.items():
-        if len(keys) <= 1:
-            continue
-        for feature_index, target_name in keys:
-            item = result[(feature_index, target_name)]
-            result[(feature_index, target_name)] = FeatureName(
-                feature_index=feature_index,
-                target_name=target_name,
-                name=item.name,
-                display_name=f"{item.display_name} [{item.name}]",
-            )
+        key = identities[index]
+        result[key] = FeatureName(feature_index, target_name, name, display,
+                                  key[2] if expand_outputs else "")
+        display_groups.setdefault(display, []).append(key)
+    for keys in display_groups.values():
+        if len(keys) > 1:
+            for key in keys:
+                item = result[key]
+                result[key] = replace(item, display_name=f"{item.display_name} [{item.name}]")
     return result
+
+
+def make_feature_names(
+    feature_set: "FeatureSet",
+    target_names_for_feature: Callable[["Feature"], Iterable[str]],
+    naming: NamingConvention | str = NamingConvention.CANONICAL,
+) -> Dict[Tuple[int, str], FeatureName]:
+    """Names of feature groups, keyed by (feature index, target)."""
+    return _make_names(feature_set, target_names_for_feature, naming)
+
+
+def make_output_names(
+    feature_set: "FeatureSet",
+    target_names_for_feature: Callable[["Feature"], Iterable[str]],
+    naming: NamingConvention | str = NamingConvention.CANONICAL,
+) -> Dict[Tuple[int, str, str], FeatureName]:
+    """Names of scalar output columns, keyed by (feature index, target, component)."""
+    return _make_names(feature_set, target_names_for_feature, naming, expand_outputs=True)

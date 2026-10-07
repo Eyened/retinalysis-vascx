@@ -15,7 +15,7 @@ from rtnls_enface.grids.specifications import (
 from vascx.fundus.features.bifurcation_angles import BifurcationAngles
 from vascx.fundus.features.caliber import Caliber
 from vascx.fundus.features.cre import CRE, CREMeasure, CREMode
-from vascx.fundus.features.disc_features import DiscFoveaDistance, DiscFoveaDistanceMode
+from vascx.fundus.features.od_morphology import ODMorphology
 from vascx.fundus.features.luminance import Luminance
 from vascx.fundus.features.rps import BackgroundLab
 from vascx.fundus.features.sharpness import Sharpness
@@ -180,9 +180,8 @@ def make_set(name: str, description: str, grid_description: str, multiplier: flo
             VascularDensity(grid_field=DISC_TEMP),
             VascularDensity(grid_field=DISC_NASAL),
 
-            # disc–fovea distance
-            DiscFoveaDistance(plot=True),
-            DiscFoveaDistance(mode=DiscFoveaDistanceMode.Edge),
+            # optic disc features
+            ODMorphology(plot=True),
             ####  IMAGE QUALITY FEATURES ####
 
             # Sparsity features
@@ -192,9 +191,7 @@ def make_set(name: str, description: str, grid_description: str, multiplier: flo
             ),
             Sharpness(plot=True, grid_field=DISC_FULL),
             Luminance(plot=True),
-            BackgroundLab("l", plot=True),
-            BackgroundLab("a"),
-            BackgroundLab("b"),
+            BackgroundLab(plot=True),
         ],
         description=description,
     )

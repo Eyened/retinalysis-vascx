@@ -1,4 +1,5 @@
 ## Updates
+- 01/10/2026: New CRE implementation that follows the [ARIC vessel measurement manual.](https://aric.cscc.unc.edu/aric9/sites/default/files/public/visitdocuments/v5/14b1%20ARIC%20NCS%20VM%20Protocol%2011.23.10.pdf#page=17).
 - 12/09/2026: New [VascX app available](https://eyened.github.io/retinalysis-vascx-app/). It runs VascX in the browser using GPU and visualizes biomarkers. Running time is about ~10s per image on a Mac M4/M5 laptop, and much slower on CPU. It is meant as a demo and for small runs with <500 images. For best performance on larger sets, use the Python package with a GPU.
 - 12/09/2026: New convnextv2 segmentation models are available and they are the new default models in VascX. They have better performance and run faster than the previous UNet ensembles.
 - 10/06/2026: Updated README with more complete information on interpreting outputs and advanced use cases.
@@ -134,8 +135,10 @@ By default, CLI output uses feature-set-aware `resolved` names; pass `--naming c
 VascX parameter names typically follow the format:
 
 ```
-[AGGREGATION]_[BIOMARKER]_[PARAMETERS]_[REGION]_[LAYER]
+[AGGREGATION]_[BIOMARKER]_[COMPONENT]_[PARAMETERS]_[REGION]_[LAYER]
 ```
+
+
 
 For example, for `median_tort_dist_etdrs_arteries`:
 
@@ -147,7 +150,10 @@ REGION = measured over the full ETDRS grid
 LAYER = arteries - arterial biomarker - as opposed to veins or vessels (combined)
 ```
 
-Some of the tokens may be ommited if they match defaults or if they do not apply. A CSV mapping between the selected biomarker names in the output CSV and publication-friendly display names can be generated with the same `--naming` option:
+Some of the tokens may be ommited if they match defaults or if they do not apply. `COMPONENT` is present only for compound features, which produce multiple named values instead of a scalar output. For example, `ODMorphology` produces `od_valid`, `od_centroid_x`, and `od_torsion` with resolved naming, or `od_valid_retina`,
+`od_centroid_x_retina`, and `od_torsion_retina` with canonical naming. `BackgroundLab` returns `[L*, a*, b*]` together; its existing `background_lab_l`, `background_lab_a`, and `background_lab_b` column names (and their canonical `_retina` variants) are unchanged.
+
+A CSV mapping between the selected biomarker names in the output CSV and publication-friendly display names can be generated with the same `--naming` option:
 
 ```
 vascx write-mapping --feature_set full_v3 PATH_TO_MAPPING_CSV --naming resolved
@@ -504,6 +510,36 @@ $$
 $$
 
 
+**ODMorphology** calculates multiple features related to the optic disc (OD) including optic disc morphology, and features useful for downstream quality control.
+
+| Component / variable | Availability and meaning |
+| --- | --- |
+| `valid` | Always 0 or 1; 1 means the OD passed the simple QC check implemented in VascX. |
+| `fraction_outside_bounds` | For valid discs: reconstructed ellipse fraction outside the image or fundus ROI. |
+| `centroid_x`, `centroid_y` | Fitted ellipse center in pixels, x = column and y = row. Estimated from the visible contour when the outside fraction is greater than zero. |
+| `fovea_distance` | Centroid–fovea distance in pixels, when the fovea is available. Also estimated for clipped discs. |
+| `ellipse_a`, `ellipse_b` | Fully visible discs only: semi-major and semi-minor axis lengths in pixels. |
+| `ovality_index` | Fully visible discs only: a/b, with 1 indicating a circle. |
+| `circularity` | Fully visible discs only: 4πA/P² using segmentation pixel area and a four-direction Crofton perimeter. Approximately 1 for a circle; pixel discretization can produce values slightly above 1. |
+| `area` | Fully visible discs only: cleaned segmentation area in pixels². |
+| `area_norm` | Fully visible discs with a finite, nonzero fovea distance: area / distance². |
+| `torsion` | Fully visible discs with a distinct fovea: unsigned acute angle (0–90°) between the major axis and the perpendicular to the disc–fovea line. Missing for equal axes; unstable near a circular shape. |
+
+Unavailable components are NaN. Fully visible means the reconstructed ellipse
+has no area outside the visible bounds. Pixel coordinates and sizes refer to the
+loaded/preprocessed image (normally 1024×1024), even when `mm_per_pixel` is supplied.
+Area and circularity use the cleaned segmentation; the axes, centroid, ovality,
+and torsion use the fitted ellipse. The torsion reference follows
+[the disc–fovea perpendicular definition](https://doi.org/10.1038/s41598-019-38960-6).
+
+The plot shows the full fundus with segmentation, ellipse, semi-axes and torsion
+reference. All twelve measurements are overlaid near the bottom in a full-width,
+semi-transparent box. Clipped
+centroids and distances are marked as estimates; unavailable measurements remain
+visible as N/A.
+
+![Combined optic disc features for fully visible and clipped samples](samples/figures/od_morphology.png)
+
 ## Feature localisation
 
 VascX localises feature computations using anatomical references and predefined grids:
@@ -566,4 +602,3 @@ including the BSD-2-Clause notices in the RPS modules and the
 ## Testing
 
 See [development.md](development.md).
-

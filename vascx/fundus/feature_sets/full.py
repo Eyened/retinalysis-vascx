@@ -10,7 +10,7 @@ from vascx.fundus.features.bifurcation_angles import BifurcationAngles
 from vascx.fundus.features.bifurcation_counts import BifurcationCount
 from vascx.fundus.features.caliber import Caliber
 from vascx.fundus.features.cre import CRE
-from vascx.fundus.features.disc_features import DiscFoveaDistance
+from vascx.fundus.features.od_morphology import ODMorphology
 from vascx.fundus.features.sparsity import Sparsity
 from vascx.fundus.features.temporal_angles import TemporalAngle
 from vascx.fundus.features.tortuosity import LengthMeasure, Tortuosity, TortuosityMode
@@ -71,7 +71,7 @@ fs_full = FeatureSet(
         # general and retina-level features
         Sparsity(plot=True),
         VarianceOfLaplacian(plot=True),
-        DiscFoveaDistance(plot=True),
+        ODMorphology(plot=True),
     ],
     description=(
         "Legacy comprehensive fundus biomarker set. Prefer full_v3 for new analyses."

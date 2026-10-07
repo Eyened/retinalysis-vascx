@@ -10,12 +10,13 @@ from importlib.metadata import PackageNotFoundError, version
 from pathlib import Path
 from typing import Dict, List, Mapping, Optional, Sequence, Tuple, Union
 
+import numpy as np
 import pandas as pd
 from matplotlib import pyplot as plt
 
 from vascx.fundus.retina import Retina
 from vascx.shared.features import FeatureSet
-from vascx.shared.naming import make_feature_names
+from vascx.shared.naming import make_feature_names, make_output_names
 from vascx.utils.feature_docs import get_biomarker_definitions
 
 PlotPaths = Dict[str, List[Tuple[str, str]]]
@@ -79,9 +80,16 @@ def _render_feature_panel(
     variable: str,
     dataframe: Optional[pd.DataFrame],
     plot_caption: bool = True,
+    component_variables: Optional[Sequence[str]] = None,
 ) -> bool:
     """Render one feature target, returning whether the panel succeeded."""
-    value = _dataframe_value(dataframe, image_id, variable)
+    if component_variables is None:
+        value = _dataframe_value(dataframe, image_id, variable)
+    else:
+        values = [_dataframe_value(dataframe, image_id, column) for column in component_variables]
+        # Preserve stored NaNs, including partially available vectors.
+        value = _MISSING if all(v is _MISSING for v in values) else np.array([
+            np.nan if _is_missing_value(v) else v for v in values], dtype=float)
     # Missing measurements still deserve a visual panel. Passing None also
     # avoids recomputing a known missing result merely to draw the image.
     plot_kwargs = {} if value is _MISSING else {
@@ -137,6 +145,7 @@ def render_biomarker_plots(
     names = make_feature_names(
         feature_set, Retina._target_names_for_feature, naming=naming
     )
+    outputs = make_output_names(feature_set, Retina._target_names_for_feature, naming=naming)
     grouped_retinas: Dict[str, List[Tuple[str, Retina]]] = {}
     for image_id, retina in retinas:
         group = ""
@@ -160,6 +169,7 @@ def render_biomarker_plots(
             )
             variables: List[str] = []
             rendered = 0
+            plot_group_name = None
 
             limit = sample_size if sample_size is not None else (3 if paired_layers else 4)
             sample_targets = sample_targets[:limit]
@@ -179,8 +189,9 @@ def render_biomarker_plots(
                             _clear_plot_axis(ax)
                             continue
                         item = names[(feature_index, target_name)]
-                        if item.name not in variables:
-                            variables.append(item.name)
+                        plot_group_name = plot_group_name or item.name
+                        columns = [outputs[(feature_index, target_name, o.key)].name for o in feature.output_schema()]
+                        variables.extend(c for c in columns if c not in variables)
                         rendered += int(
                             _render_feature_panel(
                                 ax,
@@ -188,6 +199,7 @@ def render_biomarker_plots(
                                 target=target,
                                 image_id=image_id,
                                 variable=item.name,
+                                component_variables=columns if feature.is_vector else None,
                                 dataframe=dataframe,
                                 plot_caption=False,
                             )
@@ -206,8 +218,9 @@ def render_biomarker_plots(
                 for ax, panel in zip(axes.ravel(), panels):
                     image_id, target_name, target = panel
                     item = names[(feature_index, target_name)]
-                    if item.name not in variables:
-                        variables.append(item.name)
+                    plot_group_name = plot_group_name or item.name
+                    columns = [outputs[(feature_index, target_name, o.key)].name for o in feature.output_schema()]
+                    variables.extend(c for c in columns if c not in variables)
                     rendered += int(
                         _render_feature_panel(
                             ax,
@@ -215,6 +228,7 @@ def render_biomarker_plots(
                             target=target,
                             image_id=image_id,
                             variable=item.name,
+                            component_variables=columns if feature.is_vector else None,
                             dataframe=dataframe,
                             plot_caption=False,
                         )
@@ -229,7 +243,7 @@ def render_biomarker_plots(
                 continue
 
             suffix = f"_{_safe_path_component(group)}" if group else ""
-            plot_path = plots_folder / f"{_safe_path_component(variables[0])}{suffix}.png"
+            plot_path = plots_folder / f"{_safe_path_component(plot_group_name)}{suffix}.png"
             # One caption per composite, sourced from the same plotting
             # docstring used by standalone feature plots.
             caption = feature.plot_description()

@@ -483,14 +483,14 @@ def make_examples(input_path):
     bounds_csv = input_path / "bounds.csv"
 
     # Load metadata CSVs
-    if not fovea_csv.exists() or not bounds_csv.exists():
-        click.echo("Error: fovea.csv and bounds.csv must exist in INPUT_PATH")
+    if not bounds_csv.exists():
+        click.echo("Error: bounds.csv must exist in INPUT_PATH")
         return
-    fovea_df = pd.read_csv(fovea_csv, index_col=0)
+    fovea_df = pd.read_csv(fovea_csv, index_col=0) if fovea_csv.exists() else pd.DataFrame()
     bounds_df = pd.read_csv(bounds_csv, index_col=0)
     fovea_df.index = fovea_df.index.astype(str)
     bounds_df.index = bounds_df.index.astype(str)
-    x_fovea_col, y_fovea_col = _get_fovea_columns(fovea_df)
+    x_fovea_col, y_fovea_col = _get_fovea_columns(fovea_df) if fovea_csv.exists() else (None, None)
 
     # Discover candidate IDs from artery_vein folder
     candidate_files = sorted(av_dir.glob("*.png"))
@@ -501,15 +501,12 @@ def make_examples(input_path):
 
     # Filter by presence of required counterparts
     def has_required(id_: str) -> bool:
-        return (
-            (disc_dir / f"{id_}.png").exists()
-            and (id_ in fovea_df.index)
-            and (id_ in bounds_df.index)
-        )
+        # Missing discs and landmarks still produce optic-disc validity/shape outputs.
+        return id_ in bounds_df.index
 
     ids = [id_ for id_ in candidate_ids if has_required(id_)]
     if not ids:
-        click.echo("No matching IDs with required disc/fovea/bounds found.")
+        click.echo("No matching IDs with required bounds found.")
         return
     click.echo(f"Found {len(ids)} valid IDs for biomarker extraction")
 
@@ -517,8 +514,12 @@ def make_examples(input_path):
     examples = []
     for id_ in ids:
         try:
-            fx = float(fovea_df.loc[id_, x_fovea_col])  # type: ignore[arg-type]
-            fy = float(fovea_df.loc[id_, y_fovea_col])  # type: ignore[arg-type]
+            fovea_location = None
+            if id_ in fovea_df.index:
+                fx = float(fovea_df.loc[id_, x_fovea_col])
+                fy = float(fovea_df.loc[id_, y_fovea_col])
+                if np.isfinite([fx, fy]).all():
+                    fovea_location = (fx, fy)
             bounds_str = bounds_df.loc[id_, "bounds"]
             bounds = eval(bounds_str, {"np": np}) if isinstance(bounds_str, str) else bounds_str
 
@@ -527,8 +528,8 @@ def make_examples(input_path):
                 "fundus_path": preprocess_rgb_path / f"{id_}.png",
                 "av_path": av_dir / f"{id_}.png",
                 "vessels_path": vessels_dir / f"{id_}.png",
-                "disc_path": disc_dir / f"{id_}.png",
-                "fovea_location": (fx, fy),
+                "disc_path": disc_dir / f"{id_}.png" if (disc_dir / f"{id_}.png").exists() else None,
+                "fovea_location": fovea_location,
                 "bounds": bounds,
             }
             examples.append(example)

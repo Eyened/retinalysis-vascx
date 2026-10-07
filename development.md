@@ -145,3 +145,58 @@ tox -e public -- -m cli_e2e
 
 Public runs deliberately do not add missing runtime
 dependencies separately: incomplete published dependency metadata should fail.
+
+
+## Scalar and compound features
+
+Features retain the existing scalar contract by default. To return a fixed-length
+numeric vector, declare ordered, named components and return values in that order:
+
+```python
+from vascx.shared.features import FeatureOutput
+from vascx.fundus.features.base import RetinaFeature
+
+class ExampleCoordinates(RetinaFeature):
+    outputs = (
+        FeatureOutput("x", "X coordinate", "Horizontal coordinate.", "px"),
+        FeatureOutput("y", "Y coordinate", "Vertical coordinate.", "px"),
+    )
+
+    def compute(self, retina):
+        # Supply the usual naming, display, and plotting methods as well.
+        return [retina.disc.center.x, retina.disc.center.y]
+```
+
+Component keys must be unique, nonempty snake_case names. Arrays must have shape
+`(len(outputs),)` and contain finite numbers or NaN; shape/type mismatches raise
+rather than silently producing broken columns. Use NaN for an unavailable
+component, or return `None` for an entirely unavailable vector. Existing scalar
+features do not need a declaration or implementation change. This is a contract
+for named fixed-length vectors, not arbitrary tensors or variable-length lists.
+
+`retina.calc_features(feature_set)` returns the usual flat mapping for DataFrame
+and CSV export. `retina.calc_features(feature_set, structured=True)` returns one
+array per compound feature and scalar values for scalar features. FAZ extraction
+supports the same contract. For example, a set containing `ODMorphology()` and
+`BackgroundLab()` produces structured `od` and `background_lab` arrays in resolved
+naming; order follows each feature's `output_schema()`.
+
+`make_feature_names` describes feature groups with `(feature_index, target)`
+keys. `make_output_names` describes exported columns with
+`(feature_index, target, component)` keys; scalar components use the empty string.
+The component token goes immediately after the biomarker identity and is never
+removed by resolved naming. Use `get_biomarker_definitions` for column-level
+metadata, including descriptions, units, and grouping.
+
+The plotting machinery receives the complete computed vector once. A generic
+multiline value annotation is provided; compound features can override
+`_plot_with_value` and `_annotate_value` for a combined visualization (see
+`ODMorphology`). Reports reuse stored component values, preserve NaNs, and link
+all components to one plot. Add component descriptions in the declaration so
+both the CSV data dictionary and generated reports explain each measurement.
+
+`BackgroundLab(channel=...)` has been replaced by `BackgroundLab()`, which returns
+all three Lab medians together. Custom feature sets should replace three channel
+instances with one instance. Existing Lab output columns and the PCA helper's
+DataFrame interface are unchanged. RPS implementation and post-processing remain
+in their separate BSD-attributed modules.

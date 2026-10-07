@@ -13,6 +13,8 @@ from .naming import (
     make_feature_names,
 )
 
+from .outputs import FeatureOutput, output_values, validate_schema
+
 import numpy as np
 
 if TYPE_CHECKING:
@@ -71,11 +73,36 @@ class FeatureSet:
 
 
 class Feature(ABC):
+    outputs = (FeatureOutput(),)
     general_description: str = ""
     plot_in_report: bool = False
 
     def __init__(self, *, plot: bool = False) -> None:
         self.plot_in_report = bool(plot)
+
+    def output_schema(self) -> tuple[FeatureOutput, ...]:
+        return validate_schema(self.outputs)
+
+    @property
+    def is_vector(self) -> bool:
+        return bool(self.output_schema()[0].key)
+
+    def output_values(self, value) -> tuple:
+        return output_values(self.outputs, value)
+
+    def output_name_parts(self, component: str, **kwargs) -> Sequence[NamePart]:
+        parts = list(self.name_parts(**kwargs))
+        if component:
+            output = next(item for item in self.output_schema() if item.key == component)
+            position = next((i for i, part in enumerate(parts) if part.family), 0) + 1
+            parts.insert(position, NamePart("component", (component,),
+                         output.display_name or component.replace("_", " "), always_keep=True))
+        return parts
+
+    def output_description(self, component: str, **kwargs) -> str:
+        output = next(item for item in self.output_schema() if item.key == component)
+        return " ".join(text for text in (self.description(**kwargs), output.description,
+                         f"Units: {output.units}." if output.units else "") if text)
 
     @abstractmethod
     def compute(self, *args: Any, **kwargs: Any) -> Any:
@@ -152,6 +179,12 @@ class Feature(ABC):
 
     def _format_value(self, value: Any) -> str:
         """Format a value for display."""
+        if self.is_vector:
+            values = self.output_values(value)
+            return "\n".join(
+                f"{output.display_name or output.key}: " + ("N/A" if np.isnan(v) else f"{v:.3g}")
+                for output, v in zip(self.output_schema(), values)
+            )
         if value is None or (isinstance(value, (float, np.floating)) and np.isnan(value)):
             return "N/A"
         if isinstance(value, np.generic):
@@ -217,18 +250,24 @@ class Feature(ABC):
             if computed_value is _MISSING
             else computed_value
         )
-        ax = self._plot(ax, layer, **kwargs)
+        self.output_values(value)
+        ax = self._plot_with_value(ax, layer, value, **kwargs)
         if plot_fovea:
             ax = self._plot_fovea_location(ax, layer)
 
-        # Display values starting from top-left, going down
-        y_start = 0.99
-        formatted_value = self._format_value(value)
-        ax.text(0.01, y_start, formatted_value, transform=ax.transAxes, ha='left', va='top', color='white', fontsize=8, bbox=dict(facecolor='black', alpha=0.5, edgecolor='none'))
+        self._annotate_value(ax, layer, value)
         if plot_caption:
             _add_plot_caption(ax, self.plot_description())
 
         return ax
+
+    def _plot_with_value(self, ax, layer, value, **kwargs):
+        return self._plot(ax, layer, **kwargs)
+
+    def _annotate_value(self, ax, layer, value):
+        ax.text(0.01, 0.99, self._format_value(value), transform=ax.transAxes,
+                ha="left", va="top", color="white", fontsize=8,
+                bbox=dict(facecolor="black", alpha=0.5, edgecolor="none"))
 
     def plot_figure(
         self,

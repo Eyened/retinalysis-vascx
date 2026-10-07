@@ -1,0 +1,78 @@
+feature_set,field,device_a,device_b,variable,category,icc,ci_low,ci_high,n_pairs,n_images,status,missing_measurement_pairs
+macula_centered_rs,F2,TOPCON 3D OCT-1000,TOPCON TRC-50EX + DXC-950P,disc_fovea_distance_center,other,,,,57,114,insufficient_pairs,401
+macula_centered_rs,F2,TOPCON 3D OCT-1000,TOPCON TRC-50EX + DXC-950P,disc_fovea_distance,other,0.23400679846055583,-0.02,0.6,458,916,ok,0
+macula_centered_rs,F2,TOPCON 3D OCT-1000,TOPCON TRC-50EX + DXC-950P,sparsity,other,0.0596927858611345,-0.04,0.21,458,916,ok,0
+macula_centered_rs,F2,TOPCON 3D OCT-1000,TOPCON TRC-50EX + DXC-950P,sparsity_crcl_full,other,0.07030807780544487,-0.05,0.23,458,916,ok,0
+macula_centered_rs,F2,TOPCON 3D OCT-1000,TOPCON TRC-50EX + DXC-950P,sparsity_etdrs_full,other,0.10528226384346352,-0.07,0.3,458,916,ok,0
+macula_centered_rs,F2,TOPCON 3D OCT-1000,TOPCON TRC-50EX + DXC-950P,sharpness_crcl,other,,,,0,0,insufficient_pairs,458
+macula_centered_rs,F2,TOPCON 3D OCT-1000,TOPCON TRC-50EX + DXC-950P,sharpness_etdrs,other,,,,0,0,insufficient_pairs,458
+macula_centered_rs,F2,TOPCON 3D OCT-1000 MARK II,TOPCON TRC-50EX + DXC-950P,disc_fovea_distance_center,other,0.12748589745069608,-0.02,0.42,102,204,ok,630
+macula_centered_rs,F2,TOPCON 3D OCT-1000 MARK II,TOPCON TRC-50EX + DXC-950P,disc_fovea_distance,other,0.2611872715497772,-0.02,0.63,732,1464,ok,0
+macula_centered_rs,F2,TOPCON 3D OCT-1000 MARK II,TOPCON TRC-50EX + DXC-950P,sparsity,other,0.05590311373658721,-0.05,0.18,732,1464,ok,0
+macula_centered_rs,F2,TOPCON 3D OCT-1000 MARK II,TOPCON TRC-50EX + DXC-950P,sparsity_crcl_full,other,0.07573392118807504,-0.06,0.23,732,1464,ok,0
+macula_centered_rs,F2,TOPCON 3D OCT-1000 MARK II,TOPCON TRC-50EX + DXC-950P,sparsity_etdrs_full,other,0.15733637491267033,-0.07,0.38,732,1464,ok,0
+macula_centered_rs,F2,TOPCON 3D OCT-1000 MARK II,TOPCON TRC-50EX + DXC-950P,sharpness_crcl,other,,,,0,0,insufficient_pairs,732
+macula_centered_rs,F2,TOPCON 3D OCT-1000 MARK II,TOPCON TRC-50EX + DXC-950P,sharpness_etdrs,other,,,,0,0,insufficient_pairs,732
+macula_centered_rs,F2,TOPCON 3D OCT-2000 FA Plus,TOPCON TRC-50EX + DXC-950P,disc_fovea_distance_center,other,0.14756882603379265,-0.01,0.46,361,722,ok,2366
+macula_centered_rs,F2,TOPCON 3D OCT-2000 FA Plus,TOPCON TRC-50EX + DXC-950P,disc_fovea_distance,other,0.26391407465266103,-0.02,0.63,2727,5454,ok,0
+macula_centered_rs,F2,TOPCON 3D OCT-2000 FA Plus,TOPCON TRC-50EX + DXC-950P,sparsity,other,0.06774523719186323,-0.05,0.23,2727,5454,ok,0
+macula_centered_rs,F2,TOPCON 3D OCT-2000 FA Plus,TOPCON TRC-50EX + DXC-950P,sparsity_crcl_full,other,0.08968061515704619,-0.05,0.29,2727,5454,ok,0
+macula_centered_rs,F2,TOPCON 3D OCT-2000 FA Plus,TOPCON TRC-50EX + DXC-950P,sparsity_etdrs_full,other,0.1449716781353607,-0.08,0.38,2727,5454,ok,0
+macula_centered_rs,F2,TOPCON 3D OCT-2000 FA Plus,TOPCON TRC-50EX + DXC-950P,sharpness_crcl,other,,,,0,0,insufficient_pairs,2727
+macula_centered_rs,F2,TOPCON 3D OCT-2000 FA Plus,TOPCON TRC-50EX + DXC-950P,sharpness_etdrs,other,,,,0,0,insufficient_pairs,2727
+macula_centered_rs,F2,TOPCON 3D OCT-2000 FA Plus,TOPCON TRC-50IX + D7100,disc_fovea_distance_center,other,,,,0,0,insufficient_pairs,0
+macula_centered_rs,F2,TOPCON 3D OCT-2000 FA Plus,TOPCON TRC-50IX + D7100,disc_fovea_distance,other,,,,0,0,insufficient_pairs,0
+macula_centered_rs,F2,TOPCON 3D OCT-2000 FA Plus,TOPCON TRC-50IX + D7100,sparsity,other,,,,0,0,insufficient_pairs,0
+macula_centered_rs,F2,TOPCON 3D OCT-2000 FA Plus,TOPCON TRC-50IX + D7100,sparsity_crcl_full,other,,,,0,0,insufficient_pairs,0
+macula_centered_rs,F2,TOPCON 3D OCT-2000 FA Plus,TOPCON TRC-50IX + D7100,sparsity_etdrs_full,other,,,,0,0,insufficient_pairs,0
+macula_centered_rs,F2,TOPCON 3D OCT-2000 FA Plus,TOPCON TRC-50IX + D7100,sharpness_crcl,other,,,,0,0,insufficient_pairs,0
+macula_centered_rs,F2,TOPCON 3D OCT-2000 FA Plus,TOPCON TRC-50IX + D7100,sharpness_etdrs,other,,,,0,0,insufficient_pairs,0
+macula_centered_rs,F2,TOPCON TRC-50EX + DXC-950P,TOPCON TRC-50IX + D7100,disc_fovea_distance_center,other,,,,0,0,insufficient_pairs,0
+macula_centered_rs,F2,TOPCON TRC-50EX + DXC-950P,TOPCON TRC-50IX + D7100,disc_fovea_distance,other,,,,0,0,insufficient_pairs,0
+macula_centered_rs,F2,TOPCON TRC-50EX + DXC-950P,TOPCON TRC-50IX + D7100,sparsity,other,,,,0,0,insufficient_pairs,0
+macula_centered_rs,F2,TOPCON TRC-50EX + DXC-950P,TOPCON TRC-50IX + D7100,sparsity_crcl_full,other,,,,0,0,insufficient_pairs,0
+macula_centered_rs,F2,TOPCON TRC-50EX + DXC-950P,TOPCON TRC-50IX + D7100,sparsity_etdrs_full,other,,,,0,0,insufficient_pairs,0
+macula_centered_rs,F2,TOPCON TRC-50EX + DXC-950P,TOPCON TRC-50IX + D7100,sharpness_crcl,other,,,,0,0,insufficient_pairs,0
+macula_centered_rs,F2,TOPCON TRC-50EX + DXC-950P,TOPCON TRC-50IX + D7100,sharpness_etdrs,other,,,,0,0,insufficient_pairs,0
+macula_centered_rs,F2,TOPCON 3D OCT-2000 FA Plus,TOPCON TRC-50DX + D7100,disc_fovea_distance_center,other,,,,0,0,insufficient_pairs,0
+macula_centered_rs,F2,TOPCON 3D OCT-2000 FA Plus,TOPCON TRC-50DX + D7100,disc_fovea_distance,other,,,,0,0,insufficient_pairs,0
+macula_centered_rs,F2,TOPCON 3D OCT-2000 FA Plus,TOPCON TRC-50DX + D7100,sparsity,other,,,,0,0,insufficient_pairs,0
+macula_centered_rs,F2,TOPCON 3D OCT-2000 FA Plus,TOPCON TRC-50DX + D7100,sparsity_crcl_full,other,,,,0,0,insufficient_pairs,0
+macula_centered_rs,F2,TOPCON 3D OCT-2000 FA Plus,TOPCON TRC-50DX + D7100,sparsity_etdrs_full,other,,,,0,0,insufficient_pairs,0
+macula_centered_rs,F2,TOPCON 3D OCT-2000 FA Plus,TOPCON TRC-50DX + D7100,sharpness_crcl,other,,,,0,0,insufficient_pairs,0
+macula_centered_rs,F2,TOPCON 3D OCT-2000 FA Plus,TOPCON TRC-50DX + D7100,sharpness_etdrs,other,,,,0,0,insufficient_pairs,0
+macula_centered_rs,F2,TOPCON 3D OCT-2000 FA Plus,TOPCON DRI OCT Triton plus,disc_fovea_distance_center,other,,,,0,0,insufficient_pairs,0
+macula_centered_rs,F2,TOPCON 3D OCT-2000 FA Plus,TOPCON DRI OCT Triton plus,disc_fovea_distance,other,,,,0,0,insufficient_pairs,0
+macula_centered_rs,F2,TOPCON 3D OCT-2000 FA Plus,TOPCON DRI OCT Triton plus,sparsity,other,,,,0,0,insufficient_pairs,0
+macula_centered_rs,F2,TOPCON 3D OCT-2000 FA Plus,TOPCON DRI OCT Triton plus,sparsity_crcl_full,other,,,,0,0,insufficient_pairs,0
+macula_centered_rs,F2,TOPCON 3D OCT-2000 FA Plus,TOPCON DRI OCT Triton plus,sparsity_etdrs_full,other,,,,0,0,insufficient_pairs,0
+macula_centered_rs,F2,TOPCON 3D OCT-2000 FA Plus,TOPCON DRI OCT Triton plus,sharpness_crcl,other,,,,0,0,insufficient_pairs,0
+macula_centered_rs,F2,TOPCON 3D OCT-2000 FA Plus,TOPCON DRI OCT Triton plus,sharpness_etdrs,other,,,,0,0,insufficient_pairs,0
+macula_centered_rs,F2,TOPCON DRI OCT Triton plus,TOPCON TRC-50DX + D7100,disc_fovea_distance_center,other,,,,0,0,insufficient_pairs,0
+macula_centered_rs,F2,TOPCON DRI OCT Triton plus,TOPCON TRC-50DX + D7100,disc_fovea_distance,other,,,,0,0,insufficient_pairs,0
+macula_centered_rs,F2,TOPCON DRI OCT Triton plus,TOPCON TRC-50DX + D7100,sparsity,other,,,,0,0,insufficient_pairs,0
+macula_centered_rs,F2,TOPCON DRI OCT Triton plus,TOPCON TRC-50DX + D7100,sparsity_crcl_full,other,,,,0,0,insufficient_pairs,0
+macula_centered_rs,F2,TOPCON DRI OCT Triton plus,TOPCON TRC-50DX + D7100,sparsity_etdrs_full,other,,,,0,0,insufficient_pairs,0
+macula_centered_rs,F2,TOPCON DRI OCT Triton plus,TOPCON TRC-50DX + D7100,sharpness_crcl,other,,,,0,0,insufficient_pairs,0
+macula_centered_rs,F2,TOPCON DRI OCT Triton plus,TOPCON TRC-50DX + D7100,sharpness_etdrs,other,,,,0,0,insufficient_pairs,0
+macula_centered_rs,F2,TOPCON DRI OCT Triton plus - Fundus,TOPCON TRC-50DX + D7100,disc_fovea_distance_center,other,,,,0,0,insufficient_pairs,0
+macula_centered_rs,F2,TOPCON DRI OCT Triton plus - Fundus,TOPCON TRC-50DX + D7100,disc_fovea_distance,other,,,,0,0,insufficient_pairs,0
+macula_centered_rs,F2,TOPCON DRI OCT Triton plus - Fundus,TOPCON TRC-50DX + D7100,sparsity,other,,,,0,0,insufficient_pairs,0
+macula_centered_rs,F2,TOPCON DRI OCT Triton plus - Fundus,TOPCON TRC-50DX + D7100,sparsity_crcl_full,other,,,,0,0,insufficient_pairs,0
+macula_centered_rs,F2,TOPCON DRI OCT Triton plus - Fundus,TOPCON TRC-50DX + D7100,sparsity_etdrs_full,other,,,,0,0,insufficient_pairs,0
+macula_centered_rs,F2,TOPCON DRI OCT Triton plus - Fundus,TOPCON TRC-50DX + D7100,sharpness_crcl,other,,,,0,0,insufficient_pairs,0
+macula_centered_rs,F2,TOPCON DRI OCT Triton plus - Fundus,TOPCON TRC-50DX + D7100,sharpness_etdrs,other,,,,0,0,insufficient_pairs,0
+macula_centered_rs,F2,TOPCON 3D OCT-2000 FA Plus,TOPCON DRI OCT Triton plus - Fundus,disc_fovea_distance_center,other,,,,0,0,insufficient_pairs,0
+macula_centered_rs,F2,TOPCON 3D OCT-2000 FA Plus,TOPCON DRI OCT Triton plus - Fundus,disc_fovea_distance,other,,,,0,0,insufficient_pairs,0
+macula_centered_rs,F2,TOPCON 3D OCT-2000 FA Plus,TOPCON DRI OCT Triton plus - Fundus,sparsity,other,,,,0,0,insufficient_pairs,0
+macula_centered_rs,F2,TOPCON 3D OCT-2000 FA Plus,TOPCON DRI OCT Triton plus - Fundus,sparsity_crcl_full,other,,,,0,0,insufficient_pairs,0
+macula_centered_rs,F2,TOPCON 3D OCT-2000 FA Plus,TOPCON DRI OCT Triton plus - Fundus,sparsity_etdrs_full,other,,,,0,0,insufficient_pairs,0
+macula_centered_rs,F2,TOPCON 3D OCT-2000 FA Plus,TOPCON DRI OCT Triton plus - Fundus,sharpness_crcl,other,,,,0,0,insufficient_pairs,0
+macula_centered_rs,F2,TOPCON 3D OCT-2000 FA Plus,TOPCON DRI OCT Triton plus - Fundus,sharpness_etdrs,other,,,,0,0,insufficient_pairs,0
+macula_centered_rs,F2,TOPCON TRC-50EX + DXC-950P,TOPCON TRC-50VT - Analog Fundus Camera,disc_fovea_distance_center,other,0.10732868162559107,-0.03,0.35,564,1128,ok,3326
+macula_centered_rs,F2,TOPCON TRC-50EX + DXC-950P,TOPCON TRC-50VT - Analog Fundus Camera,disc_fovea_distance,other,0.2122636792071431,-0.07,0.53,3890,7780,ok,0
+macula_centered_rs,F2,TOPCON TRC-50EX + DXC-950P,TOPCON TRC-50VT - Analog Fundus Camera,sparsity,other,0.6208636271303973,0.6,0.64,3890,7780,ok,0
+macula_centered_rs,F2,TOPCON TRC-50EX + DXC-950P,TOPCON TRC-50VT - Analog Fundus Camera,sparsity_crcl_full,other,0.6525621174049536,0.63,0.67,3890,7780,ok,0
+macula_centered_rs,F2,TOPCON TRC-50EX + DXC-950P,TOPCON TRC-50VT - Analog Fundus Camera,sparsity_etdrs_full,other,0.6621865478015733,0.61,0.7,3890,7780,ok,0
+macula_centered_rs,F2,TOPCON TRC-50EX + DXC-950P,TOPCON TRC-50VT - Analog Fundus Camera,sharpness_crcl,other,,,,0,0,insufficient_pairs,3890
+macula_centered_rs,F2,TOPCON TRC-50EX + DXC-950P,TOPCON TRC-50VT - Analog Fundus Camera,sharpness_etdrs,other,,,,0,0,insufficient_pairs,3890

@@ -1,0 +1,232 @@
+feature_set,field,device_a,device_b,variable,category,icc,ci_low,ci_high,n_pairs,n_images,status,missing_measurement_pairs
+macula_centered_rs,F2,TOPCON 3D OCT-1000,TOPCON TRC-50EX + DXC-950P,diam_crcl_full_arteries,caliber,,,,28,56,insufficient_pairs,430
+macula_centered_rs,F2,TOPCON 3D OCT-1000,TOPCON TRC-50EX + DXC-950P,diam_crcl_full_veins,caliber,,,,28,56,insufficient_pairs,430
+macula_centered_rs,F2,TOPCON 3D OCT-1000,TOPCON TRC-50EX + DXC-950P,diam_crcl_superior_arteries,caliber,,,,30,60,insufficient_pairs,428
+macula_centered_rs,F2,TOPCON 3D OCT-1000,TOPCON TRC-50EX + DXC-950P,diam_crcl_superior_veins,caliber,,,,30,60,insufficient_pairs,428
+macula_centered_rs,F2,TOPCON 3D OCT-1000,TOPCON TRC-50EX + DXC-950P,diam_crcl_inferior_arteries,caliber,,,,30,60,insufficient_pairs,428
+macula_centered_rs,F2,TOPCON 3D OCT-1000,TOPCON TRC-50EX + DXC-950P,diam_crcl_inferior_veins,caliber,,,,30,60,insufficient_pairs,428
+macula_centered_rs,F2,TOPCON 3D OCT-1000,TOPCON TRC-50EX + DXC-950P,diam_etdrs_full_arteries,caliber,,,,33,66,insufficient_pairs,425
+macula_centered_rs,F2,TOPCON 3D OCT-1000,TOPCON TRC-50EX + DXC-950P,diam_etdrs_full_veins,caliber,,,,33,66,insufficient_pairs,425
+macula_centered_rs,F2,TOPCON 3D OCT-1000,TOPCON TRC-50EX + DXC-950P,cre_arteries,caliber,0.45356745949367205,-0.09,0.74,144,288,ok,314
+macula_centered_rs,F2,TOPCON 3D OCT-1000,TOPCON TRC-50EX + DXC-950P,cre_veins,caliber,0.5274752645636936,-0.09,0.8,138,276,ok,320
+macula_centered_rs,F2,TOPCON 3D OCT-1000,TOPCON TRC-50EX + DXC-950P,cre_max_vessels_3_arteries,caliber,0.45491082937004534,-0.09,0.75,153,306,ok,305
+macula_centered_rs,F2,TOPCON 3D OCT-1000,TOPCON TRC-50EX + DXC-950P,cre_max_vessels_3_veins,caliber,0.5215116642559241,-0.09,0.8,155,310,ok,303
+macula_centered_rs,F2,TOPCON 3D OCT-1000,TOPCON TRC-50EX + DXC-950P,cre_max_vessels_6_arteries,caliber,,,,22,44,insufficient_pairs,436
+macula_centered_rs,F2,TOPCON 3D OCT-1000,TOPCON TRC-50EX + DXC-950P,cre_max_vessels_6_veins,caliber,,,,25,50,insufficient_pairs,433
+macula_centered_rs,F2,TOPCON 3D OCT-1000,TOPCON TRC-50EX + DXC-950P,cre_hf_superior_arteries,caliber,0.30979465963356706,-0.06,0.57,415,830,ok,43
+macula_centered_rs,F2,TOPCON 3D OCT-1000,TOPCON TRC-50EX + DXC-950P,cre_hf_superior_veins,caliber,0.26622922103014957,-0.02,0.49,390,780,ok,68
+macula_centered_rs,F2,TOPCON 3D OCT-1000,TOPCON TRC-50EX + DXC-950P,cre_hf_inferior_arteries,caliber,0.2976803760646156,-0.07,0.56,403,806,ok,55
+macula_centered_rs,F2,TOPCON 3D OCT-1000,TOPCON TRC-50EX + DXC-950P,cre_hf_inferior_veins,caliber,0.32290386150720596,-0.05,0.58,403,806,ok,55
+macula_centered_rs,F2,TOPCON 3D OCT-1000,TOPCON TRC-50EX + DXC-950P,avr_cre,caliber,0.65800692161128,0.55,0.75,126,252,ok,332
+macula_centered_rs,F2,TOPCON 3D OCT-1000,TOPCON TRC-50EX + DXC-950P,avr_cre_hf_superior,caliber,0.3075452728440297,0.21,0.4,362,724,ok,96
+macula_centered_rs,F2,TOPCON 3D OCT-1000,TOPCON TRC-50EX + DXC-950P,avr_cre_hf_inferior,caliber,0.52958715505062,0.45,0.6,361,722,ok,97
+macula_centered_rs,F2,TOPCON 3D OCT-1000 MARK II,TOPCON TRC-50EX + DXC-950P,diam_crcl_full_arteries,caliber,,,,53,106,insufficient_pairs,679
+macula_centered_rs,F2,TOPCON 3D OCT-1000 MARK II,TOPCON TRC-50EX + DXC-950P,diam_crcl_full_veins,caliber,,,,53,106,insufficient_pairs,679
+macula_centered_rs,F2,TOPCON 3D OCT-1000 MARK II,TOPCON TRC-50EX + DXC-950P,diam_crcl_superior_arteries,caliber,,,,55,110,insufficient_pairs,677
+macula_centered_rs,F2,TOPCON 3D OCT-1000 MARK II,TOPCON TRC-50EX + DXC-950P,diam_crcl_superior_veins,caliber,,,,55,110,insufficient_pairs,677
+macula_centered_rs,F2,TOPCON 3D OCT-1000 MARK II,TOPCON TRC-50EX + DXC-950P,diam_crcl_inferior_arteries,caliber,,,,53,106,insufficient_pairs,679
+macula_centered_rs,F2,TOPCON 3D OCT-1000 MARK II,TOPCON TRC-50EX + DXC-950P,diam_crcl_inferior_veins,caliber,,,,53,106,insufficient_pairs,679
+macula_centered_rs,F2,TOPCON 3D OCT-1000 MARK II,TOPCON TRC-50EX + DXC-950P,diam_etdrs_full_arteries,caliber,0.31570408247868365,-0.1,0.64,65,130,ok,667
+macula_centered_rs,F2,TOPCON 3D OCT-1000 MARK II,TOPCON TRC-50EX + DXC-950P,diam_etdrs_full_veins,caliber,0.1662551183610006,-0.09,0.44,65,130,ok,667
+macula_centered_rs,F2,TOPCON 3D OCT-1000 MARK II,TOPCON TRC-50EX + DXC-950P,cre_arteries,caliber,0.48896093399304613,-0.03,0.74,215,430,ok,517
+macula_centered_rs,F2,TOPCON 3D OCT-1000 MARK II,TOPCON TRC-50EX + DXC-950P,cre_veins,caliber,0.5991598603409051,-0.02,0.83,194,388,ok,538
+macula_centered_rs,F2,TOPCON 3D OCT-1000 MARK II,TOPCON TRC-50EX + DXC-950P,cre_max_vessels_3_arteries,caliber,0.48474417566829014,-0.04,0.74,224,448,ok,508
+macula_centered_rs,F2,TOPCON 3D OCT-1000 MARK II,TOPCON TRC-50EX + DXC-950P,cre_max_vessels_3_veins,caliber,0.598677730666022,-0.02,0.83,221,442,ok,511
+macula_centered_rs,F2,TOPCON 3D OCT-1000 MARK II,TOPCON TRC-50EX + DXC-950P,cre_max_vessels_6_arteries,caliber,,,,50,100,insufficient_pairs,682
+macula_centered_rs,F2,TOPCON 3D OCT-1000 MARK II,TOPCON TRC-50EX + DXC-950P,cre_max_vessels_6_veins,caliber,,,,23,46,insufficient_pairs,709
+macula_centered_rs,F2,TOPCON 3D OCT-1000 MARK II,TOPCON TRC-50EX + DXC-950P,cre_hf_superior_arteries,caliber,0.3377882216368863,0.05,0.54,652,1304,ok,80
+macula_centered_rs,F2,TOPCON 3D OCT-1000 MARK II,TOPCON TRC-50EX + DXC-950P,cre_hf_superior_veins,caliber,0.38993307253349924,0.08,0.59,613,1226,ok,119
+macula_centered_rs,F2,TOPCON 3D OCT-1000 MARK II,TOPCON TRC-50EX + DXC-950P,cre_hf_inferior_arteries,caliber,0.3246422782662189,-0.06,0.59,605,1210,ok,127
+macula_centered_rs,F2,TOPCON 3D OCT-1000 MARK II,TOPCON TRC-50EX + DXC-950P,cre_hf_inferior_veins,caliber,0.30368504545091146,-0.02,0.53,636,1272,ok,96
+macula_centered_rs,F2,TOPCON 3D OCT-1000 MARK II,TOPCON TRC-50EX + DXC-950P,avr_cre,caliber,0.7837751313152511,0.72,0.83,185,370,ok,547
+macula_centered_rs,F2,TOPCON 3D OCT-1000 MARK II,TOPCON TRC-50EX + DXC-950P,avr_cre_hf_superior,caliber,0.41141426096119327,0.33,0.48,564,1128,ok,168
+macula_centered_rs,F2,TOPCON 3D OCT-1000 MARK II,TOPCON TRC-50EX + DXC-950P,avr_cre_hf_inferior,caliber,0.3533057983363818,0.28,0.43,535,1070,ok,197
+macula_centered_rs,F2,TOPCON 3D OCT-2000 FA Plus,TOPCON TRC-50EX + DXC-950P,diam_crcl_full_arteries,caliber,0.18403862416796274,-0.06,0.49,201,402,ok,2526
+macula_centered_rs,F2,TOPCON 3D OCT-2000 FA Plus,TOPCON TRC-50EX + DXC-950P,diam_crcl_full_veins,caliber,0.31645835005546163,-0.07,0.67,201,402,ok,2526
+macula_centered_rs,F2,TOPCON 3D OCT-2000 FA Plus,TOPCON TRC-50EX + DXC-950P,diam_crcl_superior_arteries,caliber,0.33545306188009555,-0.1,0.66,215,430,ok,2512
+macula_centered_rs,F2,TOPCON 3D OCT-2000 FA Plus,TOPCON TRC-50EX + DXC-950P,diam_crcl_superior_veins,caliber,0.5243286996395383,-0.09,0.81,215,430,ok,2512
+macula_centered_rs,F2,TOPCON 3D OCT-2000 FA Plus,TOPCON TRC-50EX + DXC-950P,diam_crcl_inferior_arteries,caliber,0.23068199779773707,-0.07,0.56,186,372,ok,2541
+macula_centered_rs,F2,TOPCON 3D OCT-2000 FA Plus,TOPCON TRC-50EX + DXC-950P,diam_crcl_inferior_veins,caliber,0.4101163361223984,-0.07,0.75,186,372,ok,2541
+macula_centered_rs,F2,TOPCON 3D OCT-2000 FA Plus,TOPCON TRC-50EX + DXC-950P,diam_etdrs_full_arteries,caliber,0.3180415070261946,-0.08,0.66,237,474,ok,2490
+macula_centered_rs,F2,TOPCON 3D OCT-2000 FA Plus,TOPCON TRC-50EX + DXC-950P,diam_etdrs_full_veins,caliber,0.3459492005485642,-0.1,0.67,237,474,ok,2490
+macula_centered_rs,F2,TOPCON 3D OCT-2000 FA Plus,TOPCON TRC-50EX + DXC-950P,cre_arteries,caliber,0.48811543666490254,0.15,0.68,854,1708,ok,1873
+macula_centered_rs,F2,TOPCON 3D OCT-2000 FA Plus,TOPCON TRC-50EX + DXC-950P,cre_veins,caliber,0.6663459408540561,0.41,0.79,833,1666,ok,1894
+macula_centered_rs,F2,TOPCON 3D OCT-2000 FA Plus,TOPCON TRC-50EX + DXC-950P,cre_max_vessels_3_arteries,caliber,0.48615083054565716,0.13,0.68,928,1856,ok,1799
+macula_centered_rs,F2,TOPCON 3D OCT-2000 FA Plus,TOPCON TRC-50EX + DXC-950P,cre_max_vessels_3_veins,caliber,0.6552923002443435,0.4,0.78,923,1846,ok,1804
+macula_centered_rs,F2,TOPCON 3D OCT-2000 FA Plus,TOPCON TRC-50EX + DXC-950P,cre_max_vessels_6_arteries,caliber,0.4601346194685807,0.12,0.66,199,398,ok,2528
+macula_centered_rs,F2,TOPCON 3D OCT-2000 FA Plus,TOPCON TRC-50EX + DXC-950P,cre_max_vessels_6_veins,caliber,0.7010313113783023,0.39,0.83,166,332,ok,2561
+macula_centered_rs,F2,TOPCON 3D OCT-2000 FA Plus,TOPCON TRC-50EX + DXC-950P,cre_hf_superior_arteries,caliber,0.3620081529723596,0.15,0.52,2543,5086,ok,184
+macula_centered_rs,F2,TOPCON 3D OCT-2000 FA Plus,TOPCON TRC-50EX + DXC-950P,cre_hf_superior_veins,caliber,0.4443894687058675,0.26,0.58,2377,4754,ok,350
+macula_centered_rs,F2,TOPCON 3D OCT-2000 FA Plus,TOPCON TRC-50EX + DXC-950P,cre_hf_inferior_arteries,caliber,0.33277165662601066,0.05,0.53,2425,4850,ok,302
+macula_centered_rs,F2,TOPCON 3D OCT-2000 FA Plus,TOPCON TRC-50EX + DXC-950P,cre_hf_inferior_veins,caliber,0.3630417718313917,0.13,0.53,2456,4912,ok,271
+macula_centered_rs,F2,TOPCON 3D OCT-2000 FA Plus,TOPCON TRC-50EX + DXC-950P,avr_cre,caliber,0.7569305172072445,0.72,0.79,765,1530,ok,1962
+macula_centered_rs,F2,TOPCON 3D OCT-2000 FA Plus,TOPCON TRC-50EX + DXC-950P,avr_cre_hf_superior,caliber,0.500790486263727,0.47,0.53,2249,4498,ok,478
+macula_centered_rs,F2,TOPCON 3D OCT-2000 FA Plus,TOPCON TRC-50EX + DXC-950P,avr_cre_hf_inferior,caliber,0.39476102243735095,0.36,0.43,2209,4418,ok,518
+macula_centered_rs,F2,TOPCON 3D OCT-2000 FA Plus,TOPCON TRC-50IX + D7100,diam_crcl_full_arteries,caliber,,,,0,0,insufficient_pairs,0
+macula_centered_rs,F2,TOPCON 3D OCT-2000 FA Plus,TOPCON TRC-50IX + D7100,diam_crcl_full_veins,caliber,,,,0,0,insufficient_pairs,0
+macula_centered_rs,F2,TOPCON 3D OCT-2000 FA Plus,TOPCON TRC-50IX + D7100,diam_crcl_superior_arteries,caliber,,,,0,0,insufficient_pairs,0
+macula_centered_rs,F2,TOPCON 3D OCT-2000 FA Plus,TOPCON TRC-50IX + D7100,diam_crcl_superior_veins,caliber,,,,0,0,insufficient_pairs,0
+macula_centered_rs,F2,TOPCON 3D OCT-2000 FA Plus,TOPCON TRC-50IX + D7100,diam_crcl_inferior_arteries,caliber,,,,0,0,insufficient_pairs,0
+macula_centered_rs,F2,TOPCON 3D OCT-2000 FA Plus,TOPCON TRC-50IX + D7100,diam_crcl_inferior_veins,caliber,,,,0,0,insufficient_pairs,0
+macula_centered_rs,F2,TOPCON 3D OCT-2000 FA Plus,TOPCON TRC-50IX + D7100,diam_etdrs_full_arteries,caliber,,,,0,0,insufficient_pairs,0
+macula_centered_rs,F2,TOPCON 3D OCT-2000 FA Plus,TOPCON TRC-50IX + D7100,diam_etdrs_full_veins,caliber,,,,0,0,insufficient_pairs,0
+macula_centered_rs,F2,TOPCON 3D OCT-2000 FA Plus,TOPCON TRC-50IX + D7100,cre_arteries,caliber,,,,0,0,insufficient_pairs,0
+macula_centered_rs,F2,TOPCON 3D OCT-2000 FA Plus,TOPCON TRC-50IX + D7100,cre_veins,caliber,,,,0,0,insufficient_pairs,0
+macula_centered_rs,F2,TOPCON 3D OCT-2000 FA Plus,TOPCON TRC-50IX + D7100,cre_max_vessels_3_arteries,caliber,,,,0,0,insufficient_pairs,0
+macula_centered_rs,F2,TOPCON 3D OCT-2000 FA Plus,TOPCON TRC-50IX + D7100,cre_max_vessels_3_veins,caliber,,,,0,0,insufficient_pairs,0
+macula_centered_rs,F2,TOPCON 3D OCT-2000 FA Plus,TOPCON TRC-50IX + D7100,cre_max_vessels_6_arteries,caliber,,,,0,0,insufficient_pairs,0
+macula_centered_rs,F2,TOPCON 3D OCT-2000 FA Plus,TOPCON TRC-50IX + D7100,cre_max_vessels_6_veins,caliber,,,,0,0,insufficient_pairs,0
+macula_centered_rs,F2,TOPCON 3D OCT-2000 FA Plus,TOPCON TRC-50IX + D7100,cre_hf_superior_arteries,caliber,,,,0,0,insufficient_pairs,0
+macula_centered_rs,F2,TOPCON 3D OCT-2000 FA Plus,TOPCON TRC-50IX + D7100,cre_hf_superior_veins,caliber,,,,0,0,insufficient_pairs,0
+macula_centered_rs,F2,TOPCON 3D OCT-2000 FA Plus,TOPCON TRC-50IX + D7100,cre_hf_inferior_arteries,caliber,,,,0,0,insufficient_pairs,0
+macula_centered_rs,F2,TOPCON 3D OCT-2000 FA Plus,TOPCON TRC-50IX + D7100,cre_hf_inferior_veins,caliber,,,,0,0,insufficient_pairs,0
+macula_centered_rs,F2,TOPCON 3D OCT-2000 FA Plus,TOPCON TRC-50IX + D7100,avr_cre,caliber,,,,0,0,insufficient_pairs,0
+macula_centered_rs,F2,TOPCON 3D OCT-2000 FA Plus,TOPCON TRC-50IX + D7100,avr_cre_hf_superior,caliber,,,,0,0,insufficient_pairs,0
+macula_centered_rs,F2,TOPCON 3D OCT-2000 FA Plus,TOPCON TRC-50IX + D7100,avr_cre_hf_inferior,caliber,,,,0,0,insufficient_pairs,0
+macula_centered_rs,F2,TOPCON TRC-50EX + DXC-950P,TOPCON TRC-50IX + D7100,diam_crcl_full_arteries,caliber,,,,0,0,insufficient_pairs,0
+macula_centered_rs,F2,TOPCON TRC-50EX + DXC-950P,TOPCON TRC-50IX + D7100,diam_crcl_full_veins,caliber,,,,0,0,insufficient_pairs,0
+macula_centered_rs,F2,TOPCON TRC-50EX + DXC-950P,TOPCON TRC-50IX + D7100,diam_crcl_superior_arteries,caliber,,,,0,0,insufficient_pairs,0
+macula_centered_rs,F2,TOPCON TRC-50EX + DXC-950P,TOPCON TRC-50IX + D7100,diam_crcl_superior_veins,caliber,,,,0,0,insufficient_pairs,0
+macula_centered_rs,F2,TOPCON TRC-50EX + DXC-950P,TOPCON TRC-50IX + D7100,diam_crcl_inferior_arteries,caliber,,,,0,0,insufficient_pairs,0
+macula_centered_rs,F2,TOPCON TRC-50EX + DXC-950P,TOPCON TRC-50IX + D7100,diam_crcl_inferior_veins,caliber,,,,0,0,insufficient_pairs,0
+macula_centered_rs,F2,TOPCON TRC-50EX + DXC-950P,TOPCON TRC-50IX + D7100,diam_etdrs_full_arteries,caliber,,,,0,0,insufficient_pairs,0
+macula_centered_rs,F2,TOPCON TRC-50EX + DXC-950P,TOPCON TRC-50IX + D7100,diam_etdrs_full_veins,caliber,,,,0,0,insufficient_pairs,0
+macula_centered_rs,F2,TOPCON TRC-50EX + DXC-950P,TOPCON TRC-50IX + D7100,cre_arteries,caliber,,,,0,0,insufficient_pairs,0
+macula_centered_rs,F2,TOPCON TRC-50EX + DXC-950P,TOPCON TRC-50IX + D7100,cre_veins,caliber,,,,0,0,insufficient_pairs,0
+macula_centered_rs,F2,TOPCON TRC-50EX + DXC-950P,TOPCON TRC-50IX + D7100,cre_max_vessels_3_arteries,caliber,,,,0,0,insufficient_pairs,0
+macula_centered_rs,F2,TOPCON TRC-50EX + DXC-950P,TOPCON TRC-50IX + D7100,cre_max_vessels_3_veins,caliber,,,,0,0,insufficient_pairs,0
+macula_centered_rs,F2,TOPCON TRC-50EX + DXC-950P,TOPCON TRC-50IX + D7100,cre_max_vessels_6_arteries,caliber,,,,0,0,insufficient_pairs,0
+macula_centered_rs,F2,TOPCON TRC-50EX + DXC-950P,TOPCON TRC-50IX + D7100,cre_max_vessels_6_veins,caliber,,,,0,0,insufficient_pairs,0
+macula_centered_rs,F2,TOPCON TRC-50EX + DXC-950P,TOPCON TRC-50IX + D7100,cre_hf_superior_arteries,caliber,,,,0,0,insufficient_pairs,0
+macula_centered_rs,F2,TOPCON TRC-50EX + DXC-950P,TOPCON TRC-50IX + D7100,cre_hf_superior_veins,caliber,,,,0,0,insufficient_pairs,0
+macula_centered_rs,F2,TOPCON TRC-50EX + DXC-950P,TOPCON TRC-50IX + D7100,cre_hf_inferior_arteries,caliber,,,,0,0,insufficient_pairs,0
+macula_centered_rs,F2,TOPCON TRC-50EX + DXC-950P,TOPCON TRC-50IX + D7100,cre_hf_inferior_veins,caliber,,,,0,0,insufficient_pairs,0
+macula_centered_rs,F2,TOPCON TRC-50EX + DXC-950P,TOPCON TRC-50IX + D7100,avr_cre,caliber,,,,0,0,insufficient_pairs,0
+macula_centered_rs,F2,TOPCON TRC-50EX + DXC-950P,TOPCON TRC-50IX + D7100,avr_cre_hf_superior,caliber,,,,0,0,insufficient_pairs,0
+macula_centered_rs,F2,TOPCON TRC-50EX + DXC-950P,TOPCON TRC-50IX + D7100,avr_cre_hf_inferior,caliber,,,,0,0,insufficient_pairs,0
+macula_centered_rs,F2,TOPCON 3D OCT-2000 FA Plus,TOPCON TRC-50DX + D7100,diam_crcl_full_arteries,caliber,,,,0,0,insufficient_pairs,0
+macula_centered_rs,F2,TOPCON 3D OCT-2000 FA Plus,TOPCON TRC-50DX + D7100,diam_crcl_full_veins,caliber,,,,0,0,insufficient_pairs,0
+macula_centered_rs,F2,TOPCON 3D OCT-2000 FA Plus,TOPCON TRC-50DX + D7100,diam_crcl_superior_arteries,caliber,,,,0,0,insufficient_pairs,0
+macula_centered_rs,F2,TOPCON 3D OCT-2000 FA Plus,TOPCON TRC-50DX + D7100,diam_crcl_superior_veins,caliber,,,,0,0,insufficient_pairs,0
+macula_centered_rs,F2,TOPCON 3D OCT-2000 FA Plus,TOPCON TRC-50DX + D7100,diam_crcl_inferior_arteries,caliber,,,,0,0,insufficient_pairs,0
+macula_centered_rs,F2,TOPCON 3D OCT-2000 FA Plus,TOPCON TRC-50DX + D7100,diam_crcl_inferior_veins,caliber,,,,0,0,insufficient_pairs,0
+macula_centered_rs,F2,TOPCON 3D OCT-2000 FA Plus,TOPCON TRC-50DX + D7100,diam_etdrs_full_arteries,caliber,,,,0,0,insufficient_pairs,0
+macula_centered_rs,F2,TOPCON 3D OCT-2000 FA Plus,TOPCON TRC-50DX + D7100,diam_etdrs_full_veins,caliber,,,,0,0,insufficient_pairs,0
+macula_centered_rs,F2,TOPCON 3D OCT-2000 FA Plus,TOPCON TRC-50DX + D7100,cre_arteries,caliber,,,,0,0,insufficient_pairs,0
+macula_centered_rs,F2,TOPCON 3D OCT-2000 FA Plus,TOPCON TRC-50DX + D7100,cre_veins,caliber,,,,0,0,insufficient_pairs,0
+macula_centered_rs,F2,TOPCON 3D OCT-2000 FA Plus,TOPCON TRC-50DX + D7100,cre_max_vessels_3_arteries,caliber,,,,0,0,insufficient_pairs,0
+macula_centered_rs,F2,TOPCON 3D OCT-2000 FA Plus,TOPCON TRC-50DX + D7100,cre_max_vessels_3_veins,caliber,,,,0,0,insufficient_pairs,0
+macula_centered_rs,F2,TOPCON 3D OCT-2000 FA Plus,TOPCON TRC-50DX + D7100,cre_max_vessels_6_arteries,caliber,,,,0,0,insufficient_pairs,0
+macula_centered_rs,F2,TOPCON 3D OCT-2000 FA Plus,TOPCON TRC-50DX + D7100,cre_max_vessels_6_veins,caliber,,,,0,0,insufficient_pairs,0
+macula_centered_rs,F2,TOPCON 3D OCT-2000 FA Plus,TOPCON TRC-50DX + D7100,cre_hf_superior_arteries,caliber,,,,0,0,insufficient_pairs,0
+macula_centered_rs,F2,TOPCON 3D OCT-2000 FA Plus,TOPCON TRC-50DX + D7100,cre_hf_superior_veins,caliber,,,,0,0,insufficient_pairs,0
+macula_centered_rs,F2,TOPCON 3D OCT-2000 FA Plus,TOPCON TRC-50DX + D7100,cre_hf_inferior_arteries,caliber,,,,0,0,insufficient_pairs,0
+macula_centered_rs,F2,TOPCON 3D OCT-2000 FA Plus,TOPCON TRC-50DX + D7100,cre_hf_inferior_veins,caliber,,,,0,0,insufficient_pairs,0
+macula_centered_rs,F2,TOPCON 3D OCT-2000 FA Plus,TOPCON TRC-50DX + D7100,avr_cre,caliber,,,,0,0,insufficient_pairs,0
+macula_centered_rs,F2,TOPCON 3D OCT-2000 FA Plus,TOPCON TRC-50DX + D7100,avr_cre_hf_superior,caliber,,,,0,0,insufficient_pairs,0
+macula_centered_rs,F2,TOPCON 3D OCT-2000 FA Plus,TOPCON TRC-50DX + D7100,avr_cre_hf_inferior,caliber,,,,0,0,insufficient_pairs,0
+macula_centered_rs,F2,TOPCON 3D OCT-2000 FA Plus,TOPCON DRI OCT Triton plus,diam_crcl_full_arteries,caliber,,,,0,0,insufficient_pairs,0
+macula_centered_rs,F2,TOPCON 3D OCT-2000 FA Plus,TOPCON DRI OCT Triton plus,diam_crcl_full_veins,caliber,,,,0,0,insufficient_pairs,0
+macula_centered_rs,F2,TOPCON 3D OCT-2000 FA Plus,TOPCON DRI OCT Triton plus,diam_crcl_superior_arteries,caliber,,,,0,0,insufficient_pairs,0
+macula_centered_rs,F2,TOPCON 3D OCT-2000 FA Plus,TOPCON DRI OCT Triton plus,diam_crcl_superior_veins,caliber,,,,0,0,insufficient_pairs,0
+macula_centered_rs,F2,TOPCON 3D OCT-2000 FA Plus,TOPCON DRI OCT Triton plus,diam_crcl_inferior_arteries,caliber,,,,0,0,insufficient_pairs,0
+macula_centered_rs,F2,TOPCON 3D OCT-2000 FA Plus,TOPCON DRI OCT Triton plus,diam_crcl_inferior_veins,caliber,,,,0,0,insufficient_pairs,0
+macula_centered_rs,F2,TOPCON 3D OCT-2000 FA Plus,TOPCON DRI OCT Triton plus,diam_etdrs_full_arteries,caliber,,,,0,0,insufficient_pairs,0
+macula_centered_rs,F2,TOPCON 3D OCT-2000 FA Plus,TOPCON DRI OCT Triton plus,diam_etdrs_full_veins,caliber,,,,0,0,insufficient_pairs,0
+macula_centered_rs,F2,TOPCON 3D OCT-2000 FA Plus,TOPCON DRI OCT Triton plus,cre_arteries,caliber,,,,0,0,insufficient_pairs,0
+macula_centered_rs,F2,TOPCON 3D OCT-2000 FA Plus,TOPCON DRI OCT Triton plus,cre_veins,caliber,,,,0,0,insufficient_pairs,0
+macula_centered_rs,F2,TOPCON 3D OCT-2000 FA Plus,TOPCON DRI OCT Triton plus,cre_max_vessels_3_arteries,caliber,,,,0,0,insufficient_pairs,0
+macula_centered_rs,F2,TOPCON 3D OCT-2000 FA Plus,TOPCON DRI OCT Triton plus,cre_max_vessels_3_veins,caliber,,,,0,0,insufficient_pairs,0
+macula_centered_rs,F2,TOPCON 3D OCT-2000 FA Plus,TOPCON DRI OCT Triton plus,cre_max_vessels_6_arteries,caliber,,,,0,0,insufficient_pairs,0
+macula_centered_rs,F2,TOPCON 3D OCT-2000 FA Plus,TOPCON DRI OCT Triton plus,cre_max_vessels_6_veins,caliber,,,,0,0,insufficient_pairs,0
+macula_centered_rs,F2,TOPCON 3D OCT-2000 FA Plus,TOPCON DRI OCT Triton plus,cre_hf_superior_arteries,caliber,,,,0,0,insufficient_pairs,0
+macula_centered_rs,F2,TOPCON 3D OCT-2000 FA Plus,TOPCON DRI OCT Triton plus,cre_hf_superior_veins,caliber,,,,0,0,insufficient_pairs,0
+macula_centered_rs,F2,TOPCON 3D OCT-2000 FA Plus,TOPCON DRI OCT Triton plus,cre_hf_inferior_arteries,caliber,,,,0,0,insufficient_pairs,0
+macula_centered_rs,F2,TOPCON 3D OCT-2000 FA Plus,TOPCON DRI OCT Triton plus,cre_hf_inferior_veins,caliber,,,,0,0,insufficient_pairs,0
+macula_centered_rs,F2,TOPCON 3D OCT-2000 FA Plus,TOPCON DRI OCT Triton plus,avr_cre,caliber,,,,0,0,insufficient_pairs,0
+macula_centered_rs,F2,TOPCON 3D OCT-2000 FA Plus,TOPCON DRI OCT Triton plus,avr_cre_hf_superior,caliber,,,,0,0,insufficient_pairs,0
+macula_centered_rs,F2,TOPCON 3D OCT-2000 FA Plus,TOPCON DRI OCT Triton plus,avr_cre_hf_inferior,caliber,,,,0,0,insufficient_pairs,0
+macula_centered_rs,F2,TOPCON DRI OCT Triton plus,TOPCON TRC-50DX + D7100,diam_crcl_full_arteries,caliber,,,,0,0,insufficient_pairs,0
+macula_centered_rs,F2,TOPCON DRI OCT Triton plus,TOPCON TRC-50DX + D7100,diam_crcl_full_veins,caliber,,,,0,0,insufficient_pairs,0
+macula_centered_rs,F2,TOPCON DRI OCT Triton plus,TOPCON TRC-50DX + D7100,diam_crcl_superior_arteries,caliber,,,,0,0,insufficient_pairs,0
+macula_centered_rs,F2,TOPCON DRI OCT Triton plus,TOPCON TRC-50DX + D7100,diam_crcl_superior_veins,caliber,,,,0,0,insufficient_pairs,0
+macula_centered_rs,F2,TOPCON DRI OCT Triton plus,TOPCON TRC-50DX + D7100,diam_crcl_inferior_arteries,caliber,,,,0,0,insufficient_pairs,0
+macula_centered_rs,F2,TOPCON DRI OCT Triton plus,TOPCON TRC-50DX + D7100,diam_crcl_inferior_veins,caliber,,,,0,0,insufficient_pairs,0
+macula_centered_rs,F2,TOPCON DRI OCT Triton plus,TOPCON TRC-50DX + D7100,diam_etdrs_full_arteries,caliber,,,,0,0,insufficient_pairs,0
+macula_centered_rs,F2,TOPCON DRI OCT Triton plus,TOPCON TRC-50DX + D7100,diam_etdrs_full_veins,caliber,,,,0,0,insufficient_pairs,0
+macula_centered_rs,F2,TOPCON DRI OCT Triton plus,TOPCON TRC-50DX + D7100,cre_arteries,caliber,,,,0,0,insufficient_pairs,0
+macula_centered_rs,F2,TOPCON DRI OCT Triton plus,TOPCON TRC-50DX + D7100,cre_veins,caliber,,,,0,0,insufficient_pairs,0
+macula_centered_rs,F2,TOPCON DRI OCT Triton plus,TOPCON TRC-50DX + D7100,cre_max_vessels_3_arteries,caliber,,,,0,0,insufficient_pairs,0
+macula_centered_rs,F2,TOPCON DRI OCT Triton plus,TOPCON TRC-50DX + D7100,cre_max_vessels_3_veins,caliber,,,,0,0,insufficient_pairs,0
+macula_centered_rs,F2,TOPCON DRI OCT Triton plus,TOPCON TRC-50DX + D7100,cre_max_vessels_6_arteries,caliber,,,,0,0,insufficient_pairs,0
+macula_centered_rs,F2,TOPCON DRI OCT Triton plus,TOPCON TRC-50DX + D7100,cre_max_vessels_6_veins,caliber,,,,0,0,insufficient_pairs,0
+macula_centered_rs,F2,TOPCON DRI OCT Triton plus,TOPCON TRC-50DX + D7100,cre_hf_superior_arteries,caliber,,,,0,0,insufficient_pairs,0
+macula_centered_rs,F2,TOPCON DRI OCT Triton plus,TOPCON TRC-50DX + D7100,cre_hf_superior_veins,caliber,,,,0,0,insufficient_pairs,0
+macula_centered_rs,F2,TOPCON DRI OCT Triton plus,TOPCON TRC-50DX + D7100,cre_hf_inferior_arteries,caliber,,,,0,0,insufficient_pairs,0
+macula_centered_rs,F2,TOPCON DRI OCT Triton plus,TOPCON TRC-50DX + D7100,cre_hf_inferior_veins,caliber,,,,0,0,insufficient_pairs,0
+macula_centered_rs,F2,TOPCON DRI OCT Triton plus,TOPCON TRC-50DX + D7100,avr_cre,caliber,,,,0,0,insufficient_pairs,0
+macula_centered_rs,F2,TOPCON DRI OCT Triton plus,TOPCON TRC-50DX + D7100,avr_cre_hf_superior,caliber,,,,0,0,insufficient_pairs,0
+macula_centered_rs,F2,TOPCON DRI OCT Triton plus,TOPCON TRC-50DX + D7100,avr_cre_hf_inferior,caliber,,,,0,0,insufficient_pairs,0
+macula_centered_rs,F2,TOPCON DRI OCT Triton plus - Fundus,TOPCON TRC-50DX + D7100,diam_crcl_full_arteries,caliber,,,,0,0,insufficient_pairs,0
+macula_centered_rs,F2,TOPCON DRI OCT Triton plus - Fundus,TOPCON TRC-50DX + D7100,diam_crcl_full_veins,caliber,,,,0,0,insufficient_pairs,0
+macula_centered_rs,F2,TOPCON DRI OCT Triton plus - Fundus,TOPCON TRC-50DX + D7100,diam_crcl_superior_arteries,caliber,,,,0,0,insufficient_pairs,0
+macula_centered_rs,F2,TOPCON DRI OCT Triton plus - Fundus,TOPCON TRC-50DX + D7100,diam_crcl_superior_veins,caliber,,,,0,0,insufficient_pairs,0
+macula_centered_rs,F2,TOPCON DRI OCT Triton plus - Fundus,TOPCON TRC-50DX + D7100,diam_crcl_inferior_arteries,caliber,,,,0,0,insufficient_pairs,0
+macula_centered_rs,F2,TOPCON DRI OCT Triton plus - Fundus,TOPCON TRC-50DX + D7100,diam_crcl_inferior_veins,caliber,,,,0,0,insufficient_pairs,0
+macula_centered_rs,F2,TOPCON DRI OCT Triton plus - Fundus,TOPCON TRC-50DX + D7100,diam_etdrs_full_arteries,caliber,,,,0,0,insufficient_pairs,0
+macula_centered_rs,F2,TOPCON DRI OCT Triton plus - Fundus,TOPCON TRC-50DX + D7100,diam_etdrs_full_veins,caliber,,,,0,0,insufficient_pairs,0
+macula_centered_rs,F2,TOPCON DRI OCT Triton plus - Fundus,TOPCON TRC-50DX + D7100,cre_arteries,caliber,,,,0,0,insufficient_pairs,0
+macula_centered_rs,F2,TOPCON DRI OCT Triton plus - Fundus,TOPCON TRC-50DX + D7100,cre_veins,caliber,,,,0,0,insufficient_pairs,0
+macula_centered_rs,F2,TOPCON DRI OCT Triton plus - Fundus,TOPCON TRC-50DX + D7100,cre_max_vessels_3_arteries,caliber,,,,0,0,insufficient_pairs,0
+macula_centered_rs,F2,TOPCON DRI OCT Triton plus - Fundus,TOPCON TRC-50DX + D7100,cre_max_vessels_3_veins,caliber,,,,0,0,insufficient_pairs,0
+macula_centered_rs,F2,TOPCON DRI OCT Triton plus - Fundus,TOPCON TRC-50DX + D7100,cre_max_vessels_6_arteries,caliber,,,,0,0,insufficient_pairs,0
+macula_centered_rs,F2,TOPCON DRI OCT Triton plus - Fundus,TOPCON TRC-50DX + D7100,cre_max_vessels_6_veins,caliber,,,,0,0,insufficient_pairs,0
+macula_centered_rs,F2,TOPCON DRI OCT Triton plus - Fundus,TOPCON TRC-50DX + D7100,cre_hf_superior_arteries,caliber,,,,0,0,insufficient_pairs,0
+macula_centered_rs,F2,TOPCON DRI OCT Triton plus - Fundus,TOPCON TRC-50DX + D7100,cre_hf_superior_veins,caliber,,,,0,0,insufficient_pairs,0
+macula_centered_rs,F2,TOPCON DRI OCT Triton plus - Fundus,TOPCON TRC-50DX + D7100,cre_hf_inferior_arteries,caliber,,,,0,0,insufficient_pairs,0
+macula_centered_rs,F2,TOPCON DRI OCT Triton plus - Fundus,TOPCON TRC-50DX + D7100,cre_hf_inferior_veins,caliber,,,,0,0,insufficient_pairs,0
+macula_centered_rs,F2,TOPCON DRI OCT Triton plus - Fundus,TOPCON TRC-50DX + D7100,avr_cre,caliber,,,,0,0,insufficient_pairs,0
+macula_centered_rs,F2,TOPCON DRI OCT Triton plus - Fundus,TOPCON TRC-50DX + D7100,avr_cre_hf_superior,caliber,,,,0,0,insufficient_pairs,0
+macula_centered_rs,F2,TOPCON DRI OCT Triton plus - Fundus,TOPCON TRC-50DX + D7100,avr_cre_hf_inferior,caliber,,,,0,0,insufficient_pairs,0
+macula_centered_rs,F2,TOPCON 3D OCT-2000 FA Plus,TOPCON DRI OCT Triton plus - Fundus,diam_crcl_full_arteries,caliber,,,,0,0,insufficient_pairs,0
+macula_centered_rs,F2,TOPCON 3D OCT-2000 FA Plus,TOPCON DRI OCT Triton plus - Fundus,diam_crcl_full_veins,caliber,,,,0,0,insufficient_pairs,0
+macula_centered_rs,F2,TOPCON 3D OCT-2000 FA Plus,TOPCON DRI OCT Triton plus - Fundus,diam_crcl_superior_arteries,caliber,,,,0,0,insufficient_pairs,0
+macula_centered_rs,F2,TOPCON 3D OCT-2000 FA Plus,TOPCON DRI OCT Triton plus - Fundus,diam_crcl_superior_veins,caliber,,,,0,0,insufficient_pairs,0
+macula_centered_rs,F2,TOPCON 3D OCT-2000 FA Plus,TOPCON DRI OCT Triton plus - Fundus,diam_crcl_inferior_arteries,caliber,,,,0,0,insufficient_pairs,0
+macula_centered_rs,F2,TOPCON 3D OCT-2000 FA Plus,TOPCON DRI OCT Triton plus - Fundus,diam_crcl_inferior_veins,caliber,,,,0,0,insufficient_pairs,0
+macula_centered_rs,F2,TOPCON 3D OCT-2000 FA Plus,TOPCON DRI OCT Triton plus - Fundus,diam_etdrs_full_arteries,caliber,,,,0,0,insufficient_pairs,0
+macula_centered_rs,F2,TOPCON 3D OCT-2000 FA Plus,TOPCON DRI OCT Triton plus - Fundus,diam_etdrs_full_veins,caliber,,,,0,0,insufficient_pairs,0
+macula_centered_rs,F2,TOPCON 3D OCT-2000 FA Plus,TOPCON DRI OCT Triton plus - Fundus,cre_arteries,caliber,,,,0,0,insufficient_pairs,0
+macula_centered_rs,F2,TOPCON 3D OCT-2000 FA Plus,TOPCON DRI OCT Triton plus - Fundus,cre_veins,caliber,,,,0,0,insufficient_pairs,0
+macula_centered_rs,F2,TOPCON 3D OCT-2000 FA Plus,TOPCON DRI OCT Triton plus - Fundus,cre_max_vessels_3_arteries,caliber,,,,0,0,insufficient_pairs,0
+macula_centered_rs,F2,TOPCON 3D OCT-2000 FA Plus,TOPCON DRI OCT Triton plus - Fundus,cre_max_vessels_3_veins,caliber,,,,0,0,insufficient_pairs,0
+macula_centered_rs,F2,TOPCON 3D OCT-2000 FA Plus,TOPCON DRI OCT Triton plus - Fundus,cre_max_vessels_6_arteries,caliber,,,,0,0,insufficient_pairs,0
+macula_centered_rs,F2,TOPCON 3D OCT-2000 FA Plus,TOPCON DRI OCT Triton plus - Fundus,cre_max_vessels_6_veins,caliber,,,,0,0,insufficient_pairs,0
+macula_centered_rs,F2,TOPCON 3D OCT-2000 FA Plus,TOPCON DRI OCT Triton plus - Fundus,cre_hf_superior_arteries,caliber,,,,0,0,insufficient_pairs,0
+macula_centered_rs,F2,TOPCON 3D OCT-2000 FA Plus,TOPCON DRI OCT Triton plus - Fundus,cre_hf_superior_veins,caliber,,,,0,0,insufficient_pairs,0
+macula_centered_rs,F2,TOPCON 3D OCT-2000 FA Plus,TOPCON DRI OCT Triton plus - Fundus,cre_hf_inferior_arteries,caliber,,,,0,0,insufficient_pairs,0
+macula_centered_rs,F2,TOPCON 3D OCT-2000 FA Plus,TOPCON DRI OCT Triton plus - Fundus,cre_hf_inferior_veins,caliber,,,,0,0,insufficient_pairs,0
+macula_centered_rs,F2,TOPCON 3D OCT-2000 FA Plus,TOPCON DRI OCT Triton plus - Fundus,avr_cre,caliber,,,,0,0,insufficient_pairs,0
+macula_centered_rs,F2,TOPCON 3D OCT-2000 FA Plus,TOPCON DRI OCT Triton plus - Fundus,avr_cre_hf_superior,caliber,,,,0,0,insufficient_pairs,0
+macula_centered_rs,F2,TOPCON 3D OCT-2000 FA Plus,TOPCON DRI OCT Triton plus - Fundus,avr_cre_hf_inferior,caliber,,,,0,0,insufficient_pairs,0
+macula_centered_rs,F2,TOPCON TRC-50EX + DXC-950P,TOPCON TRC-50VT - Analog Fundus Camera,diam_crcl_full_arteries,caliber,0.15298742150712172,-0.06,0.43,312,624,ok,3578
+macula_centered_rs,F2,TOPCON TRC-50EX + DXC-950P,TOPCON TRC-50VT - Analog Fundus Camera,diam_crcl_full_veins,caliber,0.20814409759179553,-0.06,0.53,312,624,ok,3578
+macula_centered_rs,F2,TOPCON TRC-50EX + DXC-950P,TOPCON TRC-50VT - Analog Fundus Camera,diam_crcl_superior_arteries,caliber,0.20905536345323109,-0.07,0.52,319,638,ok,3571
+macula_centered_rs,F2,TOPCON TRC-50EX + DXC-950P,TOPCON TRC-50VT - Analog Fundus Camera,diam_crcl_superior_veins,caliber,0.3036250561985,-0.08,0.65,319,638,ok,3571
+macula_centered_rs,F2,TOPCON TRC-50EX + DXC-950P,TOPCON TRC-50VT - Analog Fundus Camera,diam_crcl_inferior_arteries,caliber,0.18520114333271934,-0.08,0.48,308,616,ok,3582
+macula_centered_rs,F2,TOPCON TRC-50EX + DXC-950P,TOPCON TRC-50VT - Analog Fundus Camera,diam_crcl_inferior_veins,caliber,0.26308456121289553,-0.08,0.6,308,616,ok,3582
+macula_centered_rs,F2,TOPCON TRC-50EX + DXC-950P,TOPCON TRC-50VT - Analog Fundus Camera,diam_etdrs_full_arteries,caliber,0.32094155086705145,-0.09,0.65,365,730,ok,3525
+macula_centered_rs,F2,TOPCON TRC-50EX + DXC-950P,TOPCON TRC-50VT - Analog Fundus Camera,diam_etdrs_full_veins,caliber,0.2233115135851015,-0.08,0.54,369,738,ok,3521
+macula_centered_rs,F2,TOPCON TRC-50EX + DXC-950P,TOPCON TRC-50VT - Analog Fundus Camera,cre_arteries,caliber,0.14845230052902,-0.06,0.42,1216,2432,ok,2674
+macula_centered_rs,F2,TOPCON TRC-50EX + DXC-950P,TOPCON TRC-50VT - Analog Fundus Camera,cre_veins,caliber,0.2296375968744982,-0.06,0.56,1213,2426,ok,2677
+macula_centered_rs,F2,TOPCON TRC-50EX + DXC-950P,TOPCON TRC-50VT - Analog Fundus Camera,cre_max_vessels_3_arteries,caliber,0.1650651217178194,-0.06,0.45,1425,2850,ok,2465
+macula_centered_rs,F2,TOPCON TRC-50EX + DXC-950P,TOPCON TRC-50VT - Analog Fundus Camera,cre_max_vessels_3_veins,caliber,0.2509173930231581,-0.08,0.58,1434,2868,ok,2456
+macula_centered_rs,F2,TOPCON TRC-50EX + DXC-950P,TOPCON TRC-50VT - Analog Fundus Camera,cre_max_vessels_6_arteries,caliber,0.11827856850893508,-0.05,0.37,242,484,ok,3648
+macula_centered_rs,F2,TOPCON TRC-50EX + DXC-950P,TOPCON TRC-50VT - Analog Fundus Camera,cre_max_vessels_6_veins,caliber,0.23147686738908735,-0.05,0.58,194,388,ok,3696
+macula_centered_rs,F2,TOPCON TRC-50EX + DXC-950P,TOPCON TRC-50VT - Analog Fundus Camera,cre_hf_superior_arteries,caliber,0.21227630243066808,-0.08,0.46,3405,6810,ok,485
+macula_centered_rs,F2,TOPCON TRC-50EX + DXC-950P,TOPCON TRC-50VT - Analog Fundus Camera,cre_hf_superior_veins,caliber,0.32110326126260935,-0.03,0.56,3252,6504,ok,638
+macula_centered_rs,F2,TOPCON TRC-50EX + DXC-950P,TOPCON TRC-50VT - Analog Fundus Camera,cre_hf_inferior_arteries,caliber,0.19975894392155016,-0.08,0.45,3197,6394,ok,693
+macula_centered_rs,F2,TOPCON TRC-50EX + DXC-950P,TOPCON TRC-50VT - Analog Fundus Camera,cre_hf_inferior_veins,caliber,0.30431804664882117,-0.03,0.54,3279,6558,ok,611
+macula_centered_rs,F2,TOPCON TRC-50EX + DXC-950P,TOPCON TRC-50VT - Analog Fundus Camera,avr_cre,caliber,0.7165633000812799,0.68,0.75,1025,2050,ok,2865
+macula_centered_rs,F2,TOPCON TRC-50EX + DXC-950P,TOPCON TRC-50VT - Analog Fundus Camera,avr_cre_hf_superior,caliber,0.5175448871915949,0.49,0.55,2952,5904,ok,938
+macula_centered_rs,F2,TOPCON TRC-50EX + DXC-950P,TOPCON TRC-50VT - Analog Fundus Camera,avr_cre_hf_inferior,caliber,0.4585634252114861,0.42,0.49,2783,5566,ok,1107

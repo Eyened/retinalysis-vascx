@@ -1,0 +1,111 @@
+feature_set,field,device_a,device_b,variable,category,icc,ci_low,ci_high,n_pairs,n_images,status,missing_measurement_pairs
+od_centered_rs,F1,TOPCON 3D OCT-1000,TOPCON TRC-50EX + DXC-950P,vd_crcl_full_arteries,density,0.7127491865439699,0.19,0.87,123,246,ok,375
+od_centered_rs,F1,TOPCON 3D OCT-1000,TOPCON TRC-50EX + DXC-950P,vd_crcl_full_veins,density,0.6556123974235856,0.15,0.84,123,246,ok,375
+od_centered_rs,F1,TOPCON 3D OCT-1000,TOPCON TRC-50EX + DXC-950P,vd_crcl_superior_arteries,density,0.811084925692399,0.67,0.88,181,362,ok,317
+od_centered_rs,F1,TOPCON 3D OCT-1000,TOPCON TRC-50EX + DXC-950P,vd_crcl_superior_veins,density,0.8110812068178594,0.67,0.88,181,362,ok,317
+od_centered_rs,F1,TOPCON 3D OCT-1000,TOPCON TRC-50EX + DXC-950P,vd_crcl_inferior_arteries,density,0.6274167547911349,0.24,0.8,302,604,ok,196
+od_centered_rs,F1,TOPCON 3D OCT-1000,TOPCON TRC-50EX + DXC-950P,vd_crcl_inferior_veins,density,0.6033414301186499,0.17,0.79,302,604,ok,196
+od_centered_rs,F1,TOPCON 3D OCT-1000,TOPCON TRC-50EX + DXC-950P,vd_crcl_temporal_arteries,density,0.7201078576600712,0.48,0.83,191,382,ok,307
+od_centered_rs,F1,TOPCON 3D OCT-1000,TOPCON TRC-50EX + DXC-950P,vd_crcl_temporal_veins,density,0.7656757481883105,0.54,0.87,191,382,ok,307
+od_centered_rs,F1,TOPCON 3D OCT-1000,TOPCON TRC-50EX + DXC-950P,vd_crcl_nasal_arteries,density,0.7770497684351058,0.31,0.9,151,302,ok,347
+od_centered_rs,F1,TOPCON 3D OCT-1000,TOPCON TRC-50EX + DXC-950P,vd_crcl_nasal_veins,density,0.8007957000708279,0.26,0.92,151,302,ok,347
+od_centered_rs,F1,TOPCON 3D OCT-1000 MARK II,TOPCON TRC-50EX + DXC-950P,vd_crcl_full_arteries,density,0.7653198067011506,0.68,0.83,238,476,ok,787
+od_centered_rs,F1,TOPCON 3D OCT-1000 MARK II,TOPCON TRC-50EX + DXC-950P,vd_crcl_full_veins,density,0.7548601875504315,0.59,0.84,238,476,ok,787
+od_centered_rs,F1,TOPCON 3D OCT-1000 MARK II,TOPCON TRC-50EX + DXC-950P,vd_crcl_superior_arteries,density,0.8068475067171984,0.77,0.84,471,942,ok,554
+od_centered_rs,F1,TOPCON 3D OCT-1000 MARK II,TOPCON TRC-50EX + DXC-950P,vd_crcl_superior_veins,density,0.8184313813106264,0.78,0.85,471,942,ok,554
+od_centered_rs,F1,TOPCON 3D OCT-1000 MARK II,TOPCON TRC-50EX + DXC-950P,vd_crcl_inferior_arteries,density,0.7088748512475921,0.61,0.78,567,1134,ok,458
+od_centered_rs,F1,TOPCON 3D OCT-1000 MARK II,TOPCON TRC-50EX + DXC-950P,vd_crcl_inferior_veins,density,0.7509540046488118,0.51,0.86,567,1134,ok,458
+od_centered_rs,F1,TOPCON 3D OCT-1000 MARK II,TOPCON TRC-50EX + DXC-950P,vd_crcl_temporal_arteries,density,0.7481895116587045,0.67,0.8,384,768,ok,641
+od_centered_rs,F1,TOPCON 3D OCT-1000 MARK II,TOPCON TRC-50EX + DXC-950P,vd_crcl_temporal_veins,density,0.8200810212240741,0.74,0.87,384,768,ok,641
+od_centered_rs,F1,TOPCON 3D OCT-1000 MARK II,TOPCON TRC-50EX + DXC-950P,vd_crcl_nasal_arteries,density,0.8501776922318516,0.79,0.89,315,630,ok,710
+od_centered_rs,F1,TOPCON 3D OCT-1000 MARK II,TOPCON TRC-50EX + DXC-950P,vd_crcl_nasal_veins,density,0.8469041657076347,0.73,0.9,315,630,ok,710
+od_centered_rs,F1,TOPCON 3D OCT-2000 FA Plus,TOPCON TRC-50EX + DXC-950P,vd_crcl_full_arteries,density,0.6362242222319741,0.58,0.69,602,1204,ok,1832
+od_centered_rs,F1,TOPCON 3D OCT-2000 FA Plus,TOPCON TRC-50EX + DXC-950P,vd_crcl_full_veins,density,0.6904099234805983,0.62,0.74,602,1204,ok,1832
+od_centered_rs,F1,TOPCON 3D OCT-2000 FA Plus,TOPCON TRC-50EX + DXC-950P,vd_crcl_superior_arteries,density,0.7059708207499833,0.68,0.73,1435,2870,ok,999
+od_centered_rs,F1,TOPCON 3D OCT-2000 FA Plus,TOPCON TRC-50EX + DXC-950P,vd_crcl_superior_veins,density,0.7624398559940021,0.74,0.78,1435,2870,ok,999
+od_centered_rs,F1,TOPCON 3D OCT-2000 FA Plus,TOPCON TRC-50EX + DXC-950P,vd_crcl_inferior_arteries,density,0.6502532268251416,0.56,0.72,1144,2288,ok,1290
+od_centered_rs,F1,TOPCON 3D OCT-2000 FA Plus,TOPCON TRC-50EX + DXC-950P,vd_crcl_inferior_veins,density,0.7275238999508099,0.6,0.81,1144,2288,ok,1290
+od_centered_rs,F1,TOPCON 3D OCT-2000 FA Plus,TOPCON TRC-50EX + DXC-950P,vd_crcl_temporal_arteries,density,0.6470609677814035,0.55,0.72,839,1678,ok,1595
+od_centered_rs,F1,TOPCON 3D OCT-2000 FA Plus,TOPCON TRC-50EX + DXC-950P,vd_crcl_temporal_veins,density,0.7771874841932439,0.72,0.82,839,1678,ok,1595
+od_centered_rs,F1,TOPCON 3D OCT-2000 FA Plus,TOPCON TRC-50EX + DXC-950P,vd_crcl_nasal_arteries,density,0.7505710548144475,0.72,0.78,891,1782,ok,1543
+od_centered_rs,F1,TOPCON 3D OCT-2000 FA Plus,TOPCON TRC-50EX + DXC-950P,vd_crcl_nasal_veins,density,0.8308178770587805,0.8,0.86,891,1782,ok,1543
+od_centered_rs,F1,TOPCON 3D OCT-2000 FA Plus,TOPCON TRC-50IX + D7100,vd_crcl_full_arteries,density,,,,0,0,insufficient_pairs,0
+od_centered_rs,F1,TOPCON 3D OCT-2000 FA Plus,TOPCON TRC-50IX + D7100,vd_crcl_full_veins,density,,,,0,0,insufficient_pairs,0
+od_centered_rs,F1,TOPCON 3D OCT-2000 FA Plus,TOPCON TRC-50IX + D7100,vd_crcl_superior_arteries,density,,,,0,0,insufficient_pairs,0
+od_centered_rs,F1,TOPCON 3D OCT-2000 FA Plus,TOPCON TRC-50IX + D7100,vd_crcl_superior_veins,density,,,,0,0,insufficient_pairs,0
+od_centered_rs,F1,TOPCON 3D OCT-2000 FA Plus,TOPCON TRC-50IX + D7100,vd_crcl_inferior_arteries,density,,,,0,0,insufficient_pairs,0
+od_centered_rs,F1,TOPCON 3D OCT-2000 FA Plus,TOPCON TRC-50IX + D7100,vd_crcl_inferior_veins,density,,,,0,0,insufficient_pairs,0
+od_centered_rs,F1,TOPCON 3D OCT-2000 FA Plus,TOPCON TRC-50IX + D7100,vd_crcl_temporal_arteries,density,,,,0,0,insufficient_pairs,0
+od_centered_rs,F1,TOPCON 3D OCT-2000 FA Plus,TOPCON TRC-50IX + D7100,vd_crcl_temporal_veins,density,,,,0,0,insufficient_pairs,0
+od_centered_rs,F1,TOPCON 3D OCT-2000 FA Plus,TOPCON TRC-50IX + D7100,vd_crcl_nasal_arteries,density,,,,0,0,insufficient_pairs,0
+od_centered_rs,F1,TOPCON 3D OCT-2000 FA Plus,TOPCON TRC-50IX + D7100,vd_crcl_nasal_veins,density,,,,0,0,insufficient_pairs,0
+od_centered_rs,F1,TOPCON TRC-50EX + DXC-950P,TOPCON TRC-50IX + D7100,vd_crcl_full_arteries,density,,,,0,0,insufficient_pairs,0
+od_centered_rs,F1,TOPCON TRC-50EX + DXC-950P,TOPCON TRC-50IX + D7100,vd_crcl_full_veins,density,,,,0,0,insufficient_pairs,0
+od_centered_rs,F1,TOPCON TRC-50EX + DXC-950P,TOPCON TRC-50IX + D7100,vd_crcl_superior_arteries,density,,,,0,0,insufficient_pairs,0
+od_centered_rs,F1,TOPCON TRC-50EX + DXC-950P,TOPCON TRC-50IX + D7100,vd_crcl_superior_veins,density,,,,0,0,insufficient_pairs,0
+od_centered_rs,F1,TOPCON TRC-50EX + DXC-950P,TOPCON TRC-50IX + D7100,vd_crcl_inferior_arteries,density,,,,0,0,insufficient_pairs,0
+od_centered_rs,F1,TOPCON TRC-50EX + DXC-950P,TOPCON TRC-50IX + D7100,vd_crcl_inferior_veins,density,,,,0,0,insufficient_pairs,0
+od_centered_rs,F1,TOPCON TRC-50EX + DXC-950P,TOPCON TRC-50IX + D7100,vd_crcl_temporal_arteries,density,,,,0,0,insufficient_pairs,0
+od_centered_rs,F1,TOPCON TRC-50EX + DXC-950P,TOPCON TRC-50IX + D7100,vd_crcl_temporal_veins,density,,,,0,0,insufficient_pairs,0
+od_centered_rs,F1,TOPCON TRC-50EX + DXC-950P,TOPCON TRC-50IX + D7100,vd_crcl_nasal_arteries,density,,,,0,0,insufficient_pairs,0
+od_centered_rs,F1,TOPCON TRC-50EX + DXC-950P,TOPCON TRC-50IX + D7100,vd_crcl_nasal_veins,density,,,,0,0,insufficient_pairs,0
+od_centered_rs,F1,TOPCON 3D OCT-2000 FA Plus,TOPCON TRC-50DX + D7100,vd_crcl_full_arteries,density,,,,0,0,insufficient_pairs,0
+od_centered_rs,F1,TOPCON 3D OCT-2000 FA Plus,TOPCON TRC-50DX + D7100,vd_crcl_full_veins,density,,,,0,0,insufficient_pairs,0
+od_centered_rs,F1,TOPCON 3D OCT-2000 FA Plus,TOPCON TRC-50DX + D7100,vd_crcl_superior_arteries,density,,,,0,0,insufficient_pairs,0
+od_centered_rs,F1,TOPCON 3D OCT-2000 FA Plus,TOPCON TRC-50DX + D7100,vd_crcl_superior_veins,density,,,,0,0,insufficient_pairs,0
+od_centered_rs,F1,TOPCON 3D OCT-2000 FA Plus,TOPCON TRC-50DX + D7100,vd_crcl_inferior_arteries,density,,,,0,0,insufficient_pairs,0
+od_centered_rs,F1,TOPCON 3D OCT-2000 FA Plus,TOPCON TRC-50DX + D7100,vd_crcl_inferior_veins,density,,,,0,0,insufficient_pairs,0
+od_centered_rs,F1,TOPCON 3D OCT-2000 FA Plus,TOPCON TRC-50DX + D7100,vd_crcl_temporal_arteries,density,,,,0,0,insufficient_pairs,0
+od_centered_rs,F1,TOPCON 3D OCT-2000 FA Plus,TOPCON TRC-50DX + D7100,vd_crcl_temporal_veins,density,,,,0,0,insufficient_pairs,0
+od_centered_rs,F1,TOPCON 3D OCT-2000 FA Plus,TOPCON TRC-50DX + D7100,vd_crcl_nasal_arteries,density,,,,0,0,insufficient_pairs,0
+od_centered_rs,F1,TOPCON 3D OCT-2000 FA Plus,TOPCON TRC-50DX + D7100,vd_crcl_nasal_veins,density,,,,0,0,insufficient_pairs,0
+od_centered_rs,F1,TOPCON 3D OCT-2000 FA Plus,TOPCON DRI OCT Triton plus,vd_crcl_full_arteries,density,,,,0,0,insufficient_pairs,0
+od_centered_rs,F1,TOPCON 3D OCT-2000 FA Plus,TOPCON DRI OCT Triton plus,vd_crcl_full_veins,density,,,,0,0,insufficient_pairs,0
+od_centered_rs,F1,TOPCON 3D OCT-2000 FA Plus,TOPCON DRI OCT Triton plus,vd_crcl_superior_arteries,density,,,,0,0,insufficient_pairs,0
+od_centered_rs,F1,TOPCON 3D OCT-2000 FA Plus,TOPCON DRI OCT Triton plus,vd_crcl_superior_veins,density,,,,0,0,insufficient_pairs,0
+od_centered_rs,F1,TOPCON 3D OCT-2000 FA Plus,TOPCON DRI OCT Triton plus,vd_crcl_inferior_arteries,density,,,,0,0,insufficient_pairs,0
+od_centered_rs,F1,TOPCON 3D OCT-2000 FA Plus,TOPCON DRI OCT Triton plus,vd_crcl_inferior_veins,density,,,,0,0,insufficient_pairs,0
+od_centered_rs,F1,TOPCON 3D OCT-2000 FA Plus,TOPCON DRI OCT Triton plus,vd_crcl_temporal_arteries,density,,,,0,0,insufficient_pairs,0
+od_centered_rs,F1,TOPCON 3D OCT-2000 FA Plus,TOPCON DRI OCT Triton plus,vd_crcl_temporal_veins,density,,,,0,0,insufficient_pairs,0
+od_centered_rs,F1,TOPCON 3D OCT-2000 FA Plus,TOPCON DRI OCT Triton plus,vd_crcl_nasal_arteries,density,,,,0,0,insufficient_pairs,0
+od_centered_rs,F1,TOPCON 3D OCT-2000 FA Plus,TOPCON DRI OCT Triton plus,vd_crcl_nasal_veins,density,,,,0,0,insufficient_pairs,0
+od_centered_rs,F1,TOPCON DRI OCT Triton plus,TOPCON TRC-50DX + D7100,vd_crcl_full_arteries,density,,,,0,0,insufficient_pairs,0
+od_centered_rs,F1,TOPCON DRI OCT Triton plus,TOPCON TRC-50DX + D7100,vd_crcl_full_veins,density,,,,0,0,insufficient_pairs,0
+od_centered_rs,F1,TOPCON DRI OCT Triton plus,TOPCON TRC-50DX + D7100,vd_crcl_superior_arteries,density,,,,0,0,insufficient_pairs,0
+od_centered_rs,F1,TOPCON DRI OCT Triton plus,TOPCON TRC-50DX + D7100,vd_crcl_superior_veins,density,,,,0,0,insufficient_pairs,0
+od_centered_rs,F1,TOPCON DRI OCT Triton plus,TOPCON TRC-50DX + D7100,vd_crcl_inferior_arteries,density,,,,0,0,insufficient_pairs,0
+od_centered_rs,F1,TOPCON DRI OCT Triton plus,TOPCON TRC-50DX + D7100,vd_crcl_inferior_veins,density,,,,0,0,insufficient_pairs,0
+od_centered_rs,F1,TOPCON DRI OCT Triton plus,TOPCON TRC-50DX + D7100,vd_crcl_temporal_arteries,density,,,,0,0,insufficient_pairs,0
+od_centered_rs,F1,TOPCON DRI OCT Triton plus,TOPCON TRC-50DX + D7100,vd_crcl_temporal_veins,density,,,,0,0,insufficient_pairs,0
+od_centered_rs,F1,TOPCON DRI OCT Triton plus,TOPCON TRC-50DX + D7100,vd_crcl_nasal_arteries,density,,,,0,0,insufficient_pairs,0
+od_centered_rs,F1,TOPCON DRI OCT Triton plus,TOPCON TRC-50DX + D7100,vd_crcl_nasal_veins,density,,,,0,0,insufficient_pairs,0
+od_centered_rs,F1,TOPCON 3D OCT-2000 FA Plus,TOPCON DRI OCT Triton plus - Fundus,vd_crcl_full_arteries,density,,,,0,0,insufficient_pairs,0
+od_centered_rs,F1,TOPCON 3D OCT-2000 FA Plus,TOPCON DRI OCT Triton plus - Fundus,vd_crcl_full_veins,density,,,,0,0,insufficient_pairs,0
+od_centered_rs,F1,TOPCON 3D OCT-2000 FA Plus,TOPCON DRI OCT Triton plus - Fundus,vd_crcl_superior_arteries,density,,,,0,0,insufficient_pairs,0
+od_centered_rs,F1,TOPCON 3D OCT-2000 FA Plus,TOPCON DRI OCT Triton plus - Fundus,vd_crcl_superior_veins,density,,,,0,0,insufficient_pairs,0
+od_centered_rs,F1,TOPCON 3D OCT-2000 FA Plus,TOPCON DRI OCT Triton plus - Fundus,vd_crcl_inferior_arteries,density,,,,0,0,insufficient_pairs,0
+od_centered_rs,F1,TOPCON 3D OCT-2000 FA Plus,TOPCON DRI OCT Triton plus - Fundus,vd_crcl_inferior_veins,density,,,,0,0,insufficient_pairs,0
+od_centered_rs,F1,TOPCON 3D OCT-2000 FA Plus,TOPCON DRI OCT Triton plus - Fundus,vd_crcl_temporal_arteries,density,,,,0,0,insufficient_pairs,0
+od_centered_rs,F1,TOPCON 3D OCT-2000 FA Plus,TOPCON DRI OCT Triton plus - Fundus,vd_crcl_temporal_veins,density,,,,0,0,insufficient_pairs,0
+od_centered_rs,F1,TOPCON 3D OCT-2000 FA Plus,TOPCON DRI OCT Triton plus - Fundus,vd_crcl_nasal_arteries,density,,,,0,0,insufficient_pairs,0
+od_centered_rs,F1,TOPCON 3D OCT-2000 FA Plus,TOPCON DRI OCT Triton plus - Fundus,vd_crcl_nasal_veins,density,,,,0,0,insufficient_pairs,0
+od_centered_rs,F1,TOPCON DRI OCT Triton plus - Fundus,TOPCON TRC-50DX + D7100,vd_crcl_full_arteries,density,,,,0,0,insufficient_pairs,0
+od_centered_rs,F1,TOPCON DRI OCT Triton plus - Fundus,TOPCON TRC-50DX + D7100,vd_crcl_full_veins,density,,,,0,0,insufficient_pairs,0
+od_centered_rs,F1,TOPCON DRI OCT Triton plus - Fundus,TOPCON TRC-50DX + D7100,vd_crcl_superior_arteries,density,,,,0,0,insufficient_pairs,0
+od_centered_rs,F1,TOPCON DRI OCT Triton plus - Fundus,TOPCON TRC-50DX + D7100,vd_crcl_superior_veins,density,,,,0,0,insufficient_pairs,0
+od_centered_rs,F1,TOPCON DRI OCT Triton plus - Fundus,TOPCON TRC-50DX + D7100,vd_crcl_inferior_arteries,density,,,,0,0,insufficient_pairs,0
+od_centered_rs,F1,TOPCON DRI OCT Triton plus - Fundus,TOPCON TRC-50DX + D7100,vd_crcl_inferior_veins,density,,,,0,0,insufficient_pairs,0
+od_centered_rs,F1,TOPCON DRI OCT Triton plus - Fundus,TOPCON TRC-50DX + D7100,vd_crcl_temporal_arteries,density,,,,0,0,insufficient_pairs,0
+od_centered_rs,F1,TOPCON DRI OCT Triton plus - Fundus,TOPCON TRC-50DX + D7100,vd_crcl_temporal_veins,density,,,,0,0,insufficient_pairs,0
+od_centered_rs,F1,TOPCON DRI OCT Triton plus - Fundus,TOPCON TRC-50DX + D7100,vd_crcl_nasal_arteries,density,,,,0,0,insufficient_pairs,0
+od_centered_rs,F1,TOPCON DRI OCT Triton plus - Fundus,TOPCON TRC-50DX + D7100,vd_crcl_nasal_veins,density,,,,0,0,insufficient_pairs,0
+od_centered_rs,F1,TOPCON TRC-50EX + DXC-950P,TOPCON TRC-50VT - Analog Fundus Camera,vd_crcl_full_arteries,density,,,,0,0,insufficient_pairs,0
+od_centered_rs,F1,TOPCON TRC-50EX + DXC-950P,TOPCON TRC-50VT - Analog Fundus Camera,vd_crcl_full_veins,density,,,,0,0,insufficient_pairs,0
+od_centered_rs,F1,TOPCON TRC-50EX + DXC-950P,TOPCON TRC-50VT - Analog Fundus Camera,vd_crcl_superior_arteries,density,,,,0,0,insufficient_pairs,0
+od_centered_rs,F1,TOPCON TRC-50EX + DXC-950P,TOPCON TRC-50VT - Analog Fundus Camera,vd_crcl_superior_veins,density,,,,0,0,insufficient_pairs,0
+od_centered_rs,F1,TOPCON TRC-50EX + DXC-950P,TOPCON TRC-50VT - Analog Fundus Camera,vd_crcl_inferior_arteries,density,,,,0,0,insufficient_pairs,0
+od_centered_rs,F1,TOPCON TRC-50EX + DXC-950P,TOPCON TRC-50VT - Analog Fundus Camera,vd_crcl_inferior_veins,density,,,,0,0,insufficient_pairs,0
+od_centered_rs,F1,TOPCON TRC-50EX + DXC-950P,TOPCON TRC-50VT - Analog Fundus Camera,vd_crcl_temporal_arteries,density,,,,0,0,insufficient_pairs,0
+od_centered_rs,F1,TOPCON TRC-50EX + DXC-950P,TOPCON TRC-50VT - Analog Fundus Camera,vd_crcl_temporal_veins,density,,,,0,0,insufficient_pairs,0
+od_centered_rs,F1,TOPCON TRC-50EX + DXC-950P,TOPCON TRC-50VT - Analog Fundus Camera,vd_crcl_nasal_arteries,density,,,,0,0,insufficient_pairs,0
+od_centered_rs,F1,TOPCON TRC-50EX + DXC-950P,TOPCON TRC-50VT - Analog Fundus Camera,vd_crcl_nasal_veins,density,,,,0,0,insufficient_pairs,0

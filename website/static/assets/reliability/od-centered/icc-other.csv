@@ -1,0 +1,45 @@
+feature_set,field,device_a,device_b,variable,category,icc,ci_low,ci_high,n_pairs,n_images,status,missing_measurement_pairs
+od_centered_rs,F1,TOPCON 3D OCT-1000,TOPCON TRC-50EX + DXC-950P,disc_fovea_distance_center,other,0.12844816297497152,-0.02,0.41,498,996,ok,0
+od_centered_rs,F1,TOPCON 3D OCT-1000,TOPCON TRC-50EX + DXC-950P,disc_fovea_distance,other,0.18166470485221292,-0.03,0.51,498,996,ok,0
+od_centered_rs,F1,TOPCON 3D OCT-1000,TOPCON TRC-50EX + DXC-950P,sparsity,other,0.1083659563237825,-0.06,0.33,498,996,ok,0
+od_centered_rs,F1,TOPCON 3D OCT-1000,TOPCON TRC-50EX + DXC-950P,sparsity_crcl_full,other,0.10484802520780574,-0.06,0.32,498,996,ok,0
+od_centered_rs,F1,TOPCON 3D OCT-1000 MARK II,TOPCON TRC-50EX + DXC-950P,disc_fovea_distance_center,other,0.1398590934641596,-0.02,0.44,1025,2050,ok,0
+od_centered_rs,F1,TOPCON 3D OCT-1000 MARK II,TOPCON TRC-50EX + DXC-950P,disc_fovea_distance,other,0.1904215497699791,-0.04,0.52,1025,2050,ok,0
+od_centered_rs,F1,TOPCON 3D OCT-1000 MARK II,TOPCON TRC-50EX + DXC-950P,sparsity,other,0.0741524941871521,-0.05,0.25,1025,2050,ok,0
+od_centered_rs,F1,TOPCON 3D OCT-1000 MARK II,TOPCON TRC-50EX + DXC-950P,sparsity_crcl_full,other,0.08467219982275034,-0.05,0.28,1025,2050,ok,0
+od_centered_rs,F1,TOPCON 3D OCT-2000 FA Plus,TOPCON TRC-50EX + DXC-950P,disc_fovea_distance_center,other,0.1352410885489959,-0.02,0.43,2434,4868,ok,0
+od_centered_rs,F1,TOPCON 3D OCT-2000 FA Plus,TOPCON TRC-50EX + DXC-950P,disc_fovea_distance,other,0.20713533270707757,-0.04,0.55,2434,4868,ok,0
+od_centered_rs,F1,TOPCON 3D OCT-2000 FA Plus,TOPCON TRC-50EX + DXC-950P,sparsity,other,0.07899606515332729,-0.04,0.27,2434,4868,ok,0
+od_centered_rs,F1,TOPCON 3D OCT-2000 FA Plus,TOPCON TRC-50EX + DXC-950P,sparsity_crcl_full,other,0.09996191664677571,-0.05,0.32,2434,4868,ok,0
+od_centered_rs,F1,TOPCON 3D OCT-2000 FA Plus,TOPCON TRC-50IX + D7100,disc_fovea_distance_center,other,,,,0,0,insufficient_pairs,0
+od_centered_rs,F1,TOPCON 3D OCT-2000 FA Plus,TOPCON TRC-50IX + D7100,disc_fovea_distance,other,,,,0,0,insufficient_pairs,0
+od_centered_rs,F1,TOPCON 3D OCT-2000 FA Plus,TOPCON TRC-50IX + D7100,sparsity,other,,,,0,0,insufficient_pairs,0
+od_centered_rs,F1,TOPCON 3D OCT-2000 FA Plus,TOPCON TRC-50IX + D7100,sparsity_crcl_full,other,,,,0,0,insufficient_pairs,0
+od_centered_rs,F1,TOPCON TRC-50EX + DXC-950P,TOPCON TRC-50IX + D7100,disc_fovea_distance_center,other,,,,0,0,insufficient_pairs,0
+od_centered_rs,F1,TOPCON TRC-50EX + DXC-950P,TOPCON TRC-50IX + D7100,disc_fovea_distance,other,,,,0,0,insufficient_pairs,0
+od_centered_rs,F1,TOPCON TRC-50EX + DXC-950P,TOPCON TRC-50IX + D7100,sparsity,other,,,,0,0,insufficient_pairs,0
+od_centered_rs,F1,TOPCON TRC-50EX + DXC-950P,TOPCON TRC-50IX + D7100,sparsity_crcl_full,other,,,,0,0,insufficient_pairs,0
+od_centered_rs,F1,TOPCON 3D OCT-2000 FA Plus,TOPCON TRC-50DX + D7100,disc_fovea_distance_center,other,,,,0,0,insufficient_pairs,0
+od_centered_rs,F1,TOPCON 3D OCT-2000 FA Plus,TOPCON TRC-50DX + D7100,disc_fovea_distance,other,,,,0,0,insufficient_pairs,0
+od_centered_rs,F1,TOPCON 3D OCT-2000 FA Plus,TOPCON TRC-50DX + D7100,sparsity,other,,,,0,0,insufficient_pairs,0
+od_centered_rs,F1,TOPCON 3D OCT-2000 FA Plus,TOPCON TRC-50DX + D7100,sparsity_crcl_full,other,,,,0,0,insufficient_pairs,0
+od_centered_rs,F1,TOPCON 3D OCT-2000 FA Plus,TOPCON DRI OCT Triton plus,disc_fovea_distance_center,other,,,,0,0,insufficient_pairs,0
+od_centered_rs,F1,TOPCON 3D OCT-2000 FA Plus,TOPCON DRI OCT Triton plus,disc_fovea_distance,other,,,,0,0,insufficient_pairs,0
+od_centered_rs,F1,TOPCON 3D OCT-2000 FA Plus,TOPCON DRI OCT Triton plus,sparsity,other,,,,0,0,insufficient_pairs,0
+od_centered_rs,F1,TOPCON 3D OCT-2000 FA Plus,TOPCON DRI OCT Triton plus,sparsity_crcl_full,other,,,,0,0,insufficient_pairs,0
+od_centered_rs,F1,TOPCON DRI OCT Triton plus,TOPCON TRC-50DX + D7100,disc_fovea_distance_center,other,,,,0,0,insufficient_pairs,0
+od_centered_rs,F1,TOPCON DRI OCT Triton plus,TOPCON TRC-50DX + D7100,disc_fovea_distance,other,,,,0,0,insufficient_pairs,0
+od_centered_rs,F1,TOPCON DRI OCT Triton plus,TOPCON TRC-50DX + D7100,sparsity,other,,,,0,0,insufficient_pairs,0
+od_centered_rs,F1,TOPCON DRI OCT Triton plus,TOPCON TRC-50DX + D7100,sparsity_crcl_full,other,,,,0,0,insufficient_pairs,0
+od_centered_rs,F1,TOPCON 3D OCT-2000 FA Plus,TOPCON DRI OCT Triton plus - Fundus,disc_fovea_distance_center,other,,,,0,0,insufficient_pairs,0
+od_centered_rs,F1,TOPCON 3D OCT-2000 FA Plus,TOPCON DRI OCT Triton plus - Fundus,disc_fovea_distance,other,,,,0,0,insufficient_pairs,0
+od_centered_rs,F1,TOPCON 3D OCT-2000 FA Plus,TOPCON DRI OCT Triton plus - Fundus,sparsity,other,,,,0,0,insufficient_pairs,0
+od_centered_rs,F1,TOPCON 3D OCT-2000 FA Plus,TOPCON DRI OCT Triton plus - Fundus,sparsity_crcl_full,other,,,,0,0,insufficient_pairs,0
+od_centered_rs,F1,TOPCON DRI OCT Triton plus - Fundus,TOPCON TRC-50DX + D7100,disc_fovea_distance_center,other,,,,0,0,insufficient_pairs,0
+od_centered_rs,F1,TOPCON DRI OCT Triton plus - Fundus,TOPCON TRC-50DX + D7100,disc_fovea_distance,other,,,,0,0,insufficient_pairs,0
+od_centered_rs,F1,TOPCON DRI OCT Triton plus - Fundus,TOPCON TRC-50DX + D7100,sparsity,other,,,,0,0,insufficient_pairs,0
+od_centered_rs,F1,TOPCON DRI OCT Triton plus - Fundus,TOPCON TRC-50DX + D7100,sparsity_crcl_full,other,,,,0,0,insufficient_pairs,0
+od_centered_rs,F1,TOPCON TRC-50EX + DXC-950P,TOPCON TRC-50VT - Analog Fundus Camera,disc_fovea_distance_center,other,,,,0,0,insufficient_pairs,0
+od_centered_rs,F1,TOPCON TRC-50EX + DXC-950P,TOPCON TRC-50VT - Analog Fundus Camera,disc_fovea_distance,other,,,,0,0,insufficient_pairs,0
+od_centered_rs,F1,TOPCON TRC-50EX + DXC-950P,TOPCON TRC-50VT - Analog Fundus Camera,sparsity,other,,,,0,0,insufficient_pairs,0
+od_centered_rs,F1,TOPCON TRC-50EX + DXC-950P,TOPCON TRC-50VT - Analog Fundus Camera,sparsity_crcl_full,other,,,,0,0,insufficient_pairs,0

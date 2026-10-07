@@ -1,0 +1,295 @@
+[
+  {
+    "variable": "temporal_angle_arteries",
+    "display_name": "Median Temporal Angle - A",
+    "description": "Temporal vessel angle describes the angular spread of the major temporal retinal vessels. Calculated as the angle between the dominant superior and inferior temporal retinal arterial vessels on concentric circles centered on the optic disc. Reported as the median across valid measurement circles. Computed on the full image."
+  },
+  {
+    "variable": "temporal_angle_veins",
+    "display_name": "Median Temporal Angle - V",
+    "description": "Temporal vessel angle describes the angular spread of the major temporal retinal vessels. Calculated as the angle between the dominant superior and inferior temporal retinal venous vessels on concentric circles centered on the optic disc. Reported as the median across valid measurement circles. Computed on the full image."
+  },
+  {
+    "variable": "bifangle_crcl_full_arteries",
+    "display_name": "Bifurcation Angle Circle Full - A",
+    "description": "Retinal vessel bifurcation angle describes the opening between two daughter vessels at a branch point. Calculated as the angle between the outgoing branches of each eligible retinal arterial bifurcation. Reported as the mean across eligible bifurcations. Computed in the full region of a cropped circular grid centered nine-tenths of the way from the optic disc to the fovea, with radius equal to nine-tenths of their separation plus the optic-disc radius."
+  },
+  {
+    "variable": "bifangle_crcl_full_veins",
+    "display_name": "Bifurcation Angle Circle Full - V",
+    "description": "Retinal vessel bifurcation angle describes the opening between two daughter vessels at a branch point. Calculated as the angle between the outgoing branches of each eligible retinal venous bifurcation. Reported as the mean across eligible bifurcations. Computed in the full region of a cropped circular grid centered nine-tenths of the way from the optic disc to the fovea, with radius equal to nine-tenths of their separation plus the optic-disc radius."
+  },
+  {
+    "variable": "bifangle_crcl_superior_arteries",
+    "display_name": "Bifurcation Angle Circle Superior - A",
+    "description": "Retinal vessel bifurcation angle describes the opening between two daughter vessels at a branch point. Calculated as the angle between the outgoing branches of each eligible retinal arterial bifurcation. Reported as the mean across eligible bifurcations. Computed in the superior region of a cropped circular grid centered nine-tenths of the way from the optic disc to the fovea, with radius equal to nine-tenths of their separation plus the optic-disc radius."
+  },
+  {
+    "variable": "bifangle_crcl_superior_veins",
+    "display_name": "Bifurcation Angle Circle Superior - V",
+    "description": "Retinal vessel bifurcation angle describes the opening between two daughter vessels at a branch point. Calculated as the angle between the outgoing branches of each eligible retinal venous bifurcation. Reported as the mean across eligible bifurcations. Computed in the superior region of a cropped circular grid centered nine-tenths of the way from the optic disc to the fovea, with radius equal to nine-tenths of their separation plus the optic-disc radius."
+  },
+  {
+    "variable": "bifangle_crcl_inferior_arteries",
+    "display_name": "Bifurcation Angle Circle Inferior - A",
+    "description": "Retinal vessel bifurcation angle describes the opening between two daughter vessels at a branch point. Calculated as the angle between the outgoing branches of each eligible retinal arterial bifurcation. Reported as the mean across eligible bifurcations. Computed in the inferior region of a cropped circular grid centered nine-tenths of the way from the optic disc to the fovea, with radius equal to nine-tenths of their separation plus the optic-disc radius."
+  },
+  {
+    "variable": "bifangle_crcl_inferior_veins",
+    "display_name": "Bifurcation Angle Circle Inferior - V",
+    "description": "Retinal vessel bifurcation angle describes the opening between two daughter vessels at a branch point. Calculated as the angle between the outgoing branches of each eligible retinal venous bifurcation. Reported as the mean across eligible bifurcations. Computed in the inferior region of a cropped circular grid centered nine-tenths of the way from the optic disc to the fovea, with radius equal to nine-tenths of their separation plus the optic-disc radius."
+  },
+  {
+    "variable": "diam_crcl_full_arteries",
+    "display_name": "Caliber Circle Full - A",
+    "description": "Retinal vessel caliber describes the width of the retinal vasculature. Calculated from the median vessel width measured along each eligible retinal arterial segment. Reported as the mean across eligible vessel segments, weighted by vessel length. Computed in the full region of a cropped circular grid centered nine-tenths of the way from the optic disc to the fovea, with radius equal to nine-tenths of their separation plus the optic-disc radius."
+  },
+  {
+    "variable": "diam_crcl_full_veins",
+    "display_name": "Caliber Circle Full - V",
+    "description": "Retinal vessel caliber describes the width of the retinal vasculature. Calculated from the median vessel width measured along each eligible retinal venous segment. Reported as the mean across eligible vessel segments, weighted by vessel length. Computed in the full region of a cropped circular grid centered nine-tenths of the way from the optic disc to the fovea, with radius equal to nine-tenths of their separation plus the optic-disc radius."
+  },
+  {
+    "variable": "diam_crcl_superior_arteries",
+    "display_name": "Caliber Circle Superior - A",
+    "description": "Retinal vessel caliber describes the width of the retinal vasculature. Calculated from the median vessel width measured along each eligible retinal arterial segment. Reported as the mean across eligible vessel segments, weighted by vessel length. Computed in the superior region of a cropped circular grid centered nine-tenths of the way from the optic disc to the fovea, with radius equal to nine-tenths of their separation plus the optic-disc radius."
+  },
+  {
+    "variable": "diam_crcl_superior_veins",
+    "display_name": "Caliber Circle Superior - V",
+    "description": "Retinal vessel caliber describes the width of the retinal vasculature. Calculated from the median vessel width measured along each eligible retinal venous segment. Reported as the mean across eligible vessel segments, weighted by vessel length. Computed in the superior region of a cropped circular grid centered nine-tenths of the way from the optic disc to the fovea, with radius equal to nine-tenths of their separation plus the optic-disc radius."
+  },
+  {
+    "variable": "diam_crcl_inferior_arteries",
+    "display_name": "Caliber Circle Inferior - A",
+    "description": "Retinal vessel caliber describes the width of the retinal vasculature. Calculated from the median vessel width measured along each eligible retinal arterial segment. Reported as the mean across eligible vessel segments, weighted by vessel length. Computed in the inferior region of a cropped circular grid centered nine-tenths of the way from the optic disc to the fovea, with radius equal to nine-tenths of their separation plus the optic-disc radius."
+  },
+  {
+    "variable": "diam_crcl_inferior_veins",
+    "display_name": "Caliber Circle Inferior - V",
+    "description": "Retinal vessel caliber describes the width of the retinal vasculature. Calculated from the median vessel width measured along each eligible retinal venous segment. Reported as the mean across eligible vessel segments, weighted by vessel length. Computed in the inferior region of a cropped circular grid centered nine-tenths of the way from the optic disc to the fovea, with radius equal to nine-tenths of their separation plus the optic-disc radius."
+  },
+  {
+    "variable": "diam_etdrs_full_arteries",
+    "display_name": "Caliber ETDRS Full - A",
+    "description": "Retinal vessel caliber describes the width of the retinal vasculature. Calculated from the median vessel width measured along each eligible retinal arterial segment. Reported as the mean across eligible vessel segments, weighted by vessel length. Computed in the full region of a fovea-centered ETDRS grid with ring radii of 0.5, 1.5, and 3.0 mm."
+  },
+  {
+    "variable": "diam_etdrs_full_veins",
+    "display_name": "Caliber ETDRS Full - V",
+    "description": "Retinal vessel caliber describes the width of the retinal vasculature. Calculated from the median vessel width measured along each eligible retinal venous segment. Reported as the mean across eligible vessel segments, weighted by vessel length. Computed in the full region of a fovea-centered ETDRS grid with ring radii of 0.5, 1.5, and 3.0 mm."
+  },
+  {
+    "variable": "cre_arteries",
+    "display_name": "Temporal CRE - A",
+    "description": "Central retinal equivalent caliber summarizes the width of the major retinal vessels. Calculated by combining the largest temporal retinal arterial vessels crossing concentric circles centered on the optic disc using an established equivalent-caliber formula. Reported as the median across valid measurement circles. Computed on the full image."
+  },
+  {
+    "variable": "cre_veins",
+    "display_name": "Temporal CRE - V",
+    "description": "Central retinal equivalent caliber summarizes the width of the major retinal vessels. Calculated by combining the largest temporal retinal venous vessels crossing concentric circles centered on the optic disc using an established equivalent-caliber formula. Reported as the median across valid measurement circles. Computed on the full image."
+  },
+  {
+    "variable": "cre_max_vessels_3_arteries",
+    "display_name": "Temporal CRE - A (max vessels=3)",
+    "description": "Central retinal equivalent caliber summarizes the width of the major retinal vessels. Calculated by combining the largest temporal retinal arterial vessels crossing concentric circles centered on the optic disc using an established equivalent-caliber formula. Reported as the median across valid measurement circles. Computed on the full image."
+  },
+  {
+    "variable": "cre_max_vessels_3_veins",
+    "display_name": "Temporal CRE - V (max vessels=3)",
+    "description": "Central retinal equivalent caliber summarizes the width of the major retinal vessels. Calculated by combining the largest temporal retinal venous vessels crossing concentric circles centered on the optic disc using an established equivalent-caliber formula. Reported as the median across valid measurement circles. Computed on the full image."
+  },
+  {
+    "variable": "cre_max_vessels_6_arteries",
+    "display_name": "Temporal CRE - A (max vessels=6)",
+    "description": "Central retinal equivalent caliber summarizes the width of the major retinal vessels. Calculated by combining the largest temporal retinal arterial vessels crossing concentric circles centered on the optic disc using an established equivalent-caliber formula. Reported as the median across valid measurement circles. Computed on the full image."
+  },
+  {
+    "variable": "cre_max_vessels_6_veins",
+    "display_name": "Temporal CRE - V (max vessels=6)",
+    "description": "Central retinal equivalent caliber summarizes the width of the major retinal vessels. Calculated by combining the largest temporal retinal venous vessels crossing concentric circles centered on the optic disc using an established equivalent-caliber formula. Reported as the median across valid measurement circles. Computed on the full image."
+  },
+  {
+    "variable": "cre_hf_superior_arteries",
+    "display_name": "Temporal CRE Hemifield Superior - A",
+    "description": "Central retinal equivalent caliber summarizes the width of the major retinal vessels. Calculated by combining the largest temporal retinal arterial vessels crossing concentric circles centered on the optic disc using an established equivalent-caliber formula. Reported as the median across valid measurement circles. Computed in the superior region of the visible retina divided into superior and inferior regions by the optic-disc–fovea axis."
+  },
+  {
+    "variable": "cre_hf_superior_veins",
+    "display_name": "Temporal CRE Hemifield Superior - V",
+    "description": "Central retinal equivalent caliber summarizes the width of the major retinal vessels. Calculated by combining the largest temporal retinal venous vessels crossing concentric circles centered on the optic disc using an established equivalent-caliber formula. Reported as the median across valid measurement circles. Computed in the superior region of the visible retina divided into superior and inferior regions by the optic-disc–fovea axis."
+  },
+  {
+    "variable": "cre_hf_inferior_arteries",
+    "display_name": "Temporal CRE Hemifield Inferior - A",
+    "description": "Central retinal equivalent caliber summarizes the width of the major retinal vessels. Calculated by combining the largest temporal retinal arterial vessels crossing concentric circles centered on the optic disc using an established equivalent-caliber formula. Reported as the median across valid measurement circles. Computed in the inferior region of the visible retina divided into superior and inferior regions by the optic-disc–fovea axis."
+  },
+  {
+    "variable": "cre_hf_inferior_veins",
+    "display_name": "Temporal CRE Hemifield Inferior - V",
+    "description": "Central retinal equivalent caliber summarizes the width of the major retinal vessels. Calculated by combining the largest temporal retinal venous vessels crossing concentric circles centered on the optic disc using an established equivalent-caliber formula. Reported as the median across valid measurement circles. Computed in the inferior region of the visible retina divided into superior and inferior regions by the optic-disc–fovea axis."
+  },
+  {
+    "variable": "tort_dist_max_segment_len_0p2_crcl_arteries",
+    "display_name": "Distance Tortuosity Circle - A (max segment len=0.2)",
+    "description": "Retinal vessel tortuosity describes the degree to which vessels deviate from a straight course. Higher values indicate more tortuous vessels. Calculated for retinal arterial vessel segments as path length divided by the straight-line distance between endpoints. Reported as the mean across eligible vessel segments, weighted by vessel length. Computed in the full region of a cropped circular grid centered nine-tenths of the way from the optic disc to the fovea, with radius equal to nine-tenths of their separation plus the optic-disc radius."
+  },
+  {
+    "variable": "tort_dist_max_segment_len_0p2_crcl_veins",
+    "display_name": "Distance Tortuosity Circle - V (max segment len=0.2)",
+    "description": "Retinal vessel tortuosity describes the degree to which vessels deviate from a straight course. Higher values indicate more tortuous vessels. Calculated for retinal venous vessel segments as path length divided by the straight-line distance between endpoints. Reported as the mean across eligible vessel segments, weighted by vessel length. Computed in the full region of a cropped circular grid centered nine-tenths of the way from the optic disc to the fovea, with radius equal to nine-tenths of their separation plus the optic-disc radius."
+  },
+  {
+    "variable": "tort_curv_crcl_arteries",
+    "display_name": "Curvature Tortuosity Circle - A",
+    "description": "Retinal vessel tortuosity describes the degree to which vessels deviate from a straight course. Higher values indicate more tortuous vessels. Calculated by integrating curvature along retinal arterial vessel segments. Reported as the mean across eligible vessel segments, weighted by vessel length. Computed in the full region of a cropped circular grid centered nine-tenths of the way from the optic disc to the fovea, with radius equal to nine-tenths of their separation plus the optic-disc radius."
+  },
+  {
+    "variable": "tort_curv_crcl_veins",
+    "display_name": "Curvature Tortuosity Circle - V",
+    "description": "Retinal vessel tortuosity describes the degree to which vessels deviate from a straight course. Higher values indicate more tortuous vessels. Calculated by integrating curvature along retinal venous vessel segments. Reported as the mean across eligible vessel segments, weighted by vessel length. Computed in the full region of a cropped circular grid centered nine-tenths of the way from the optic disc to the fovea, with radius equal to nine-tenths of their separation plus the optic-disc radius."
+  },
+  {
+    "variable": "tort_dist_max_segment_len_0p15_etdrs_arteries",
+    "display_name": "Distance Tortuosity ETDRS - A (max segment len=0.15)",
+    "description": "Retinal vessel tortuosity describes the degree to which vessels deviate from a straight course. Higher values indicate more tortuous vessels. Calculated for retinal arterial vessel segments as path length divided by the straight-line distance between endpoints. Reported as the mean across eligible vessel segments, weighted by vessel length. Computed in the full region of a fovea-centered ETDRS grid with ring radii of 0.5, 1.5, and 3.0 mm."
+  },
+  {
+    "variable": "tort_dist_max_segment_len_0p15_etdrs_veins",
+    "display_name": "Distance Tortuosity ETDRS - V (max segment len=0.15)",
+    "description": "Retinal vessel tortuosity describes the degree to which vessels deviate from a straight course. Higher values indicate more tortuous vessels. Calculated for retinal venous vessel segments as path length divided by the straight-line distance between endpoints. Reported as the mean across eligible vessel segments, weighted by vessel length. Computed in the full region of a fovea-centered ETDRS grid with ring radii of 0.5, 1.5, and 3.0 mm."
+  },
+  {
+    "variable": "tort_dist_max_segment_len_0p2_etdrs_arteries",
+    "display_name": "Distance Tortuosity ETDRS - A (max segment len=0.2)",
+    "description": "Retinal vessel tortuosity describes the degree to which vessels deviate from a straight course. Higher values indicate more tortuous vessels. Calculated for retinal arterial vessel segments as path length divided by the straight-line distance between endpoints. Reported as the mean across eligible vessel segments, weighted by vessel length. Computed in the full region of a fovea-centered ETDRS grid with ring radii of 0.5, 1.5, and 3.0 mm."
+  },
+  {
+    "variable": "tort_dist_max_segment_len_0p2_etdrs_veins",
+    "display_name": "Distance Tortuosity ETDRS - V (max segment len=0.2)",
+    "description": "Retinal vessel tortuosity describes the degree to which vessels deviate from a straight course. Higher values indicate more tortuous vessels. Calculated for retinal venous vessel segments as path length divided by the straight-line distance between endpoints. Reported as the mean across eligible vessel segments, weighted by vessel length. Computed in the full region of a fovea-centered ETDRS grid with ring radii of 0.5, 1.5, and 3.0 mm."
+  },
+  {
+    "variable": "tort_dist_max_segment_len_0p25_etdrs_arteries",
+    "display_name": "Distance Tortuosity ETDRS - A (max segment len=0.25)",
+    "description": "Retinal vessel tortuosity describes the degree to which vessels deviate from a straight course. Higher values indicate more tortuous vessels. Calculated for retinal arterial vessel segments as path length divided by the straight-line distance between endpoints. Reported as the mean across eligible vessel segments, weighted by vessel length. Computed in the full region of a fovea-centered ETDRS grid with ring radii of 0.5, 1.5, and 3.0 mm."
+  },
+  {
+    "variable": "tort_dist_max_segment_len_0p25_etdrs_veins",
+    "display_name": "Distance Tortuosity ETDRS - V (max segment len=0.25)",
+    "description": "Retinal vessel tortuosity describes the degree to which vessels deviate from a straight course. Higher values indicate more tortuous vessels. Calculated for retinal venous vessel segments as path length divided by the straight-line distance between endpoints. Reported as the mean across eligible vessel segments, weighted by vessel length. Computed in the full region of a fovea-centered ETDRS grid with ring radii of 0.5, 1.5, and 3.0 mm."
+  },
+  {
+    "variable": "tort_curv_etdrs_arteries",
+    "display_name": "Curvature Tortuosity ETDRS - A",
+    "description": "Retinal vessel tortuosity describes the degree to which vessels deviate from a straight course. Higher values indicate more tortuous vessels. Calculated by integrating curvature along retinal arterial vessel segments. Reported as the mean across eligible vessel segments, weighted by vessel length. Computed in the full region of a fovea-centered ETDRS grid with ring radii of 0.5, 1.5, and 3.0 mm."
+  },
+  {
+    "variable": "tort_curv_etdrs_veins",
+    "display_name": "Curvature Tortuosity ETDRS - V",
+    "description": "Retinal vessel tortuosity describes the degree to which vessels deviate from a straight course. Higher values indicate more tortuous vessels. Calculated by integrating curvature along retinal venous vessel segments. Reported as the mean across eligible vessel segments, weighted by vessel length. Computed in the full region of a fovea-centered ETDRS grid with ring radii of 0.5, 1.5, and 3.0 mm."
+  },
+  {
+    "variable": "vd_crcl_full_arteries",
+    "display_name": "Vessel Density Circle Full - A",
+    "description": "Retinal vascular density is the proportion of the evaluated retinal area occupied by blood vessels. Higher values indicate greater vessel coverage. Calculated as the area occupied by retinal arterial vessels divided by the evaluated retinal area. Computed in the full region of a cropped circular grid centered nine-tenths of the way from the optic disc to the fovea, with radius equal to nine-tenths of their separation plus the optic-disc radius."
+  },
+  {
+    "variable": "vd_crcl_full_veins",
+    "display_name": "Vessel Density Circle Full - V",
+    "description": "Retinal vascular density is the proportion of the evaluated retinal area occupied by blood vessels. Higher values indicate greater vessel coverage. Calculated as the area occupied by retinal venous vessels divided by the evaluated retinal area. Computed in the full region of a cropped circular grid centered nine-tenths of the way from the optic disc to the fovea, with radius equal to nine-tenths of their separation plus the optic-disc radius."
+  },
+  {
+    "variable": "vd_crcl_superior_arteries",
+    "display_name": "Vessel Density Circle Superior - A",
+    "description": "Retinal vascular density is the proportion of the evaluated retinal area occupied by blood vessels. Higher values indicate greater vessel coverage. Calculated as the area occupied by retinal arterial vessels divided by the evaluated retinal area. Computed in the superior region of a cropped circular grid centered nine-tenths of the way from the optic disc to the fovea, with radius equal to nine-tenths of their separation plus the optic-disc radius."
+  },
+  {
+    "variable": "vd_crcl_superior_veins",
+    "display_name": "Vessel Density Circle Superior - V",
+    "description": "Retinal vascular density is the proportion of the evaluated retinal area occupied by blood vessels. Higher values indicate greater vessel coverage. Calculated as the area occupied by retinal venous vessels divided by the evaluated retinal area. Computed in the superior region of a cropped circular grid centered nine-tenths of the way from the optic disc to the fovea, with radius equal to nine-tenths of their separation plus the optic-disc radius."
+  },
+  {
+    "variable": "vd_crcl_inferior_arteries",
+    "display_name": "Vessel Density Circle Inferior - A",
+    "description": "Retinal vascular density is the proportion of the evaluated retinal area occupied by blood vessels. Higher values indicate greater vessel coverage. Calculated as the area occupied by retinal arterial vessels divided by the evaluated retinal area. Computed in the inferior region of a cropped circular grid centered nine-tenths of the way from the optic disc to the fovea, with radius equal to nine-tenths of their separation plus the optic-disc radius."
+  },
+  {
+    "variable": "vd_crcl_inferior_veins",
+    "display_name": "Vessel Density Circle Inferior - V",
+    "description": "Retinal vascular density is the proportion of the evaluated retinal area occupied by blood vessels. Higher values indicate greater vessel coverage. Calculated as the area occupied by retinal venous vessels divided by the evaluated retinal area. Computed in the inferior region of a cropped circular grid centered nine-tenths of the way from the optic disc to the fovea, with radius equal to nine-tenths of their separation plus the optic-disc radius."
+  },
+  {
+    "variable": "disc_fovea_distance_center",
+    "display_name": "Disc-Fovea Distance (Center)",
+    "description": "Disc–fovea distance describes the anatomical separation between the optic disc and fovea. Calculated from the optic-disc center to the foveal center. Computed on the full image."
+  },
+  {
+    "variable": "disc_fovea_distance",
+    "display_name": "Disc-Fovea Distance",
+    "description": "Disc–fovea distance describes the anatomical separation between the optic disc and fovea. Calculated from the nearest optic-disc margin to the foveal center. Computed on the full image."
+  },
+  {
+    "variable": "sparsity",
+    "display_name": "Mean Sparsity",
+    "description": "Retinal vessel sparsity describes the extent of vessel-free space in the retina. Higher values indicate larger vessel-free spaces. Calculated from the distance between each retinal location and the nearest vessel. Reported as the mean across evaluated retinal locations. Computed on the full image."
+  },
+  {
+    "variable": "sparsity_crcl_full",
+    "display_name": "Mean Sparsity Circle Full",
+    "description": "Retinal vessel sparsity describes the extent of vessel-free space in the retina. Higher values indicate larger vessel-free spaces. Calculated from the distance between each retinal location and the nearest vessel. Reported as the mean across evaluated retinal locations. Computed in the full region of a cropped circular grid centered nine-tenths of the way from the optic disc to the fovea, with radius equal to nine-tenths of their separation plus the optic-disc radius."
+  },
+  {
+    "variable": "sparsity_etdrs_full",
+    "display_name": "Mean Sparsity ETDRS Full",
+    "description": "Retinal vessel sparsity describes the extent of vessel-free space in the retina. Higher values indicate larger vessel-free spaces. Calculated from the distance between each retinal location and the nearest vessel. Reported as the mean across evaluated retinal locations. Computed in the full region of a fovea-centered ETDRS grid with ring radii of 0.5, 1.5, and 3.0 mm."
+  },
+  {
+    "variable": "sharpness_crcl",
+    "display_name": "Sharpness (ESF σ) Circle",
+    "description": "Vessel sharpness describes the clarity of vessel borders in the fundus image. Lower values indicate sharper vessel borders. Calculated from the width of the intensity transition across retinal vessel vessel edges. Reported as the mean across eligible vessel segments, weighted by vessel length. Computed in the full region of a cropped circular grid centered nine-tenths of the way from the optic disc to the fovea, with radius equal to nine-tenths of their separation plus the optic-disc radius."
+  },
+  {
+    "variable": "sharpness_etdrs",
+    "display_name": "Sharpness (ESF σ) ETDRS",
+    "description": "Vessel sharpness describes the clarity of vessel borders in the fundus image. Lower values indicate sharper vessel borders. Calculated from the width of the intensity transition across retinal vessel vessel edges. Reported as the mean across eligible vessel segments, weighted by vessel length. Computed in the full region of a fovea-centered ETDRS grid with ring radii of 0.5, 1.5, and 3.0 mm."
+  },
+  {
+    "variable": "luminance",
+    "display_name": "Luminance",
+    "description": "Fundus luminance describes the overall brightness of the retinal image. Higher values indicate a brighter image. Calculated by converting the fundus image to luminance. Reported as the mean across the visible retinal area. Computed on the full image."
+  },
+  {
+    "variable": "avr_cre",
+    "display_name": "Artery-vein ratio of Temporal CRE",
+    "description": "Artery-vein ratio compares the arterial and venous values of the same measurement. Calculated as `temporal_cre_arteries` / `temporal_cre_veins`. Missing inputs or a zero denominator give a missing result. Computed on the full image.",
+    "formula": "cre_arteries / cre_veins",
+    "dependencies": [
+      "cre_arteries",
+      "cre_veins"
+    ],
+    "origin": "historical_post_processing"
+  },
+  {
+    "variable": "avr_cre_hf_superior",
+    "display_name": "Artery-vein ratio of Temporal CRE Hemifield Superior",
+    "description": "Artery-vein ratio compares the arterial and venous values of the same measurement. Calculated as `temporal_cre_hf_superior_arteries` / `temporal_cre_hf_superior_veins`. Missing inputs or a zero denominator give a missing result. Computed in the superior region of the visible retina divided into superior and inferior regions by the optic-disc–fovea axis.",
+    "formula": "cre_hf_superior_arteries / cre_hf_superior_veins",
+    "dependencies": [
+      "cre_hf_superior_arteries",
+      "cre_hf_superior_veins"
+    ],
+    "origin": "historical_post_processing"
+  },
+  {
+    "variable": "avr_cre_hf_inferior",
+    "display_name": "Artery-vein ratio of Temporal CRE Hemifield Inferior",
+    "description": "Artery-vein ratio compares the arterial and venous values of the same measurement. Calculated as `temporal_cre_hf_inferior_arteries` / `temporal_cre_hf_inferior_veins`. Missing inputs or a zero denominator give a missing result. Computed in the inferior region of the visible retina divided into superior and inferior regions by the optic-disc–fovea axis.",
+    "formula": "cre_hf_inferior_arteries / cre_hf_inferior_veins",
+    "dependencies": [
+      "cre_hf_inferior_arteries",
+      "cre_hf_inferior_veins"
+    ],
+    "origin": "historical_post_processing"
+  }
+]

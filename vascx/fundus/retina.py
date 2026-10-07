@@ -252,6 +252,10 @@ class Retina(Fundus):
         naming: str = "resolved",
         structured: bool = False,
     ):
+        from vascx.fundus.features.derived import FeatureEvaluator
+
+        evaluator = FeatureEvaluator(self)
+        evaluator.validate(feature_set)
         all_features = {}
         seen_names: Dict[str, object] = {}
         name_cache = getattr(feature_set, "_vascx_name_cache", {})
@@ -277,7 +281,7 @@ class Retina(Fundus):
 
             for target_name, target in targets:
                 try:
-                    res = feature.compute(target)
+                    res = evaluator.evaluate(feature, target_name)
                 except Exception as e:
                     if raise_on_error:
                         raise RuntimeError(

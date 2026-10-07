@@ -6,6 +6,7 @@ from typing import TYPE_CHECKING, List, Optional, Tuple
 import matplotlib.pyplot as plt
 import numpy as np
 from matplotlib import cm
+from matplotlib.collections import LineCollection
 from matplotlib.colors import Normalize
 from rtnls_enface.grids.specifications import BaseGridFieldSpecification
 from scipy.ndimage import gaussian_filter1d
@@ -288,10 +289,42 @@ def _fit_pulse_profile_params(
         slope_residual = (bg_slope - bg_slope0) / slope_prior_sigma
         return np.concatenate([data_residual, [width_residual, slope_residual]])
 
+    sqrt_two = np.sqrt(2.0)
+    inv_sqrt_pi = 1.0 / np.sqrt(np.pi)
+
+    def jacobian(params: np.ndarray) -> np.ndarray:
+        """Differentiate the normalized data residual and both prior residuals.
+
+        Columns follow (sigma, background, slope, amplitude, center, width).
+        Width is bounded above zero, so the model's abs(width) has derivative 1.
+        """
+        sigma, _, _, amp, mu, width = params
+        scale = sigma * sqrt_two + 1e-12
+        left = x - (mu - 0.5 * width)
+        right = x - (mu + 0.5 * width)
+        z_left, z_right = left / scale, right / scale
+        exp_left, exp_right = np.exp(-z_left**2), np.exp(-z_right**2)
+        factor = amp * inv_sqrt_pi
+
+        jac = np.zeros((n_samples + 2, 6), dtype=np.float64)
+        jac[:-2, 0] = factor * sqrt_two * (
+            -exp_left * left + exp_right * right
+        ) / scale**2
+        jac[:-2, 1] = -1.0
+        jac[:-2, 2] = -(x - x_ref)
+        jac[:-2, 3] = 0.5 * (erf(z_left) - erf(z_right))
+        jac[:-2, 4] = factor * (exp_right - exp_left) / scale
+        jac[:-2, 5] = 0.5 * factor * (exp_left + exp_right) / scale
+        jac[:-2] /= noise_scale
+        jac[-2, 5] = 1.0 / width_prior_sigma
+        jac[-1, 2] = 1.0 / slope_prior_sigma
+        return jac
+
     try:
         result = least_squares(
             residual,
             x0,
+            jac=jacobian,
             bounds=(lower, upper),
             max_nfev=2000,
         )
@@ -399,6 +432,12 @@ class Sharpness(VesselsLayerFeature):
     using the segment diameter as a soft prior on pulse width; takes the median σ over
     clean profiles, then a length-weighted mean over segments.
     Profiles that leave the fundus bounds or intersect other vessels are discarded.
+    By default, the number of profiles is ceil(16 * segment length / reference
+    distance), clamped to 4–8, distributed uniformly in the spline parameter.
+    The reference is the OD–fovea distance, or 2.5 times the area-equivalent OD
+    diameter without a fovea, or half the shorter image dimension without an OD.
+    These counts precede profile rejection. An explicit n_profiles retains fixed
+    sampling for comparisons with older measurements.
     Lower values indicate sharper edges.
     """
 
@@ -418,7 +457,7 @@ class Sharpness(VesselsLayerFeature):
 
     default_min_area_within_bounds = 0.80
     default_min_numpoints = 20
-    default_n_profiles = 12
+    default_n_profiles = None
     default_profile_smooth_sigma = 0.7
     default_min_contrast = 4.0
     default_min_diameter = 2.0
@@ -429,7 +468,7 @@ class Sharpness(VesselsLayerFeature):
         self,
         grid_field: Optional[BaseGridFieldSpecification] = None,
         min_numpoints: int = default_min_numpoints,
-        n_profiles: int = default_n_profiles,
+        n_profiles: Optional[int] = default_n_profiles,
         profile_smooth_sigma: float = default_profile_smooth_sigma,
         min_contrast: float = default_min_contrast,
         min_diameter: float = default_min_diameter,
@@ -441,8 +480,12 @@ class Sharpness(VesselsLayerFeature):
         """Bilateral ESF sharpness (blur σ) from vessel cross-sections."""
         if min_numpoints < 2:
             raise ValueError("min_numpoints must be >= 2")
-        if n_profiles < 1:
-            raise ValueError("n_profiles must be >= 1")
+        if n_profiles is not None and (
+            isinstance(n_profiles, bool)
+            or not isinstance(n_profiles, (int, np.integer))
+            or n_profiles < 1
+        ):
+            raise ValueError("n_profiles must be a positive integer or None")
         if profile_smooth_sigma < 0:
             raise ValueError("profile_smooth_sigma must be >= 0")
         if min_contrast < 0:
@@ -452,7 +495,7 @@ class Sharpness(VesselsLayerFeature):
         if not np.isfinite(width_prior_fraction) or width_prior_fraction <= 0:
             raise ValueError("width_prior_fraction must be > 0")
         self.min_numpoints = int(min_numpoints)
-        self.n_profiles = int(n_profiles)
+        self.n_profiles = None if n_profiles is None else int(n_profiles)
         self.profile_smooth_sigma = float(profile_smooth_sigma)
         self.min_contrast = float(min_contrast)
         self.min_diameter = float(min_diameter)
@@ -495,6 +538,28 @@ class Sharpness(VesselsLayerFeature):
                 continue
             eligible.append(segment)
         return eligible
+
+    def _profile_reference_distance(self, layer: FundusVesselsLayer) -> float:
+        """Resolve a positive anatomical sampling scale in image pixels."""
+        retina = layer.retina
+        disc = retina.disc
+        if disc is not None:
+            if getattr(retina, "fovea_location", None) is not None:
+                distance = float(retina.disc_fovea_distance)
+                if np.isfinite(distance) and distance > 0:
+                    return distance
+            distance = 2.5 * (2.0 * float(disc.circle.r))
+            if np.isfinite(distance) and distance > 0:
+                return distance
+        resolution = getattr(retina, "resolution", layer.mask.shape)
+        return 0.5 * min(resolution[:2])
+
+    def _segment_n_profiles(self, segment: Segment) -> int:
+        """Number of candidate profiles before bounds, contamination and fit QC."""
+        if self.n_profiles is not None:
+            return self.n_profiles
+        distance = self._profile_reference_distance(segment.layer)
+        return min(8, max(4, ceil(16.0 * segment.length / distance)))
 
     def _segment_profile_half_len(self, segment: Segment) -> Optional[int]:
         """Half-length L of perpendicular profiles for a segment (pixels)."""
@@ -574,7 +639,7 @@ class Sharpness(VesselsLayerFeature):
 
         other = self._other_vessels_mask(segment, vessels_mask)
         keep: List[int] = []
-        for i, t in enumerate(np.linspace(0.0, 1.0, self.n_profiles)):
+        for i, t in enumerate(np.linspace(0.0, 1.0, self._segment_n_profiles(segment))):
             origin = spline.get_point(t)
             direction = spline.get_perpendicular(t)
             if self._profile_outside_bounds(origin, direction, half_len, bounds_mask):
@@ -604,7 +669,9 @@ class Sharpness(VesselsLayerFeature):
         if keep is None:
             return None
         try:
-            profiles = spline.profile(green, N=self.n_profiles, L=half_len)
+            profiles = spline.profile(
+                green, N=self._segment_n_profiles(segment), L=half_len
+            )
         except Exception:
             return None
         profiles = np.asarray(profiles, dtype=np.float64)
@@ -628,7 +695,7 @@ class Sharpness(VesselsLayerFeature):
             return None
 
         lines = []
-        ts = np.linspace(0.0, 1.0, self.n_profiles)
+        ts = np.linspace(0.0, 1.0, self._segment_n_profiles(segment))
         for i in keep:
             t = float(ts[int(i)])
             origin = spline.get_point(t)  # (y, x)
@@ -998,8 +1065,9 @@ class Sharpness(VesselsLayerFeature):
 
     def _plot(self, ax, layer: FundusVesselsLayer, **kwargs):
         """Vessel centerlines are colored by their edge-spread width. The color bar gives
-        ESF sigma in pixels; smaller values indicate sharper vessel edges. The
-        configured region is outlined when present.
+        ESF sigma in pixels; smaller values indicate sharper vessel edges. White
+        perpendicular lines mark clean intensity-profile sampling locations on
+        the scored segments. The configured region is outlined when present.
         """
         layer.plot(ax=ax, image=True, bounds=True, skeleton=False, mask=False)
         field = self._get_grid_field(layer)
@@ -1020,6 +1088,11 @@ class Sharpness(VesselsLayerFeature):
 
         norm = Normalize(vmin=vmin, vmax=vmax)
         cmap = plt.get_cmap("viridis")
+        vessels_mask = np.asarray(layer.mask, dtype=bool)
+        bounds_mask = self._profile_validity_mask(layer)
+        profile_lines = []
+        # Matplotlib linewidths are in points; use one pixel at the figure DPI.
+        linewidth = 72.0 / ax.figure.dpi
         for segment, sigma in scores:
             skel = np.asarray(segment.skeleton)
             if skel.size == 0:
@@ -1028,8 +1101,22 @@ class Sharpness(VesselsLayerFeature):
                 skel[:, 1],
                 skel[:, 0],
                 color=cmap(norm(sigma)),
-                linewidth=1.2,
+                linewidth=linewidth,
                 alpha=0.95,
+            )
+            lines = self._segment_profile_lines(segment, vessels_mask, bounds_mask)
+            if lines is not None:
+                profile_lines.extend(lines)
+
+        if profile_lines:
+            ax.add_collection(
+                LineCollection(
+                    profile_lines,
+                    colors="white",
+                    linewidths=linewidth,
+                    alpha=0.6,
+                    zorder=1.9,
+                )
             )
 
         sm = cm.ScalarMappable(norm=norm, cmap=cmap)

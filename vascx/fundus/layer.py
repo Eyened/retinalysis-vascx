@@ -328,8 +328,17 @@ class VesselTreeLayer(VesselLayer):
                 segment_to_pixels[s].append((x, y))
         return segment_to_pixels
 
-    def get_segment_pixels(self, segment: Segment) -> List[Tuple[int]]:
-        return self.segment_pixels[segment]
+    def get_segment_pixels(self, segment: Segment) -> List[Tuple[int, int]]:
+        """Return vessel pixels owned by a graph segment or its clipped pieces."""
+        if segment in self.segment_pixels:
+            return self.segment_pixels[segment]
+        # Region clipping preserves the original graph segments' pixel ownership.
+        # Include their full masks so a continuation outside the measurement
+        # region is not mistaken for another vessel in sharpness profiles.
+        pixels: List[Tuple[int, int]] = []
+        for original in segment.original_segments or []:
+            pixels.extend(self.segment_pixels.get(original, []))
+        return pixels
 
     @cached_property
     def nodes(self) -> List[Node]:

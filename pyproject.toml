@@ -7,6 +7,7 @@ name = "retinalysis-vascx"
 dynamic = ["version"]
 description = "Retinal analysis toolbox for Python"
 readme = { file = "README.md", content-type = "text/markdown" }
+license = { text = "PolyForm-Noncommercial-1.0.0" }
 authors = [{ name = "Jose Vargas", email = "j.vargasquiros@erasmusmc.nl" }]
 requires-python = ">=3.8, <3.15"
 dependencies = [
@@ -44,6 +45,7 @@ test = [
 ]
 
 [tool.setuptools]
+license-files = ["LICENSE"]
 include-package-data = true
 zip-safe = false
 

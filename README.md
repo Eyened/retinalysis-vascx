@@ -22,6 +22,7 @@ VascX was created to facilitate the extraction of retinal vascular biomarkers fr
   <img src="samples/figures/biomarkers_combined_part2.png" alt="Image 2" width="45%">
 </p> -->
 
+
 ## Attribution
 
 If you use VascX, please consider citing our open access papers / preprints:
@@ -548,6 +549,21 @@ df = extract_biomarkers_to_folder(
 
 Inputs may be dictionaries accepted by `Retina.from_file` or already constructed `Retina` objects. Pass `report_retinas` to visualize a separate, explicitly selected set of representative images, or `generate_report=False` to skip README, manifest, and plot generation.
 
+## License
+
+Copyright (c) 2025 Erasmus Medical Center.
+
+VascX is available under the [PolyForm Noncommercial License 1.0.0](LICENSE).
+Uses outside the permissions granted by that license require a separate commercial
+agreement. For commercial licensing, contact
+[Jose Vargas](mailto:j.vargasquiros@erasmusmc.nl).
+
+Third-party components retain their respective licenses and copyright notices,
+including the BSD-2-Clause notices in the RPS modules and the
+[license for the bundled sknw code](vascx/shared/sknw/LICENSE).
+
+
 ## Testing
 
 See [development.md](development.md).
+

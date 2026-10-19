@@ -12,7 +12,7 @@ class FeatureOutput:
     key: str = ""
     display_name: str = ""
     description: str = ""
-    units: str = ""
+    units: str = "dimensionless"
 
 
 def validate_schema(outputs):

@@ -1,4 +1,0 @@
-/* Standard Docusaurus layout, matching the Retinalysis research site. */
-:root { --ifm-color-primary: #2459a6; --ifm-color-primary-dark: #204f94; }
-.markdown img { max-width: 100%; height: auto; }
-.markdown p a, .markdown li a { text-decoration: underline; text-underline-offset: 2px; }

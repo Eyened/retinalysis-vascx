@@ -15,16 +15,15 @@ jobs:
     runs-on: ubuntu-latest
     defaults:
       run:
-        working-directory: website
+        working-directory: docs
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version-file: website/.nvmrc
+          node-version-file: docs/.nvmrc
           cache: npm
-          cache-dependency-path: website/package-lock.json
+          cache-dependency-path: docs/package-lock.json
       - run: npm ci
-      - run: npm run content:generate
       - run: npm test
       - run: npm run build
       - run: npx playwright install --with-deps chromium
@@ -32,7 +31,7 @@ jobs:
       - uses: actions/upload-pages-artifact@v3
         if: github.event_name != 'pull_request'
         with:
-          path: website/build
+          path: docs/build
   deploy:
     if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
     needs: build

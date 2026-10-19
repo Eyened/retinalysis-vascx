@@ -190,7 +190,7 @@ As an alternative, we also provide notebooks for running the three stages:
 
 > [!IMPORTANT]
 > ### Biomarker post-processing and normalisation
-> While several VascX biomarkers such as tortuosity are unitless, others such as vessel calibers or CREs measure distances. By default, VascX reports these distance measurements in pixels. If an explicit per-image `mm_per_pixel` value is provided, VascX uses it for ETDRS grid scaling and multiplies caliber and CRE biomarkers into millimeters. Some derived biomarkers such as artery-vein ratio (AVR) may also be computed in a post-processing stage as the ratio between caliber or CRE (recommended) measurements. The [sample post-processing notebook](./notebooks/3_post_process.ipynb) shows how to post-process and optionally normalise a VascX export.
+> Features measure spatial quantities in pixels. Enable `use_mm_per_pixel=True` to convert lengths, areas and inverse lengths to mm, mm² and mm⁻¹, respectively. The data dictionary describes the exported units. Ratios, angles, counts and Lab values are unchanged. See the run input contract below.
 
 ## Advanced Usage
 
@@ -265,7 +265,19 @@ Only models for enabled steps are required. For example, a run with `--no-qualit
 
 For most datasets, the standard [feature extraction notebook](./notebooks/2_feature_extraction.ipynb) and `vascx calc-biomarkers` command are the simplest way to compute biomarkers. Advanced users can create `Retina` objects manually when they need to pass custom parameters per image, such as an explicit scaling factor `mm_per_pixel` from an acquisition platform. The [advanced feature extraction notebook](./notebooks/advanced/2_feature_extraction_advanced.ipynb) is an alternative to `2_feature_extraction.ipynb` that demonstrates this using the sample folder.
 
-`mm_per_pixel` is interpreted as millimeters per pixel. When provided, VascX uses it to scale some grids defined in physical units (eg. ETDRS grid), and to convert caliber and CRE outputs from pixels to millimeters. Unitless features, densities, angles, and tortuosity values are not multiplied. If no `mm_per_pixel` value is provided, VascX keeps the legacy behavior: grid scaling is derived from the optic-disc to fovea distance using the 4.75 mm assumption, and caliber/CRE outputs remain in pixels. For full feature sets, also provide the ROI mask or preprocessing bounds; the advanced notebook shows how to convert VascX preprocessing bounds into an ROI mask.
+`mm_per_pixel` is millimetres per pixel of the **processed image**, not the original acquisition. Extraction defaults to `use_mm_per_pixel=False, use_fovea=True`. When enabled, calibration must be finite and positive for each image; enabled fovea coordinates must both be finite (outside-image coordinates are allowed). Disabled inputs are ignored. Validation happens during each image’s execution: single-image calls raise `InputContractError`; bulk calls log and skip that image. Missing discs remain measurement failures, with `od_valid=0` and unavailable measurements. With fovea disabled, fovea-dependent measurements are unavailable while independent measurements continue.
+
+Feature `compute()` methods always return native units. Shared output conversion scales caliber, CRE, sparsity, sharpness, and optic-disc lengths by `mm_per_pixel`, optic-disc area by its square, and curvature by its inverse. The existing dictionary and report describe the effective units; names do not change. Explicitly enabled calibration also controls physical grids such as ETDRS. Otherwise their existing 4.75 mm / disc–fovea-distance fallback remains, while measurements stay in pixels.
+
+```python
+frame = extract_biomarkers_to_folder(
+    images, "macula_centered_rs", "report", use_mm_per_pixel=True, use_fovea=True,
+)
+```
+
+For the CLI, use `--use-mm-per-pixel --mm-per-pixel-csv calibration.csv` with columns `id,mm_per_pixel`; use `--no-use-fovea` to disable landmarks. The `write-readme` and `write-mapping` commands accept the same unit/landmark switches.
+
+**Measurement definition change (`native-spatial-v2`):** sparsity is now a pixel distance and curvature is mean sampled absolute curvature in inverse pixels. Neither is normalized by disc–fovea distance. Curvature sampling is uniform in the spline parameter, not an arc-length integral. Remove the former `Sparsity(normalize=...)` argument. Regenerate outputs in a fresh release; do not relabel old normalized measurements as pixels. Reports record this definition and the enabled inputs.
 
 ### Reconstructed optic-disc geometry
 
@@ -275,16 +287,22 @@ center; `disc.circle` has radius `sqrt(a*b)`. Directional landmarks and nearest
 boundary distances use the ellipse itself. The observed `disc.mask` and
 `disc.center_of_mass` remain available, and vessel exclusion uses the observed mask.
 
-The fit rejects a disc only when both visible IoU is below 0.80 and contour RMSE
-exceeds `max(2 px, 5% of the semi-minor axis)`, or when fitting fails. The defaults
-are boundary margin 5 px, roundness weight 0.02 and robust-loss scale 2 px.
-Invalid fits retain the existing loader behavior: `disc=None`. Diagnostic flags,
-short arcs, visible fraction and off-image centers add no rejection criteria.
+The fit rejects a disc when visible IoU is non-finite or below 0.80, when the
+optimizer reaches an extrapolation limit, when ovality (major/minor semi-axis
+ratio) is >= 1.5, or when fitting fails. The strict ovality limit also applies to
+clipped discs. No area or area/ODFD² acceptance threshold is applied. Visible IoU
+compares the filled ellipse with the segmentation only inside the image and
+fundus ROI; small contour error cannot override poor overlap. The defaults are
+boundary margin 5 px, roundness weight 0.02 and robust-loss scale 2 px.
+Invalid fits retain the existing loader behavior: `disc=None`. Contour error,
+short arcs, visible fraction and off-image centers alone do not reject a fit.
+Accepted clipped discs retain their estimated centroid and disc–fovea distance;
+other OD morphology measurements require a fully visible fitted ellipse.
 
 Reconstructed landmarks drive grids, laterality, all CRE variants, temporal
 angles and disc–fovea distances. Corrected distance drives inferred ETDRS scaling,
-tortuosity splitting/curvature normalization and normalized sparsity. An explicit
-`mm_per_pixel` still controls physical grid scaling. `load_disc(...)` invalidates
+fractional tortuosity splitting and foveal exclusion masks. Curvature and sparsity are
+not normalized by this distance. An enabled `mm_per_pixel` controls physical grid scaling. `load_disc(...)` invalidates
 dependent caches when replacing or clearing a disc.
 
 There is no shared 25 px disc-margin gate or 15 px center-distance gate. Existing
@@ -393,29 +411,57 @@ and veins over the whole retina and the existing ellipse, disc-centered and
 ETDRS regions. Its D0 panel for each region displays all three values and fits,
 alongside a cyan vessel-mask overlay and gold counted boxes at one scale.
 
-**BifurcationCount.** The count of branching points in the directed graph (stage‑3). Let $\mathcal{B}$ be the set of bifurcation nodes with positions $p_b$:
+**Bifurcation.** One compound feature measures the opening angle, branching coefficient,
+absolute cubic junctional exponent deviation (JED), and filtered bifurcation count,
+separately for arteries and veins in the configured region.
+
+Daughter directions are obtained from their splines at distance $\delta$ from the
+junction. The opening angle is the angle between those two direction vectors.
+A bifurcation is eligible when its position lies in the region, both daughters
+are longer than $\delta$, and its angle is finite and at most `max_angle`.
+Defaults are `delta=20` pixels, `max_angle=135` degrees,
+`spline_error_fraction=0.05`, and `min_bifurcations=3`.
+Standard grid visibility rules apply, with a default minimum visible fraction of 0.95.
+
+Let $d_0$ be the parent segment's mean diameter and $d_1,d_2$ the daughter
+segments' mean diameters. These are **whole-segment means**, using the existing
+VascX diameter machinery, not local widths measured at $\delta$.
 
 $$
-C = \sum_{b \in \mathcal{B}} \mathbf{1}[p_b \in R].
+BC = \frac{d_1^2+d_2^2}{d_0^2}, \qquad
+JED = \frac{\sqrt[3]{\left|d_0^3-d_1^3-d_2^3\right|}}{d_0}.
 $$
 
-![](samples/figures/bifurcation_count.png)
+JED is nonnegative, dimensionless, and zero when the diameters satisfy Murray's
+cubic relation. It is not the deviation of a numerically fitted junction exponent.
 
-**BifurcationAngles.** For each bifurcation $b$ at position $p_b$, outgoing branch directions are estimated by sampling the branches' splines at distance $\delta$ from the node along each branch at points $q_1$ and $q_2$. Unit vectors $(u_b, v_b)$ are defined from the bifurcation point to the sample points:
+| Output component | Meaning |
+| --- | --- |
+| `bif_angle_mean` | Arithmetic mean of eligible opening angles, in degrees. |
+| `bif_branching_coefficient_mean` | Arithmetic mean of the individual branching coefficients. |
+| `bif_jed_mean` | Arithmetic mean of the individual absolute cubic JED values. |
+| `bif_count` | Number passing the region, daughter-length, and angle filters. |
 
-$$
-u_b = \frac{q_1 - p_b}{\|q_1 - p_b\|}, \quad v_b = \frac{q_2 - p_b}{\|q_2 - p_b\|},
-$$
+Parameter, region, and layer tokens follow these prefixes under the normal naming
+conventions. Coefficients are calculated per bifurcation before averaging.
+Each mean needs at least `min_bifurcations` observations in its own valid sample.
+Unusable diameter triplets do not remove valid angles or reduce the count.
+An adequately visible empty region returns count zero and missing means; an
+unavailable or insufficiently visible region returns four missing values.
 
-and the bifurcation angle is defined as the angle between these vectors:
+The visualization shows one full fundus image with two short daughter-direction
+rays and an arc marking each eligible bifurcation angle. The markers are unfilled,
+and an outline shows the measurement region. Compact labels
+beside each marker show `angle° | coefficient | JED`: integer angles and two decimal
+places for coefficient and JED. Unavailable diameter measurements display `N/A`.
+The summary includes all four values and sample sizes.
 
-$$
-\theta_b = \arccos(u_b \cdot v_b), \quad \theta_b \in [0^\circ, 180^\circ].
-$$
+This feature replaces the fundus `BifurcationAngles` and `BifurcationCount` APIs.
+Its count is filtered, unlike the former count of every regional branch point.
+`full` and `full_v2` now report mean angles rather than medians. The `bergmann`
+set no longer includes a bifurcation measurement. The separate FAZ count is unchanged.
 
-Angles exceeding 160° are discarded as non-bifurcating continuations. Summary statistics (e.g., mean/median) are reported across valid nodes.
-
-![](samples/figures/bifurcation_angles.png)
+![Compound bifurcation measurements](samples/figures/bifurcation.png)
 
 **Caliber.** For each segment $i$, diameters are sampled along a spline fitted to its skeleton by projecting spline normals to the vessel boundary on B. The per‑segment diameter is the median along its arclength. The reported caliber aggregates over eligible segments (length $\ell_i \ge \ell_{\min}$):
 
@@ -435,10 +481,10 @@ $$
 T_i^{\text{DF}} = \frac{L_{\text{arc},i}}{L_{\text{chord},i}}.
 $$
 
-- Curvature‑based measure, using planar curvature $\kappa_i(s)$ and OD–fovea distance $d_{ODF}$ for scale normalization:
+- Curvature-based measure: mean absolute planar curvature sampled uniformly in the spline parameter $t$ (inverse pixels):
 
 $$
-T_i^{\kappa} = \frac{1}{L_{\text{arc},i}} \int_0^{L_{\text{arc},i}} \big|\kappa_i(s)\big| \, ds \; \cdot \; d_{ODF}.
+T_i^{\kappa} = \frac{1}{N_i} \sum_{j=1}^{N_i} |\kappa_i(t_j)|.
 $$
 
 - Inflection count (number of curvature sign changes along the centerline):
@@ -478,7 +524,7 @@ and the reported value is the median over radii.
 
 ![](samples/figures/temporal_angle.png)
 
-**Sparsity.** Let $\mathrm{DT}(x)$ represent the distance transform over $R$, ie. the normalized Euclidean distance to the nearest vessel pixel (scaled by $d_{ODF}$). Over pixels in R we report either the mean or the largest local maximum:
+**Sparsity.** Let $\mathrm{DT}(x)$ represent the distance transform over $R$, ie. the Euclidean distance to the nearest vessel pixel, measured in image pixels. Over pixels in R we report either the mean or the largest local maximum:
 
 $$
 S_{\text{mean}} = \frac{1}{|R|} \sum_{x \in R} \mathrm{DT}(x), \qquad
@@ -527,7 +573,7 @@ $$
 
 Unavailable components are NaN. Fully visible means the reconstructed ellipse
 has no area outside the visible bounds. Pixel coordinates and sizes refer to the
-loaded/preprocessed image (normally 1024×1024), even when `mm_per_pixel` is supplied.
+loaded/preprocessed image (normally 1024×1024). With `use_mm_per_pixel=True`, lengths and coordinates are converted to mm and areas to mm². Centroids are measured from the processed image’s top-left origin; they do not align anatomy between images.
 Area and circularity use the cleaned segmentation; the axes, centroid, ovality,
 and torsion use the fitted ellipse. The torsion reference follows
 [the disc–fovea perpendicular definition](https://doi.org/10.1038/s41598-019-38960-6).

@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from vascx.shared.outputs import FeatureOutput
+
 from math import ceil
 from typing import TYPE_CHECKING, List, Optional, Tuple
 
@@ -445,6 +447,8 @@ class Sharpness(VesselsLayerFeature):
         "Vessel sharpness describes the clarity of vessel borders in the fundus image. "
         "Lower values indicate sharper vessel borders."
     )
+
+    outputs = (FeatureOutput(units="px"),)
 
     def implementation_description(self, layer_name: str = "vessels", **kwargs) -> str:
         from .base import get_layer_description
@@ -1065,7 +1069,7 @@ class Sharpness(VesselsLayerFeature):
 
     def _plot(self, ax, layer: FundusVesselsLayer, **kwargs):
         """Vessel centerlines are colored by their edge-spread width. The color bar gives
-        ESF sigma in pixels; smaller values indicate sharper vessel edges. White
+        ESF sigma in the reported distance units; smaller values indicate sharper vessel edges. White
         perpendicular lines mark clean intensity-profile sampling locations on
         the scored segments. The configured region is outlined when present.
         """
@@ -1078,13 +1082,15 @@ class Sharpness(VesselsLayerFeature):
         if not scores:
             return ax
 
+        scale = getattr(ax, "_vascx_display_scale", 1.0)
+        scores = [(segment, sigma * scale) for segment, sigma in scores]
         values = np.asarray([sigma for _, sigma in scores], dtype=float)
         vmin = float(np.nanpercentile(values, 5))
         vmax = float(np.nanpercentile(values, 95))
         if not np.isfinite(vmin) or not np.isfinite(vmax) or vmax <= vmin:
             vmin, vmax = float(np.nanmin(values)), float(np.nanmax(values))
         if not np.isfinite(vmin) or not np.isfinite(vmax) or vmax <= vmin:
-            vmin, vmax = 0.5, 3.0
+            vmin, vmax = 0.5 * scale, 3.0 * scale
 
         norm = Normalize(vmin=vmin, vmax=vmax)
         cmap = plt.get_cmap("viridis")
@@ -1121,5 +1127,5 @@ class Sharpness(VesselsLayerFeature):
 
         sm = cm.ScalarMappable(norm=norm, cmap=cmap)
         sm.set_array([])
-        plt.colorbar(sm, ax=ax, fraction=0.046, pad=0.04, label="ESF σ (px)")
+        plt.colorbar(sm, ax=ax, fraction=0.046, pad=0.04, label=f"ESF σ ({getattr(ax, '_vascx_output_schema', self.output_schema())[0].units})")
         return ax

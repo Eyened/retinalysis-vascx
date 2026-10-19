@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from vascx.shared.outputs import FeatureOutput
+
 from typing import TYPE_CHECKING, Optional
 
 import cv2
@@ -33,6 +35,8 @@ class VascularDensity(LayerFeature):
         "Retinal vascular density is the proportion of the evaluated retinal area "
         "occupied by blood vessels. Higher values indicate greater vessel coverage."
     )
+
+    outputs = (FeatureOutput(units="fraction"),)
 
     def implementation_description(self, layer_name: str = "vessels", **kwargs) -> str:
         from .base import get_layer_description

@@ -5,9 +5,8 @@ from rtnls_enface.grids.specifications import (
     GridFieldSpecification,
 )
 
-from vascx.faz.features.tortuosity import TortuosityMeasure
-from vascx.fundus.features.bifurcation_angles import BifurcationAngles
-from vascx.fundus.features.bifurcation_counts import BifurcationCount
+from vascx.fundus.features.tortuosity import TortuosityMeasure
+from vascx.fundus.features.bifurcation import Bifurcation
 from vascx.fundus.features.caliber import Caliber
 from vascx.fundus.features.cre import CRE
 from vascx.fundus.features.od_morphology import ODMorphology
@@ -63,10 +62,8 @@ fs_full = FeatureSet(
         Tortuosity(mode=TortuosityMode.Vessels, measure=TortuosityMeasure.Curvature, aggregator=median),
         Tortuosity(mode=TortuosityMode.Vessels, measure=TortuosityMeasure.Inflections, aggregator=median),
 
-        # bifurcation angles
-        BifurcationAngles(plot=True, aggregator=median),
-        # Note: we have deprecated BifurcationCount due to low reproducibility scores.
-        BifurcationCount(plot=True),
+        # bifurcation features
+        Bifurcation(plot=True),
 
         # general and retina-level features
         Sparsity(plot=True),

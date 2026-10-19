@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from vascx.shared.outputs import FeatureOutput
+
 from typing import TYPE_CHECKING, Optional
 
 import numpy as np
@@ -36,6 +38,8 @@ class VarianceOfLaplacian(RetinaFeature):
         "Laplacian variance describes image focus from the variation in local intensity changes. "
         "Higher values indicate a sharper image."
     )
+
+    outputs = (FeatureOutput(units="intensity²"),)
 
     def implementation_description(self, **kwargs) -> str:
         return "Calculated from the second spatial derivative of fundus-image intensity."

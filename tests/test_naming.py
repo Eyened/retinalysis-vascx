@@ -176,7 +176,7 @@ def test_calc_biomarkers_writes_output_bundle_metadata(tmp_path, monkeypatch):
     input_path.mkdir()
     output_folder = tmp_path / "biomarker_report"
 
-    monkeypatch.setattr("vascx.cli.make_examples", lambda _path: [{"id": "sample"}])
+    monkeypatch.setattr("vascx.cli.make_examples", lambda _path, **kwargs: [{"id": "sample"}])
     monkeypatch.setattr(
         "vascx.utils.analysis.extract_in_parallel",
         lambda **_kwargs: pd.DataFrame({"dummy": [1.0]}, index=["sample"]),

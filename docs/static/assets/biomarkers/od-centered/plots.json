@@ -1,0 +1,116 @@
+{
+  "feature_set": "od_centered_rs",
+  "vascx_version": "1.1.2.dev2+gf9ff26462",
+  "release": "2026_10",
+  "field": "F1",
+  "plots": [
+    {
+      "path": "/assets/biomarkers/od-centered/background_lab.jpg",
+      "variables": [
+        "background_lab_a",
+        "background_lab_b",
+        "background_lab_l"
+      ]
+    },
+    {
+      "path": "/assets/biomarkers/od-centered/bif_crcl_arteries.jpg",
+      "variables": [
+        "bif_angle_mean_crcl_arteries",
+        "bif_angle_mean_crcl_veins",
+        "bif_branching_coefficient_mean_crcl_arteries",
+        "bif_branching_coefficient_mean_crcl_veins",
+        "bif_count_crcl_arteries",
+        "bif_count_crcl_veins",
+        "bif_jed_mean_crcl_arteries",
+        "bif_jed_mean_crcl_veins"
+      ]
+    },
+    {
+      "path": "/assets/biomarkers/od-centered/cre_aric_arteries.jpg",
+      "variables": [
+        "avr_cre_aric",
+        "cre_aric_arteries",
+        "cre_aric_veins"
+      ]
+    },
+    {
+      "path": "/assets/biomarkers/od-centered/cre_arteries.jpg",
+      "variables": [
+        "avr_cre",
+        "cre_arteries",
+        "cre_veins"
+      ]
+    },
+    {
+      "path": "/assets/biomarkers/od-centered/diam_crcl_arteries.jpg",
+      "variables": [
+        "diam_crcl_arteries",
+        "diam_crcl_veins"
+      ]
+    },
+    {
+      "path": "/assets/biomarkers/od-centered/fd_d0_crcl_arteries.jpg",
+      "variables": [
+        "fd_d0_crcl_arteries",
+        "fd_d0_crcl_veins"
+      ]
+    },
+    {
+      "path": "/assets/biomarkers/od-centered/luminance.jpg",
+      "variables": [
+        "luminance"
+      ]
+    },
+    {
+      "path": "/assets/biomarkers/od-centered/od.jpg",
+      "variables": [
+        "od_area",
+        "od_area_norm",
+        "od_centroid_x",
+        "od_centroid_y",
+        "od_circularity",
+        "od_ellipse_a",
+        "od_ellipse_b",
+        "od_fovea_distance",
+        "od_fraction_outside_bounds",
+        "od_ovality_index",
+        "od_torsion",
+        "od_valid"
+      ]
+    },
+    {
+      "path": "/assets/biomarkers/od-centered/sharpness_crcl.jpg",
+      "variables": [
+        "sharpness_crcl"
+      ]
+    },
+    {
+      "path": "/assets/biomarkers/od-centered/sparsity.jpg",
+      "variables": [
+        "sparsity",
+        "sparsity_crcl_full"
+      ]
+    },
+    {
+      "path": "/assets/biomarkers/od-centered/temporal_angle_arteries.jpg",
+      "variables": [
+        "temporal_angle_arteries",
+        "temporal_angle_veins"
+      ]
+    },
+    {
+      "path": "/assets/biomarkers/od-centered/tort_dist_max_segment_len_0p2_crcl_arteries.jpg",
+      "variables": [
+        "tort_dist_max_segment_len_0p2_crcl_arteries",
+        "tort_dist_max_segment_len_0p2_crcl_veins"
+      ]
+    },
+    {
+      "path": "/assets/biomarkers/od-centered/vd_crcl_arteries.jpg",
+      "variables": [
+        "vd_crcl_arteries",
+        "vd_crcl_veins"
+      ]
+    }
+  ]
+}

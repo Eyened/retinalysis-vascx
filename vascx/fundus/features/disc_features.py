@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from vascx.shared.outputs import FeatureOutput
+
 from enum import Enum
 from typing import TYPE_CHECKING, Literal, Union
 
@@ -32,6 +34,8 @@ class DiscFoveaDistance(RetinaFeature):
         "Disc–fovea distance describes the anatomical separation between the optic "
         "disc and fovea."
     )
+
+    outputs = (FeatureOutput(units="px"),)
 
     def implementation_description(self, **kwargs) -> str:
         if self.mode == DiscFoveaDistanceMode.Center:

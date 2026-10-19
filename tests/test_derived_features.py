@@ -37,6 +37,7 @@ class ExampleRetina:
     calc_features = Retina.calc_features
     _register_canonical_name = Retina._register_canonical_name
     id = "example"
+    fovea_location = (0., 0.)
 
     def __init__(self, a=2, v=4):
         self.layers = {"arteries": SimpleNamespace(name="arteries", value=a),
@@ -106,8 +107,10 @@ def test_distinct_instances_are_independent():
 
 def test_legacy_names_and_unchanged_other_sets():
     expected = {
-        "macula_centered_rs": {"avr_cre", "avr_cre_hf_superior", "avr_cre_hf_inferior"},
-        "od_centered_rs": {"avr_full_cre", "avr_nasal_cre", "avr_temporal_cre"},
+        "macula_centered_rs": {"avr_cre", "avr_cre_aric"},
+        "od_centered_rs": {"avr_full_cre", "avr_nasal_cre", "avr_temporal_cre",
+                           "avr_full_cre_aric", "avr_nasal_cre_aric", "avr_temporal_cre_aric",
+                           "avr_full_cre_aric_hf_superior", "avr_full_cre_aric_hf_inferior"},
     }
     for fs, names in expected.items():
         definitions = get_biomarker_definitions(fs)

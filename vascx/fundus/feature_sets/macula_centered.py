@@ -8,7 +8,8 @@ from rtnls_enface.grids.specifications import (
     GridFieldSpecification,
 )
 
-from vascx.fundus.features.bifurcation_angles import BifurcationAngles
+from vascx.fundus.features.fractal_dimension import FractalDimension
+from vascx.fundus.features.bifurcation import Bifurcation
 from vascx.fundus.features.caliber import Caliber
 from vascx.fundus.features.cre import CRE, CREMeasure, CREMode
 from vascx.fundus.features.od_morphology import ODMorphology
@@ -23,13 +24,14 @@ from vascx.fundus.features.tortuosity import (
     TortuosityMeasure,
     TortuosityMode,
 )
+from vascx.fundus.features.derived import AVR
 from vascx.fundus.features.vascular_densities import VascularDensity
-from vascx.shared.aggregators import LengthWeightedAggregator, mean
+from vascx.shared.aggregators import LengthWeightedAggregator
 from vascx.shared.features import FeatureSet
 
 
 
-def make_set(name: str, description: str, grid_description: str, center: float=1.0, radius_multiplier: float=1.0, band_crop: bool=False) -> FeatureSet:
+def make_set(name: str, description: str, grid_description: str, center: float=1.0, radius_multiplier: float=1.0, band_crop: bool=False, include_hemifields: bool=False) -> FeatureSet:
 
     ETDRS_FULL = GridFieldSpecification(ETDRSGridSpecification(description="a fovea-centered ETDRS grid with ring radii of 0.5, 1.5, and 3.0 mm"), ETDRSRing.FullGrid)
 
@@ -45,16 +47,22 @@ def make_set(name: str, description: str, grid_description: str, center: float=1
         [
             TemporalAngle(plot=True),
 
-            # bifurcation angles (full, superior, inferior)
-            BifurcationAngles(plot=True, aggregator=mean, grid_field=CIRCLE_CROPPED_FIELD),
-            BifurcationAngles(grid_field=CIRCLE_CROPPED_SUP, aggregator=mean),
-            BifurcationAngles(grid_field=CIRCLE_CROPPED_INF, aggregator=mean),
+            # bifurcation features (full, superior, inferior)
+            Bifurcation(plot=True, grid_field=CIRCLE_CROPPED_FIELD),
+            # optional hemifield features
+            *([
+                Bifurcation(grid_field=CIRCLE_CROPPED_SUP),
+                Bifurcation(grid_field=CIRCLE_CROPPED_INF)
+            ] if include_hemifields else []),
 
             # caliber (length-weighted)
             Caliber(plot=True, grid_field=CIRCLE_CROPPED_FIELD, aggregator=LengthWeightedAggregator()),
-            Caliber(grid_field=CIRCLE_CROPPED_SUP, aggregator=LengthWeightedAggregator()),
-            Caliber(grid_field=CIRCLE_CROPPED_INF, aggregator=LengthWeightedAggregator()),
             Caliber(grid_field=ETDRS_FULL, aggregator=LengthWeightedAggregator()),
+            # optional hemifield features
+            *([
+                Caliber(grid_field=CIRCLE_CROPPED_SUP, aggregator=LengthWeightedAggregator()),
+                Caliber(grid_field=CIRCLE_CROPPED_INF, aggregator=LengthWeightedAggregator())
+            ] if include_hemifields else []),
 
             # CRE: temporal count variants and standalone superior/inferior regions
             CRE(CREMode.Temporal, plot=True),
@@ -84,23 +92,7 @@ def make_set(name: str, description: str, grid_description: str, center: float=1
             # ETDRS total (length-weighted normalized)
             Tortuosity(
                 mode=TortuosityMode.Segments,
-                max_segment_len=0.15,
-                measure=TortuosityMeasure.Distance,
-                length_measure=LengthMeasure.Splines,
-                grid_field=ETDRS_FULL,
-                aggregator=LengthWeightedAggregator(),
-            ),
-            Tortuosity(
-                mode=TortuosityMode.Segments,
                 max_segment_len=0.2,
-                measure=TortuosityMeasure.Distance,
-                length_measure=LengthMeasure.Splines,
-                grid_field=ETDRS_FULL,
-                aggregator=LengthWeightedAggregator(),
-            ),
-            Tortuosity(
-                mode=TortuosityMode.Segments,
-                max_segment_len=0.25,
                 measure=TortuosityMeasure.Distance,
                 length_measure=LengthMeasure.Splines,
                 grid_field=ETDRS_FULL,
@@ -115,9 +107,13 @@ def make_set(name: str, description: str, grid_description: str, center: float=1
             ),
 
             # vascular densities (full, superior, inferior)
-            VascularDensity(plot=True, grid_field=CIRCLE_CROPPED_FIELD),
-            VascularDensity(grid_field=CIRCLE_CROPPED_SUP),
-            VascularDensity(grid_field=CIRCLE_CROPPED_INF),
+            VascularDensity(plot=True, grid_field=CIRCLE_CROPPED_FIELD, min_area_within_bounds=0.95),
+            *([
+                VascularDensity(grid_field=CIRCLE_CROPPED_SUP, min_area_within_bounds=0.95),
+                VascularDensity(grid_field=CIRCLE_CROPPED_INF, min_area_within_bounds=0.95)
+            ] if include_hemifields else []),
+
+            FractalDimension(q=0, grid_field=CIRCLE_CROPPED_FIELD, plot=True),
 
             # optic disc features
             ODMorphology(plot=True),
@@ -139,11 +135,10 @@ def make_set(name: str, description: str, grid_description: str, center: float=1
         description=description,
     )
 
-    if name == "macula_centered_rs":
-        from vascx.fundus.features.derived import AVR
-        sources = [feature for feature in result if isinstance(feature, CRE)
-                   and feature.max_vessels == feature.default_max_vessels()]
-        result.features.extend(AVR(source) for source in sources)
+        
+    sources = [feature for feature in result if isinstance(feature, CRE)
+                and feature.max_vessels == feature.default_max_vessels()]
+    result.features.extend(AVR(source) for source in sources)
     return result
 
 
@@ -151,6 +146,13 @@ fs_macula_centered = make_set(
     name="macula_centered",
     description="Biomarkers optimized for macula-centered fundus images.",
     grid_description="a circular grid centered on the fovea with radius equal to the optic-disc–fovea distance plus the optic-disc radius")
+
+fs_macula_centered_hemifields = make_set(
+    name="macula_centered_hemifields",
+    description="macula_centered feature set expanded with hemifield features",
+    grid_description="a circular grid centered on the fovea with radius equal to the optic-disc–fovea distance plus the optic-disc radius",
+    include_hemifields=True)
+
 fs_macula_centered_rs = make_set(
     name="macula_centered_rs", 
     description="Biomarkers for macula-centered fundus images using a cropped circular field optimized for devices in the Rotterdam Study (narrow FoV and band crop).",

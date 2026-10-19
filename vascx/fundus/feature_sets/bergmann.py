@@ -1,4 +1,3 @@
-from vascx.fundus.features.bifurcation_counts import BifurcationCount
 from vascx.fundus.features.caliber import Caliber
 from vascx.fundus.features.cre import CRE
 from vascx.fundus.features.temporal_angles import TemporalAngle
@@ -16,11 +15,9 @@ fs_bergmann = FeatureSet(
         Caliber(plot=True, aggregator=median),
         Caliber(aggregator=std),
         Tortuosity(plot=True, length_measure=LengthMeasure.Skeleton, aggregator=median),
-        # Note: we have deprecated BifurcationCount due to low reproducibility scores.
-        BifurcationCount(plot=True),
     ],
     description=(
         "Compact set aligned with Bergmann et al. analyses: temporal angle, CRE, "
-        "vascular density, caliber, tortuosity, and bifurcation count."
+        "vascular density, caliber, and tortuosity."
     ),
 )

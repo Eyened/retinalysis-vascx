@@ -32,14 +32,14 @@ class ODMorphology(RetinaFeature):
     outputs = (
         FeatureOutput("valid", "Valid", "1 if VascX accepted an optic-disc ellipse, otherwise 0; always reported."),
         FeatureOutput("fraction_outside_bounds", "Fraction outside bounds", "Fraction of reconstructed ellipse area outside the fundus ROI or image; 0 is fully visible.", "fraction"),
-        FeatureOutput("centroid_x", "Centroid x", "Fitted ellipse centroid x (column) coordinate; estimated from the visible contour when fraction outside bounds > 0.", "px"),
-        FeatureOutput("centroid_y", "Centroid y", "Fitted ellipse centroid y (row) coordinate; estimated from the visible contour when fraction outside bounds > 0.", "px"),
+        FeatureOutput("centroid_x", "Centroid x", "Fitted ellipse centroid x (column) coordinate from the processed image’s top-left origin; estimated from the visible contour when fraction outside bounds > 0.", "px"),
+        FeatureOutput("centroid_y", "Centroid y", "Fitted ellipse centroid y (row) coordinate from the processed image’s top-left origin; estimated from the visible contour when fraction outside bounds > 0.", "px"),
         FeatureOutput("fovea_distance", "Fovea distance", "Euclidean distance from the fitted ellipse centroid to the fovea, if available. Estimated when fraction outside bounds > 0.", "px"),
         FeatureOutput("ellipse_a", "Ellipse a", "Semi-major axis length of the fitted ellipse; reported only for fully visible discs.", "px"),
         FeatureOutput("ellipse_b", "Ellipse b", "Semi-minor axis length of the fitted ellipse; reported only for fully visible discs.", "px"),
         FeatureOutput("ovality_index", "Ovality index", "Semi-major / semi-minor axis ratio (a/b); 1 is circular. Reported only for fully visible discs."),
         FeatureOutput("circularity", "Circularity", "4*pi*A/P^2 from the cleaned disc segmentation's pixel area A and four-direction Crofton perimeter P. Approximately 1 for a circle; discretization can give values slightly above 1. Reported only for fully visible discs."),
-        FeatureOutput("area", "Area", "Number of pixels in the cleaned optic-disc segmentation; reported only for fully visible discs.", "px^2"),
+        FeatureOutput("area", "Area", "Area of the cleaned optic-disc segmentation, natively counted in pixels; reported only for fully visible discs.", "px²"),
         FeatureOutput("area_norm", "Normalized area", "Segmentation area divided by squared centroid–fovea distance; requires a fully visible disc and a finite, nonzero distance."),
         FeatureOutput("torsion", "Torsion", "Unsigned acute angle (0–90 degrees) between the ellipse major axis and the perpendicular to the centroid–fovea vector. Requires a fully visible disc, a distinct fovea, and unequal ellipse axes; orientation is unstable for near-circular discs.", "degrees"),
     )
@@ -65,7 +65,7 @@ class ODMorphology(RetinaFeature):
         )
 
     def region_description(self, **kwargs):
-        return "Measured on the optic disc in the loaded image's pixel coordinate system."
+        return "Measured on the optic disc relative to the processed image’s top-left origin; coordinates do not anatomically align images."
 
     def compute(self, retina) -> np.ndarray:
         result = np.full(len(self.outputs), np.nan)
@@ -101,12 +101,10 @@ class ODMorphology(RetinaFeature):
         return ax
 
     def _plot(self, ax, retina, **kwargs):
-        """The full fundus shows the segmentation (cyan), fitted ellipse (yellow),
-        visible bounds (magenta), and centroid–fovea line (white). Fully visible
-        discs also show axes a/b and torsion relative to the perpendicular (green).
-        All measurements appear in the translucent bottom overlay; estimated
-        positions are marked ~ and unavailable measurements N/A. Pixel coordinates
-        refer to the loaded image.
+        """The fundus shows segmentation (cyan), ellipse (yellow), bounds (magenta),
+        and the disc–fovea line (white). Fully visible discs show axes a/b and
+        torsion (green). The bottom box lists measurements and units; ~ denotes
+        estimates and N/A missing values. Overlays use image pixels.
         """
         return self._draw(ax, retina, self.compute(retina))
 
@@ -169,6 +167,7 @@ class ODMorphology(RetinaFeature):
 
     def _annotate_value(self, ax, retina, value):
         values = self.output_values(value)
+        schema = getattr(ax, "_vascx_output_schema", self.output_schema())
         clipped = np.isfinite(values[1]) and values[1] > 0
         status = "Clipped disc — position estimated" if clipped else "Fully visible optic disc"
         if not np.isfinite(values[0]) or values[0] == 0:
@@ -191,9 +190,9 @@ class ODMorphology(RetinaFeature):
                 elif i == 1:
                     text = f"{v:.1%}"
                 elif i in (2, 3, 4, 5, 6):
-                    text = f"{v:.1f} px"
+                    text = f"{v:.4g} {schema[i].units}"
                 elif i == 9:
-                    text = f"{v:,.0f} px²"
+                    text = f"{v:.4g} {schema[i].units}"
                 elif i == 11:
                     text = f"{v:.1f}°"
                 else:

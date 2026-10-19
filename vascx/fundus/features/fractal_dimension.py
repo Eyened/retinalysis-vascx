@@ -105,7 +105,7 @@ class FractalDimension(LayerFeature):
         "Generalized fractal dimensions describe how the retinal vessel pattern "
         "and its distribution of vessel pixels change with observation scale."
     )
-    default_min_area_within_bounds = 1.0
+    default_min_area_within_bounds = 0.80
 
     def __init__(self, q: int = 0,
                  grid_field: Optional[BaseGridFieldSpecification] = None,
@@ -252,7 +252,7 @@ class FractalDimension(LayerFeature):
         plot_mask(ax, mask, color=(.3, .95, 1, .85))
         label = "  ".join(f"D{q}={d:.3f}" for q, d in enumerate(result.dimensions))
         ax.text(.02, .91, f"{label}\n{size} px boxes: N={result.counts[index]}",
-                transform=ax.transAxes, color="white", fontsize=8,
+                transform=ax.transAxes, color="white", fontsize=8, va="top",
                 bbox=dict(facecolor="black", alpha=.75, edgecolor="none"))
         # Include the tick labels and axis labels in the inset's white panel.
         panel = Rectangle((.49, .015), .49, .36, transform=ax.transAxes,
@@ -267,8 +267,8 @@ class FractalDimension(LayerFeature):
             inset.plot(x, np.polyval(result.coefficients[q], x), lw=.8,
                        color=color, label=f"D{q}  R²={result.r_squared[q]:.3f}")
         inset.axvline(x[index], color="#b8860b", lw=.8, alpha=.8)
-        inset.tick_params(labelsize=5, length=2)
-        inset.set_xlabel("−log(box size / px)", fontsize=6, labelpad=1)
-        inset.set_ylabel("Scale statistic", fontsize=6, labelpad=1)
-        inset.legend(fontsize=5, loc="best", frameon=False, handlelength=1)
+        inset.tick_params(labelsize=7.2, length=2)
+        inset.set_xlabel("−log(box size / px)", fontsize=7.2, labelpad=1)
+        inset.set_ylabel("Scale statistic", fontsize=7.2, labelpad=1)
+        inset.legend(fontsize=7.2, loc="best", frameon=False, handlelength=1)
         return ax

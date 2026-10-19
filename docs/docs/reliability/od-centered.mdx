@@ -1,0 +1,191 @@
+---
+title: OD-centered
+---
+
+import Introduction from '@site/src/content/reliability/od-centered.mdx';
+
+# OD-centered
+
+<Introduction />
+
+| Metadata | Evaluated configuration |
+| --- | --- |
+| VascX version | `1.1.2.dev2+gf9ff26462` |
+| Feature set | `od_centered_rs` |
+
+These results describe this version and export; they do not automatically apply to newer VascX releases.
+
+## Bifurcation features
+
+### Bifurcation
+
+Computed combinations:
+
+- Computed in the full region of a cropped optic-disc-centered annulus extending 0.7 times the optic-disc–fovea distance beyond the disc margin for Rotterdam Study images. Parameters: multiplier=1.16666666667; band crop fraction=0.06. arteries: `bif_angle_mean_crcl_arteries`; arteries: `bif_branching_coefficient_mean_crcl_arteries`; arteries: `bif_jed_mean_crcl_arteries`; arteries: `bif_count_crcl_arteries`; veins: `bif_angle_mean_crcl_veins`; veins: `bif_branching_coefficient_mean_crcl_veins`; veins: `bif_jed_mean_crcl_veins`; veins: `bif_count_crcl_veins`.
+
+Components:
+
+| Component | Units | Description |
+| --- | --- | --- |
+| `angle_mean` | degrees | Arithmetic mean of eligible daughter–daughter opening angles. |
+| `branching_coefficient_mean` | dimensionless | Mean of (d1²+d2²)/d0² per eligible bifurcation, using whole-segment mean diameters; d0 is the parent. |
+| `jed_mean` | dimensionless | Mean absolute cubic junctional exponent deviation: cuberoot(abs(d0³-d1³-d2³))/d0. Zero satisfies Murray's law. Uses whole-segment mean diameters, not a fitted exponent. |
+| `count` | count | Number passing region, daughter-length and angle filters, including nodes without valid diameter measurements. Reported even below the minimum required for means. |
+
+### Reliability
+
+![Bifurcation features: device-pair ICCs](/assets/reliability/od-centered/icc-bifurcation.png)
+
+Cells show ICC(2,1), complete-pair count in parentheses, and 95% confidence interval. Only estimable ICCs are shown.
+
+## CREs, diameters, and AVR
+
+### Length-Weighted Caliber
+
+Computed combinations:
+
+- Computed in the full region of a cropped optic-disc-centered annulus extending 0.7 times the optic-disc–fovea distance beyond the disc margin for Rotterdam Study images. Parameters: multiplier=1.16666666667; band crop fraction=0.06. arteries: `diam_crcl_arteries`; veins: `diam_crcl_veins`.
+### Full CRE
+
+Computed combinations:
+
+- Computed on the full image. arteries: `cre_arteries`; veins: `cre_veins`.
+### Full CRE ARIC
+
+Computed combinations:
+
+- Trunks selected in Zone B, 1–1.5 optic-disc diameters from the disc center. Requires at least 100% visibility of the requested annulus region. arteries: `cre_aric_arteries`; veins: `cre_aric_veins`.
+### Artery-vein ratio of Full CRE
+
+Computed combinations:
+
+- Computed on the full image. retina: `avr_cre`.
+### Artery-vein ratio of Full CRE ARIC
+
+Computed combinations:
+
+- Trunks selected in Zone B, 1–1.5 optic-disc diameters from the disc center. Requires at least 100% visibility of the requested annulus region. retina: `avr_cre_aric`.
+
+### Reliability
+
+![CREs, diameters, and AVR: device-pair ICCs](/assets/reliability/od-centered/icc-caliber.png)
+
+Cells show ICC(2,1), complete-pair count in parentheses, and 95% confidence interval. Only estimable ICCs are shown.
+
+## Tortuosity
+
+### Length-Weighted Distance Tortuosity (max segment len=0.2)
+
+Computed combinations:
+
+- Computed in the full region of a cropped optic-disc-centered annulus extending 0.7 times the optic-disc–fovea distance beyond the disc margin for Rotterdam Study images. Parameters: multiplier=1.16666666667; band crop fraction=0.06. arteries: `tort_dist_max_segment_len_0p2_crcl_arteries`; veins: `tort_dist_max_segment_len_0p2_crcl_veins`.
+### Length-Weighted Curvature Tortuosity
+
+Computed combinations:
+
+- Computed in the full region of a cropped optic-disc-centered annulus extending 0.7 times the optic-disc–fovea distance beyond the disc margin for Rotterdam Study images. Parameters: multiplier=1.16666666667; band crop fraction=0.06. arteries: `tort_curv_crcl_arteries`; veins: `tort_curv_crcl_veins`.
+
+### Reliability
+
+![Tortuosity: device-pair ICCs](/assets/reliability/od-centered/icc-tortuosity.png)
+
+Cells show ICC(2,1), complete-pair count in parentheses, and 95% confidence interval. Only estimable ICCs are shown.
+
+## Optic disc morphology
+
+### Optic disc
+
+Computed combinations:
+
+- Measured on the optic disc relative to the processed image’s top-left origin; coordinates do not anatomically align images. retina: `od_valid`; retina: `od_fraction_outside_bounds`; retina: `od_centroid_x`; retina: `od_centroid_y`; retina: `od_fovea_distance`; retina: `od_ellipse_a`; retina: `od_ellipse_b`; retina: `od_ovality_index`; retina: `od_circularity`; retina: `od_area`; retina: `od_area_norm`; retina: `od_torsion`.
+
+Components:
+
+| Component | Units | Description |
+| --- | --- | --- |
+| `valid` | dimensionless | 1 if VascX accepted an optic-disc ellipse, otherwise 0; always reported. |
+| `fraction_outside_bounds` | fraction | Fraction of reconstructed ellipse area outside the fundus ROI or image; 0 is fully visible. |
+| `centroid_x` | px | Fitted ellipse centroid x (column) coordinate from the processed image’s top-left origin; estimated from the visible contour when fraction outside bounds > 0. |
+| `centroid_y` | px | Fitted ellipse centroid y (row) coordinate from the processed image’s top-left origin; estimated from the visible contour when fraction outside bounds > 0. |
+| `fovea_distance` | px | Euclidean distance from the fitted ellipse centroid to the fovea, if available. Estimated when fraction outside bounds > 0. |
+| `ellipse_a` | px | Semi-major axis length of the fitted ellipse; reported only for fully visible discs. |
+| `ellipse_b` | px | Semi-minor axis length of the fitted ellipse; reported only for fully visible discs. |
+| `ovality_index` | dimensionless | Semi-major / semi-minor axis ratio (a/b); 1 is circular. Reported only for fully visible discs. |
+| `circularity` | dimensionless | 4*pi*A/P^2 from the cleaned disc segmentation's pixel area A and four-direction Crofton perimeter P. Approximately 1 for a circle; discretization can give values slightly above 1. Reported only for fully visible discs. |
+| `area` | px² | Area of the cleaned optic-disc segmentation, natively counted in pixels; reported only for fully visible discs. |
+| `area_norm` | dimensionless | Segmentation area divided by squared centroid–fovea distance; requires a fully visible disc and a finite, nonzero distance. |
+| `torsion` | degrees | Unsigned acute angle (0–90 degrees) between the ellipse major axis and the perpendicular to the centroid–fovea vector. Requires a fully visible disc, a distinct fovea, and unequal ellipse axes; orientation is unstable for near-circular discs. |
+
+### Reliability
+
+![Optic disc morphology: device-pair ICCs](/assets/reliability/od-centered/icc-optic-disc.png)
+
+Cells show ICC(2,1), complete-pair count in parentheses, and 95% confidence interval. Only estimable ICCs are shown.
+
+## Image quality
+
+### Sharpness (ESF σ)
+
+Computed combinations:
+
+- Computed in the full region of a cropped optic-disc-centered annulus extending 0.7 times the optic-disc–fovea distance beyond the disc margin for Rotterdam Study images. Parameters: multiplier=1.16666666667; band crop fraction=0.06. vessels: `sharpness_crcl`.
+### Luminance
+
+Computed combinations:
+
+- Computed on the full image. retina: `luminance`.
+
+### Reliability
+
+![Image quality: device-pair ICCs](/assets/reliability/od-centered/icc-image-quality.png)
+
+Cells show ICC(2,1), complete-pair count in parentheses, and 95% confidence interval. Only estimable ICCs are shown.
+
+## Other
+
+### Median Temporal Angle
+
+Computed combinations:
+
+- Computed on the full image. arteries: `temporal_angle_arteries`; veins: `temporal_angle_veins`.
+### Vessel Density
+
+Computed combinations:
+
+- Computed in the full region of a cropped optic-disc-centered annulus extending 0.7 times the optic-disc–fovea distance beyond the disc margin for Rotterdam Study images. Parameters: multiplier=1.16666666667; band crop fraction=0.06. arteries: `vd_crcl_arteries`; veins: `vd_crcl_veins`.
+### Fractal Dimension D0
+
+Computed combinations:
+
+- Computed in the full region of a cropped optic-disc-centered annulus extending 0.7 times the optic-disc–fovea distance beyond the disc margin for Rotterdam Study images. Parameters: multiplier=1.16666666667; band crop fraction=0.06. arteries: `fd_d0_crcl_arteries`; veins: `fd_d0_crcl_veins`.
+### Mean Sparsity
+
+Computed combinations:
+
+- Computed on the full image. vessels: `sparsity`.
+- Computed in the full region of a cropped optic-disc-centered annulus extending 0.7 times the optic-disc–fovea distance beyond the disc margin for Rotterdam Study images. Parameters: multiplier=1.16666666667; band crop fraction=0.06. vessels: `sparsity_crcl_full`.
+### Background Lab
+
+Computed combinations:
+
+- Computed on the full image. retina: `background_lab_l`; retina: `background_lab_a`; retina: `background_lab_b`.
+
+Components:
+
+| Component | Units | Description |
+| --- | --- | --- |
+| `l` | dimensionless | Median CIELAB lightness over retinal background pixels. |
+| `a` | dimensionless | Median CIELAB green–red coordinate over retinal background pixels. |
+| `b` | dimensionless | Median CIELAB blue–yellow coordinate over retinal background pixels. |
+### Retinal pigmentation score
+
+Computed combinations:
+
+- `rps`: `background_lab_a` and `background_lab_b`, using one PCA fitted across unique QC-eligible comparison images in all configured fields.
+
+
+### Reliability
+
+![Other: device-pair ICCs](/assets/reliability/od-centered/icc-other.png)
+
+Cells show ICC(2,1), complete-pair count in parentheses, and 95% confidence interval. Only estimable ICCs are shown.

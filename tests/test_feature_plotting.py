@@ -65,3 +65,56 @@ def test_feature_plotting_smoke(feature_set_name, tmp_path) -> None:
             assert axis_has_drawn_content(ax), f"Plot for '{title}' left the axis blank."
         finally:
             plt.close(fig)
+
+
+def test_compound_bifurcation_plot_single_image_transparent_markers_and_labels(tmp_path):
+    """One image retains every compact measurement label and uncapped values."""
+    from dataclasses import replace
+    import numpy as np
+    from matplotlib.patches import Arc
+    from vascx.fundus.features.bifurcation import Bifurcation, _BifurcationLabels
+    retina = RetinaLoader.from_folder(SAMPLES_DIR)[0]
+    feature = Bifurcation(min_bifurcations=1)
+    records = feature._measurements(retina.arteries)
+    assert len(records) > 1
+    records = tuple(replace(r, branching_coefficient=3., jed=1.5) for r in records)
+    records = (replace(records[0], branching_coefficient=np.nan, jed=np.nan), *records[1:])
+    feature._measurements = lambda layer: records
+    values = feature.compute(retina.arteries)
+    assert values[1] == 3 and values[2] == 1.5
+    fig = feature.plot_figure(retina.arteries, computed_value=values, plot_caption=False)
+    try:
+        assert tuple(fig.get_size_inches()) == feature.preferred_plot_size
+        ax = fig.axes[0]
+        assert not ax.child_axes
+        assert not ax.axison
+        assert any(t.get_gid() == "bifurcation-summary" for t in ax.texts)
+        panel = ax
+        assert len(panel.images) == 1
+        assert len(panel.lines) == 2*len(records)
+        arcs = [p for p in panel.patches if isinstance(p, Arc)]
+        assert len(arcs) == len(records) and all(not arc.get_fill() for arc in arcs)
+        for record, arc in zip(records, arcs):
+            assert (arc.theta2 - arc.theta1) % 360 == pytest.approx(record.angle)
+        for i, record in enumerate(records):
+            for ray in panel.lines[2*i:2*i+2]:
+                np.testing.assert_allclose([ray.get_xdata()[0], ray.get_ydata()[0]],
+                                           record.node.position.tuple_xy)
+        labels = next(a for a in panel.artists if isinstance(a, _BifurcationLabels))
+        assert [label.get_text() for label in labels.labels] == [
+            f'{r.angle:.0f}° | N/A | N/A' if i == 0 else f'{r.angle:.0f}° | 3.00 | 1.50'
+            for i, r in enumerate(records)]
+        for size, scale in (((8, 8), 1), ((4, 4), 1), ((8, 8), 3)):
+            fig.set_size_inches(*size)
+            for label in labels.labels:
+                label.set_fontsize(7.2 * scale)
+            for text in ax.texts:
+                if text.get_gid() == "bifurcation-summary":
+                    text.set_fontsize(8 * scale)
+            fig.canvas.draw()
+            assert len(labels.drawn_extents) == len(records)
+            for i, bbox in enumerate(labels.drawn_extents):
+                assert not any(bbox.overlaps(other) for other in labels.drawn_extents[i+1:])
+        fig.savefig(tmp_path/'bifurcation_labels.png')
+    finally:
+        plt.close(fig)

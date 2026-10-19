@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from vascx.shared.outputs import FeatureOutput
+
 import warnings
 from enum import Enum
 from typing import TYPE_CHECKING, List, Optional, Tuple
@@ -102,6 +104,8 @@ class CRE(LayerFeature):
         "Central retinal equivalent caliber summarizes the width of the major "
         "retinal vessels."
     )
+
+    outputs = (FeatureOutput(units="px"),)
 
     def implementation_description(self, layer_name: str = "vessels", **kwargs) -> str:
         from .base import get_layer_description
@@ -504,7 +508,7 @@ class CRE(LayerFeature):
                 raise ValueError("Unrecognized layer type for CRE computation")
             cte = 0.88 if layer.name == "arteries" else 0.95
             value = recursive_cre([m.median_diameter for m in result.selected], cte)
-            return layer.retina.scale_length_measurement(value)
+            return value
         cres = []
         for od_multiple in self.get_circle_multiples():
             circle = self.get_circle(layer, od_multiple)
@@ -516,7 +520,7 @@ class CRE(LayerFeature):
         if len(cres) < self.min_circles:
             return None
 
-        return layer.retina.scale_length_measurement(float(np.median(cres)))
+        return float(np.median(cres))
 
     def display_name(self, layer_name: str, key: str = None) -> str:
         from .base import get_grid_field_suffix, get_layer_suffix
@@ -657,10 +661,10 @@ class CRE(LayerFeature):
 
         ax.text(
             0.05,
-            0.95,
+            0.92,
             f"max_vessels={self.max_vessels}",
             transform=ax.transAxes,
-            fontsize=6,
+            fontsize=7.2,
             color="white",
             ha="left",
             va="top",

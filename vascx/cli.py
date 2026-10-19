@@ -473,7 +473,7 @@ def _get_fovea_columns(fovea_df):
     )
 
 
-def make_examples(input_path):
+def make_examples(input_path, *, use_fovea=True):
     # Required subpaths
     preprocess_rgb_path = input_path / "preprocessed_rgb"
     av_dir = input_path / "artery_vein"
@@ -486,11 +486,11 @@ def make_examples(input_path):
     if not bounds_csv.exists():
         click.echo("Error: bounds.csv must exist in INPUT_PATH")
         return
-    fovea_df = pd.read_csv(fovea_csv, index_col=0) if fovea_csv.exists() else pd.DataFrame()
+    fovea_df = pd.read_csv(fovea_csv, index_col=0) if use_fovea and fovea_csv.exists() else pd.DataFrame()
     bounds_df = pd.read_csv(bounds_csv, index_col=0)
     fovea_df.index = fovea_df.index.astype(str)
     bounds_df.index = bounds_df.index.astype(str)
-    x_fovea_col, y_fovea_col = _get_fovea_columns(fovea_df) if fovea_csv.exists() else (None, None)
+    x_fovea_col, y_fovea_col = _get_fovea_columns(fovea_df) if use_fovea and fovea_csv.exists() else (None, None)
 
     # Discover candidate IDs from artery_vein folder
     candidate_files = sorted(av_dir.glob("*.png"))
@@ -516,10 +516,8 @@ def make_examples(input_path):
         try:
             fovea_location = None
             if id_ in fovea_df.index:
-                fx = float(fovea_df.loc[id_, x_fovea_col])
-                fy = float(fovea_df.loc[id_, y_fovea_col])
-                if np.isfinite([fx, fy]).all():
-                    fovea_location = (fx, fy)
+                fovea_location = (fovea_df.loc[id_, x_fovea_col],
+                                   fovea_df.loc[id_, y_fovea_col])
             bounds_str = bounds_df.loc[id_, "bounds"]
             bounds = eval(bounds_str, {"np": np}) if isinstance(bounds_str, str) else bounds_str
 
@@ -596,6 +594,9 @@ def make_examples(input_path):
     show_default=True,
     help="Biomarker naming convention for output columns.",
 )
+@click.option("--use-fovea/--no-use-fovea", default=True, show_default=True)
+@click.option("--use-mm-per-pixel", is_flag=True, help="Require and use calibration for every image.")
+@click.option("--mm-per-pixel-csv", type=click.Path(exists=True), help="CSV with id and mm_per_pixel columns in processed-image coordinates.")
 def calc_biomarkers(
     input_path,
     output_folder,
@@ -606,6 +607,9 @@ def calc_biomarkers(
     report,
     report_samples,
     report_images,
+    use_fovea,
+    use_mm_per_pixel,
+    mm_per_pixel_csv,
     overwrite,
     naming,
 ):
@@ -623,7 +627,15 @@ def calc_biomarkers(
             "Pass a folder; biomarkers will be written as biomarkers.csv inside it."
         )
 
-    examples = make_examples(input_path)
+    examples = make_examples(input_path, use_fovea=use_fovea)
+    if use_mm_per_pixel:
+        if mm_per_pixel_csv is None:
+            raise click.ClickException("--use-mm-per-pixel requires --mm-per-pixel-csv")
+        calibration = pd.read_csv(mm_per_pixel_csv, dtype={"id": str}).set_index("id")
+        if calibration.index.has_duplicates or "mm_per_pixel" not in calibration:
+            raise click.ClickException("Calibration CSV requires unique id and mm_per_pixel columns")
+        for example in examples or []:
+            example["mm_per_pixel"] = calibration["mm_per_pixel"].get(str(example["id"]))
     if not examples:
         raise click.ClickException("No valid examples assembled; aborting.")
 
@@ -680,6 +692,8 @@ def calc_biomarkers(
             report_retinas=report_retinas,
             report_sample_size=report_samples,
             overwrite=overwrite,
+            use_mm_per_pixel=use_mm_per_pixel,
+            use_fovea=use_fovea,
         )
     except (FileExistsError, ValueError) as exc:
         raise click.ClickException(str(exc)) from exc
@@ -709,12 +723,15 @@ def calc_biomarkers(
     show_default=True,
     help="Naming convention used in the biomarker table.",
 )
-def write_readme(output_file, feature_set, naming):
+@click.option("--use-mm-per-pixel", is_flag=True)
+@click.option("--use-fovea/--no-use-fovea", default=True)
+def write_readme(output_file, feature_set, naming, use_mm_per_pixel, use_fovea):
     """Write Markdown documentation for FEATURE_SET to OUTPUT_FILE."""
     write_feature_set_readme(
         feature_set,
         Path(output_file),
         naming=naming,
+        use_mm_per_pixel=use_mm_per_pixel, use_fovea=use_fovea,
     )
     click.echo(f"Feature-set README written to {output_file}")
 
@@ -736,14 +753,17 @@ def write_readme(output_file, feature_set, naming):
     show_default=True,
     help="Naming convention for mapping keys and display names.",
 )
-def write_mapping(output_file, feature_set, as_json, naming):
+@click.option("--use-mm-per-pixel", is_flag=True)
+@click.option("--use-fovea/--no-use-fovea", default=True)
+def write_mapping(output_file, feature_set, as_json, naming, use_mm_per_pixel, use_fovea):
     """Write biomarker names and descriptions for FEATURE_SET.
 
     JSON preserves the legacy variable-to-display-name mapping. CSV also includes
     a description column.
     """
     write_variable_display_mapping(
-        feature_set, Path(output_file), as_json=as_json, naming=naming
+        feature_set, Path(output_file), as_json=as_json, naming=naming,
+        use_mm_per_pixel=use_mm_per_pixel, use_fovea=use_fovea
     )
     output_format = "JSON" if as_json else "CSV"
     click.echo(f"Biomarker metadata written to {output_file} as {output_format}")

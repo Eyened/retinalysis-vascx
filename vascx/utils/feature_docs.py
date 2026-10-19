@@ -36,6 +36,8 @@ def _resolve_feature_set(feature_set: Union[FeatureSet, str]) -> FeatureSet:
 def get_biomarker_definitions(
     feature_set: Union[FeatureSet, str],
     naming: str = "resolved",
+    use_mm_per_pixel: bool = False,
+    use_fovea: bool = True,
 ) -> List[BiomarkerDefinition]:
     """Return ordered, variable-level metadata for a feature set."""
     from vascx.fundus.retina import Retina
@@ -50,11 +52,11 @@ def get_biomarker_definitions(
             BiomarkerDefinition(
                 variable=item.name,
                 display_name=item.display_name,
-                description=feature.output_description(component, layer_name=target),
+                description=feature.output_description(component, layer_name=target, use_mm_per_pixel=use_mm_per_pixel),
                 feature_index=feature_index,
                 target=target,
                 component=component,
-                units=next(o.units for o in feature.output_schema() if o.key == component),
+                units=next(o.units for o in feature.reported_schema(use_mm_per_pixel) if o.key == component),
                 feature_group=groups[(feature_index, target)].name,
             )
         )
@@ -67,9 +69,11 @@ def write_variable_display_mapping(
     out_path: Union[str, Path],
     as_json: bool = False,
     naming: str = "resolved",
+    use_mm_per_pixel: bool = False,
+    use_fovea: bool = True,
 ) -> Path:
     """Write legacy JSON names or descriptive CSV metadata for a feature set."""
-    definitions = get_biomarker_definitions(feature_set, naming=naming)
+    definitions = get_biomarker_definitions(feature_set, naming=naming, use_mm_per_pixel=use_mm_per_pixel, use_fovea=use_fovea)
     out = Path(out_path)
     out.parent.mkdir(parents=True, exist_ok=True)
     if as_json:
@@ -106,10 +110,13 @@ def write_biomarker_metadata(
     feature_set: Union[FeatureSet, str],
     out_path: Union[str, Path],
     naming: str = "resolved",
+    use_mm_per_pixel: bool = False,
+    use_fovea: bool = True,
 ) -> Path:
     """Write column descriptions, component groups, and units to CSV."""
     return write_variable_display_mapping(
-        feature_set, out_path, as_json=False, naming=naming
+        feature_set, out_path, as_json=False, naming=naming,
+        use_mm_per_pixel=use_mm_per_pixel, use_fovea=use_fovea
     )
 
 
@@ -122,13 +129,15 @@ def write_feature_set_readme(
     output_file: Union[str, Path],
     *,
     naming: str = "resolved",
+    use_mm_per_pixel: bool = False,
+    use_fovea: bool = True,
     dataset_count: Optional[int] = None,
     plot_paths: Optional[Mapping[str, Sequence[Tuple[str, str]]]] = None,
     include_biomarker_values: bool = True,
 ) -> Path:
     """Write Markdown documentation for a feature set and optional dataset report."""
     fs = _resolve_feature_set(feature_set)
-    definitions = get_biomarker_definitions(fs, naming=naming)
+    definitions = get_biomarker_definitions(fs, naming=naming, use_mm_per_pixel=use_mm_per_pixel, use_fovea=use_fovea)
     plots = plot_paths or {}
     output_path = Path(output_file)
     output_path.parent.mkdir(parents=True, exist_ok=True)
@@ -142,6 +151,8 @@ def write_feature_set_readme(
         "",
         f"- Feature set: `{fs.name}`",
         f"- Naming convention: `{naming}`",
+        f"- Millimetre calibration enabled: {use_mm_per_pixel}",
+        f"- Fovea enabled: {use_fovea}",
         f"- Number of biomarkers: {len(definitions)}",
     ]
     if dataset_count is not None:
@@ -211,7 +222,7 @@ def write_feature_set_readme(
         if feature.is_vector:
             lines.extend(["", "Components:", "", "| Component | Units | Description |",
                           "| --- | --- | --- |"])
-            for output in feature.output_schema():
+            for output in feature.reported_schema(use_mm_per_pixel):
                 lines.append(f"| `{output.key}` | {_markdown_cell(output.units)} | {_markdown_cell(output.description)} |")
         # A composite artery/vein plot can be referenced by multiple variables.
         # Link it once within the section, with all matching variables named.

@@ -11,7 +11,7 @@ from rtnls_enface.grids.specifications import (
     HemifieldGridSpecification,
 )
 
-from vascx.fundus.features.bifurcation_angles import BifurcationAngles
+from vascx.fundus.features.bifurcation import Bifurcation
 from vascx.fundus.features.caliber import Caliber
 from vascx.fundus.features.cre import CRE, CREMode
 from vascx.fundus.features.od_morphology import ODMorphology
@@ -24,7 +24,7 @@ from vascx.fundus.features.tortuosity import (
     TortuosityMode,
 )
 from vascx.fundus.features.vascular_densities import VascularDensity
-from vascx.shared.aggregators import LengthWeightedAggregator, mean, median
+from vascx.shared.aggregators import LengthWeightedAggregator, median
 from vascx.shared.features import FeatureSet
 
 HMF_SUP = GridFieldSpecification(HemifieldGridSpecification(description="the visible retina divided into superior and inferior regions by the optic-disc–fovea axis"), HemifieldField.Superior)
@@ -38,10 +38,10 @@ fs_full_v3 = FeatureSet(
     [
         TemporalAngle(plot=True),
 
-        # bifurcation angles (full, superior, inferior)
-        BifurcationAngles(plot=True, aggregator=mean),
-        BifurcationAngles(grid_field=HMF_SUP, aggregator=mean),
-        BifurcationAngles(grid_field=HMF_INF, aggregator=mean),
+        # bifurcation features (full, superior, inferior)
+        Bifurcation(plot=True),
+        Bifurcation(grid_field=HMF_SUP),
+        Bifurcation(grid_field=HMF_INF),
 
         # caliber (full, superior, inferior)
         Caliber(plot=True, aggregator=median),

@@ -200,3 +200,18 @@ all three Lab medians together. Custom feature sets should replace three channel
 instances with one instance. Existing Lab output columns and the PCA helper's
 DataFrame interface are unchanged. RPS implementation and post-processing remain
 in their separate BSD-attributed modules.
+
+
+## Documentation site
+
+The Docusaurus site lives in [`docs/`](docs/README.md). From the repository root:
+
+```bash
+cd docs
+nvm install
+npm ci
+npm start
+```
+
+Open http://localhost:3000/retinalysis-vascx/. See the [site README](docs/README.md)
+for content generation, production previews, and documentation tests.

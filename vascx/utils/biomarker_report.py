@@ -13,6 +13,7 @@ from typing import Dict, List, Mapping, Optional, Sequence, Tuple, Union
 import numpy as np
 import pandas as pd
 from matplotlib import pyplot as plt
+from matplotlib.text import Text
 
 from vascx.fundus.retina import Retina
 from vascx.shared.features import FeatureSet
@@ -81,6 +82,10 @@ def _render_feature_panel(
     dataframe: Optional[pd.DataFrame],
     plot_caption: bool = True,
     component_variables: Optional[Sequence[str]] = None,
+    use_mm_per_pixel: bool = False,
+    use_fovea: bool = True,
+    display_scale=None,
+    display_schema=None,
 ) -> bool:
     """Render one feature target, returning whether the panel succeeded."""
     if component_variables is None:
@@ -96,6 +101,11 @@ def _render_feature_panel(
         "computed_value": None if _is_missing_value(value) else value
     }
     plot_kwargs["plot_caption"] = plot_caption
+    plot_kwargs.update(use_mm_per_pixel=use_mm_per_pixel, use_fovea=use_fovea)
+    if display_scale is not None:
+        plot_kwargs["display_scale"] = display_scale
+    if display_schema is not None:
+        plot_kwargs["display_schema"] = display_schema
     try:
         feature.plot(ax, target, **plot_kwargs)
     except Exception as exc:
@@ -123,6 +133,19 @@ def _render_feature_panel(
     return True
 
 
+def _scale_report_fonts(fig):
+    """Match text at equal displayed widths to the standard 8-inch OD report.
+
+    A/V grids have three columns and some features request larger panels. Fixed
+    point sizes would become much smaller when those grids are resized for docs.
+    Apply once, after all overlays (including custom artist labels) are created.
+    """
+    scale = fig.get_figwidth() / 8
+    for text in set(fig.findobj(match=Text)):
+        text.set_fontsize(text.get_fontsize() * scale)
+    return scale
+
+
 def render_biomarker_plots(
     retinas: Sequence[Tuple[str, Retina]],
     feature_set: FeatureSet,
@@ -132,8 +155,12 @@ def render_biomarker_plots(
     naming: str = "resolved",
     plot_groups: Optional[Mapping[str, str]] = None,
     sample_size: Optional[int] = None,
+    use_mm_per_pixel: bool = False,
+    use_fovea: bool = True,
+    display_scales: Optional[Mapping[str, float]] = None,
+    display_schemas=None,
 ) -> PlotPaths:
-    """Render sample grids: three A/V pairs or four single-layer images by default.
+    """Render sample grids: 2×3 A/V panels or 2×2 single-layer images by default.
 
     An explicit sample_size overrides both defaults, per plot group.
     """
@@ -147,7 +174,13 @@ def render_biomarker_plots(
     )
     outputs = make_output_names(feature_set, Retina._target_names_for_feature, naming=naming)
     grouped_retinas: Dict[str, List[Tuple[str, Retina]]] = {}
+    from vascx.shared.inputs import InputContractError, prepare_retina
     for image_id, retina in retinas:
+        try:
+            retina = prepare_retina(retina, use_mm_per_pixel=use_mm_per_pixel, use_fovea=use_fovea)
+        except InputContractError as exc:
+            warnings.warn(f"Skipped report image {image_id}: {exc}")
+            continue
         group = ""
         if plot_groups is not None:
             group = str(plot_groups.get(str(image_id), ""))
@@ -174,15 +207,16 @@ def render_biomarker_plots(
             limit = sample_size if sample_size is not None else (3 if paired_layers else 4)
             sample_targets = sample_targets[:limit]
 
+            panel_width, panel_height = getattr(feature, "preferred_plot_size", (4, 4))
             if paired_layers:
-                nrows = max(1, len(sample_targets))
+                nrows, ncols = 2, max(1, len(sample_targets))
                 fig, axes = plt.subplots(
-                    nrows, 2, figsize=(8, 4 * nrows), dpi=200, squeeze=False,
+                    nrows, ncols, figsize=(ncols * panel_width, panel_height * nrows), dpi=200, squeeze=False,
                     layout="constrained"
                 )
-                for row, (image_id, _retina, targets) in enumerate(sample_targets):
+                for column, (image_id, _retina, targets) in enumerate(sample_targets):
                     target_lookup = dict(targets)
-                    for column, target_name in enumerate(("arteries", "veins")):
+                    for row, target_name in enumerate(("arteries", "veins")):
                         ax = axes[row, column]
                         target = target_lookup.get(target_name)
                         if target is None:
@@ -202,6 +236,9 @@ def render_biomarker_plots(
                                 component_variables=columns if feature.is_vector else None,
                                 dataframe=dataframe,
                                 plot_caption=False,
+                                use_mm_per_pixel=use_mm_per_pixel, use_fovea=use_fovea,
+                                display_scale=(display_scales or {}).get(str(image_id)),
+                                display_schema=(display_schemas or {}).get(feature_index),
                             )
                         )
             else:
@@ -212,7 +249,7 @@ def render_biomarker_plots(
                 ]
                 nrows = max(1, (len(panels) + 1) // 2)
                 fig, axes = plt.subplots(
-                    nrows, 2, figsize=(8, 4 * nrows), dpi=200, squeeze=False,
+                    nrows, 2, figsize=(2 * panel_width, panel_height * nrows), dpi=200, squeeze=False,
                     layout="constrained"
                 )
                 for ax, panel in zip(axes.ravel(), panels):
@@ -231,6 +268,9 @@ def render_biomarker_plots(
                             component_variables=columns if feature.is_vector else None,
                             dataframe=dataframe,
                             plot_caption=False,
+                            use_mm_per_pixel=use_mm_per_pixel, use_fovea=use_fovea,
+                            display_scale=(display_scales or {}).get(str(image_id)),
+                            display_schema=(display_schemas or {}).get(feature_index),
                         )
                     )
 
@@ -244,23 +284,24 @@ def render_biomarker_plots(
 
             suffix = f"_{_safe_path_component(group)}" if group else ""
             plot_path = plots_folder / f"{_safe_path_component(plot_group_name)}{suffix}.png"
+            font_scale = _scale_report_fonts(fig)
             # One caption per composite, sourced from the same plotting
             # docstring used by standalone feature plots.
             caption = feature.plot_description()
             if paired_layers:
                 column_caption = (
-                    "The left column displays the explanatory plots for arteries, "
-                    "and the right column for veins."
+                    "The top row displays the explanatory plots for arteries, "
+                    "and the bottom row for veins. Each column shows the same image."
                 )
                 caption = f"{caption} {column_caption}" if caption else column_caption
             if caption:
                 wrapped = fill(" ".join(caption.split()), width=110)
                 lines = wrapped.count("\n") + 1
-                caption_height = 0.18 * lines + 0.25
-                fig.set_figheight(4 * nrows + caption_height)
+                caption_height = (0.18 * lines + 0.25) * font_scale
+                fig.set_figheight(panel_height * nrows + caption_height)
                 caption_fraction = caption_height / fig.get_figheight()
                 fig.text(0.02, 0.02, wrapped, ha="left", va="bottom",
-                         fontsize=9, gid="biomarker-caption")
+                         fontsize=9 * font_scale, gid="biomarker-caption")
                 fig.get_layout_engine().set(rect=(0, caption_fraction, 1, 1 - caption_fraction))
             fig.get_layout_engine().set(w_pad=0.08, h_pad=0.08, hspace=0.02)
             fig.savefig(plot_path, dpi=200, bbox_inches="tight", pad_inches=0)
@@ -306,6 +347,8 @@ def write_report_manifest(
     sample_ids: Sequence[str],
     plot_paths: Mapping[str, Sequence[Tuple[str, str]]],
     include_biomarker_values: bool = True,
+    use_mm_per_pixel: bool = False,
+    use_fovea: bool = True,
 ) -> Path:
     """Write machine-readable report provenance."""
     output_path = Path(output_file)
@@ -320,7 +363,10 @@ def write_report_manifest(
     if include_biomarker_values:
         files = {"biomarkers": "biomarkers.csv", **files}
     manifest = {
-        "schema_version": 1,
+        "schema_version": 2,
+        "measurement_definition": "native-spatial-v2",
+        "inputs": {"use_mm_per_pixel": use_mm_per_pixel, "use_fovea": use_fovea},
+        "calibration": "mm_per_pixel" if use_mm_per_pixel else "pixels",
         "created_utc": datetime.now(timezone.utc).isoformat(),
         "vascx_version": _package_version(),
         "feature_set": feature_set.name,

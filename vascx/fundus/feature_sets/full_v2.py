@@ -11,8 +11,7 @@ from rtnls_enface.grids.specifications import (
     HemifieldGridSpecification,
 )
 
-from vascx.fundus.features.bifurcation_angles import BifurcationAngles
-from vascx.fundus.features.bifurcation_counts import BifurcationCount
+from vascx.fundus.features.bifurcation import Bifurcation
 from vascx.fundus.features.caliber import Caliber
 from vascx.fundus.features.cre import CRE, CREMode
 from vascx.fundus.features.od_morphology import ODMorphology
@@ -37,16 +36,10 @@ ETDRS_FULL = GridFieldSpecification(ETDRSGridSpecification(description="a fovea-
 fs_full_v2 = FeatureSet(
     "full_v2",
     [
-        # bifurcation angles (full, superior, inferior)
-        BifurcationAngles(plot=True, aggregator=median),
-        BifurcationAngles(grid_field=HMF_SUP, aggregator=median),
-        BifurcationAngles(grid_field=HMF_INF, aggregator=median),
-
-        # bifurcation counts (full, superior, inferior)
-        # Note: we have deprecated BifurcationCount due to low reproducibility scores.
-        BifurcationCount(plot=True),
-        BifurcationCount(grid_field=HMF_SUP),
-        BifurcationCount(grid_field=HMF_INF),
+        # bifurcation features (full, superior, inferior)
+        Bifurcation(plot=True),
+        Bifurcation(grid_field=HMF_SUP),
+        Bifurcation(grid_field=HMF_INF),
 
         # caliber (full, superior, inferior)
         Caliber(plot=True, aggregator=median),

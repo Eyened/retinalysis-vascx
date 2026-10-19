@@ -18,7 +18,7 @@ from vascx.fundus.loader import RetinaLoader
 from vascx.shared.features import FeatureSet
 
 
-def synthetic_retina(angle=90., visible=1., fovea=(140., 100.), axes=(30., 20.)):
+def synthetic_retina(angle=90., visible=1., fovea=(140., 100.), axes=(28., 20.)):
     fit = OpticDiscEllipseFit(center=Point(100., 80.), semi_axes=axes,
         angle_degrees=angle, contour_xy=np.empty((0, 2)), excluded_contour_xy=np.empty((0, 2)),
         contour_rmse_px=0., observed_arc_degrees=360., visible_fraction=visible,
@@ -39,16 +39,16 @@ def test_full_disc_geometry_and_units():
     assert v['valid'] == 1 and v['fraction_outside_bounds'] == 0
     assert (v['centroid_x'], v['centroid_y']) == (80, 100)
     assert v['fovea_distance'] == 60
-    assert (v['ellipse_a'], v['ellipse_b']) == (30, 20)
-    assert v['ovality_index'] == 1.5
+    assert (v['ellipse_a'], v['ellipse_b']) == (28, 20)
+    assert v['ovality_index'] == 1.4
     assert v['torsion'] == 0
     assert v['area'] == retina.disc.mask.sum()
-    assert v['area'] == pytest.approx(np.pi*30*20, rel=.02)
+    assert v['area'] == pytest.approx(np.pi*28*20, rel=.02)
     assert v['area_norm'] == pytest.approx(v['area']/3600)
     # Elliptical contour circularity from the analytic perimeter (Ramanujan).
-    h = ((30-20)/(30+20))**2
-    perimeter = np.pi*50*(1+3*h/(10+np.sqrt(4-3*h)))
-    assert v['circularity'] == pytest.approx(4*np.pi**2*600/perimeter**2, rel=.04)
+    h = ((28-20)/(28+20))**2
+    perimeter = np.pi*48*(1+3*h/(10+np.sqrt(4-3*h)))
+    assert v['circularity'] == pytest.approx(4*np.pi**2*560/perimeter**2, rel=.04)
 
 
 @pytest.mark.parametrize('angle, expected', [(90, 0), (70, 20), (110, 20), (0, 90), (179, 89)])
@@ -68,6 +68,18 @@ def test_clipped_disc_retains_position_but_withholds_shape(visible):
     v = ODMorphology().compute(synthetic_retina(visible=visible))
     np.testing.assert_allclose(v[:5], [1, 1-visible, 80, 100, 60])
     assert np.isnan(v[5:]).all()
+
+
+@pytest.mark.parametrize('ovality,accepted', [(1.499, True), (1.5, False), (1.501, False)])
+@pytest.mark.parametrize('visible', [1.0, .2])
+def test_ovality_gate_preserves_clipped_distance_below_limit(ovality, accepted, visible):
+    v = ODMorphology().compute(synthetic_retina(axes=(20*ovality, 20), visible=visible))
+    assert v[0] == int(accepted)
+    if not accepted:
+        assert np.isnan(v[1:]).all()
+    else:
+        assert v[4] == 60
+        assert np.isnan(v[5:]).all() if visible < 1 else np.isfinite(v[5:]).all()
 
 
 @pytest.mark.parametrize('fovea', [None, (np.nan, 100), (np.inf, 100), (80, 100)])
@@ -92,7 +104,7 @@ def test_invalid_disc_always_outputs_zero_validity(missing):
         retina.disc = None
     else:
         retina.disc.ellipse.visible_iou = .5
-        retina.disc.ellipse.contour_rmse_px = 10
+        retina.disc.ellipse.contour_rmse_px = 0  # A good contour fit cannot rescue low overlap.
     v = ODMorphology().compute(retina)
     assert v[0] == 0 and np.isnan(v[1:]).all()
 
@@ -172,4 +184,7 @@ def test_cli_keeps_images_without_disc_or_fovea(tmp_path, fovea_row):
     examples = make_examples(tmp_path)
     assert len(examples) == 1 and examples[0]['disc_path'] is None
     expected = None if fovea_row is None or not np.isfinite(fovea_row).all() else fovea_row
-    assert examples[0]['fovea_location'] == expected
+    if fovea_row is not None and not np.isfinite(fovea_row).all():
+        np.testing.assert_allclose(examples[0]['fovea_location'], fovea_row, equal_nan=True)
+    else:
+        assert examples[0]['fovea_location'] == expected

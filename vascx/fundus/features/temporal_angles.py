@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from vascx.shared.outputs import FeatureOutput
+
 import warnings
 from itertools import combinations
 from typing import TYPE_CHECKING, List, Tuple
@@ -42,6 +44,8 @@ class TemporalAngle(LayerFeature):
     general_description = (
         "Temporal vessel angle describes the angular spread of the major temporal retinal vessels."
     )
+
+    outputs = (FeatureOutput(units="degrees"),)
 
     def implementation_description(self, layer_name: str = "vessels", **kwargs) -> str:
         from .base import get_layer_description

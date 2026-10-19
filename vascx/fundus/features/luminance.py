@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from vascx.shared.outputs import FeatureOutput
+
 from typing import TYPE_CHECKING, Optional
 
 import numpy as np
@@ -39,6 +41,8 @@ class Luminance(RetinaFeature):
         "Fundus luminance describes the overall brightness of the retinal image. "
         "Higher values indicate a brighter image."
     )
+
+    outputs = (FeatureOutput(units="intensity"),)
 
     def implementation_description(self, **kwargs) -> str:
         return "Calculated by converting the fundus image to luminance."

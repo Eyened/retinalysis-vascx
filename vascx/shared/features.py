@@ -14,6 +14,7 @@ from .naming import (
 )
 
 from .outputs import FeatureOutput, output_values, validate_schema
+from .units import effective_schema, scale_values, spatial_power
 
 import numpy as np
 
@@ -73,7 +74,7 @@ class FeatureSet:
 
 
 class Feature(ABC):
-    outputs = (FeatureOutput(),)
+    outputs = (FeatureOutput(units="dimensionless"),)
     general_description: str = ""
     plot_in_report: bool = False
 
@@ -83,12 +84,19 @@ class Feature(ABC):
     def output_schema(self) -> tuple[FeatureOutput, ...]:
         return validate_schema(self.outputs)
 
+    def reported_schema(self, use_mm_per_pixel=False):
+        return effective_schema(self.output_schema(), use_mm_per_pixel)
+
+    def convert_output(self, value, scale=1.0):
+        values = scale_values(self.output_schema(), self.output_values(value), scale)
+        return np.asarray(values, dtype=float) if self.is_vector else values[0]
+
     @property
     def is_vector(self) -> bool:
         return bool(self.output_schema()[0].key)
 
     def output_values(self, value) -> tuple:
-        return output_values(self.outputs, value)
+        return output_values(self.output_schema(), value)
 
     def output_name_parts(self, component: str, **kwargs) -> Sequence[NamePart]:
         parts = list(self.name_parts(**kwargs))
@@ -99,10 +107,13 @@ class Feature(ABC):
                          output.display_name or component.replace("_", " "), always_keep=True))
         return parts
 
-    def output_description(self, component: str, **kwargs) -> str:
-        output = next(item for item in self.output_schema() if item.key == component)
+    def output_description(self, component: str, use_mm_per_pixel=False, **kwargs) -> str:
+        output = next(item for item in self.reported_schema(use_mm_per_pixel) if item.key == component)
+        native = next(item for item in self.output_schema() if item.key == component)
+        conversion = (f"Converted from native {native.units} using per-image mm_per_pixel."
+                      if use_mm_per_pixel and spatial_power(native.units) else "")
         return " ".join(text for text in (self.description(**kwargs), output.description,
-                         f"Units: {output.units}." if output.units else "") if text)
+                         conversion, f"Units: {output.units}." if output.units else "") if text)
 
     @abstractmethod
     def compute(self, *args: Any, **kwargs: Any) -> Any:
@@ -242,6 +253,20 @@ class Feature(ABC):
 
         Pass ``plot_caption=False`` to omit the caption in custom layouts.
         """
+        from .inputs import prepare_retina
+        use_mm = kwargs.pop("use_mm_per_pixel", False)
+        use_fovea = kwargs.pop("use_fovea", True)
+        retina = getattr(layer, "retina", layer)
+        if hasattr(retina, "fovea_location"):
+            prepared = prepare_retina(retina, use_mm_per_pixel=use_mm, use_fovea=use_fovea)
+            if prepared is not retina:
+                layer = prepared if layer is retina else prepared.layers[layer.name]
+            retina = prepared
+        # Supplied computed_value is already in reported units.
+        display_scale = kwargs.pop("display_scale", None)
+        if display_scale is None:
+            display_scale = retina.mm_per_pixel if use_mm else 1.0
+        schema = kwargs.pop("display_schema", self.reported_schema(use_mm))
         plot_fovea = kwargs.pop("plot_fovea", True)
         plot_caption = kwargs.pop("plot_caption", True)
         computed_value = kwargs.pop("computed_value", _MISSING)
@@ -250,7 +275,12 @@ class Feature(ABC):
             if computed_value is _MISSING
             else computed_value
         )
+        if computed_value is _MISSING:
+            value = self.convert_output(value, display_scale)
         self.output_values(value)
+        # Local drawing context; no feature instance state is changed.
+        ax._vascx_output_schema = schema
+        ax._vascx_display_scale = display_scale
         ax = self._plot_with_value(ax, layer, value, **kwargs)
         if plot_fovea:
             ax = self._plot_fovea_location(ax, layer)
@@ -265,14 +295,23 @@ class Feature(ABC):
         return self._plot(ax, layer, **kwargs)
 
     def _annotate_value(self, ax, layer, value):
-        ax.text(0.01, 0.99, self._format_value(value), transform=ax.transAxes,
+        text = self._format_value(value)
+        schema = getattr(ax, "_vascx_output_schema", self.output_schema())
+        if not self.is_vector and schema[0].units not in ("", "dimensionless"):
+            text += " " + schema[0].units
+        elif self.is_vector:
+            text = "\n".join(
+                f"{o.display_name or o.key}: {v:.3g} {o.units}" if np.isfinite(v)
+                else f"{o.display_name or o.key}: N/A"
+                for o, v in zip(schema, self.output_values(value)))
+        ax.text(0.01, 0.99, text, transform=ax.transAxes,
                 ha="left", va="top", color="white", fontsize=8,
                 bbox=dict(facecolor="black", alpha=0.5, edgecolor="none"))
 
     def plot_figure(
         self,
         layer: Any,
-        figsize: Tuple[float, float] = (8, 8),
+        figsize: Tuple[float, float] | None = None,
         dpi: int = 128,
         axis_off: bool = True,
         **kwargs: Any,
@@ -283,6 +322,7 @@ class Feature(ABC):
         matplotlib.use("Agg", force=True)
         from matplotlib import pyplot as plt
 
+        figsize = figsize if figsize is not None else getattr(self, "preferred_plot_size", (8, 8))
         fig, ax = plt.subplots(1, 1, figsize=figsize, dpi=dpi, layout="constrained")
         self.plot(ax, layer, **kwargs)
         if axis_off:
@@ -292,7 +332,7 @@ class Feature(ABC):
     def plot_png_bytes(
         self,
         layer: Any,
-        figsize: Tuple[float, float] = (8, 8),
+        figsize: Tuple[float, float] | None = None,
         dpi: int = 128,
         axis_off: bool = True,
         bbox_inches: str = "tight",

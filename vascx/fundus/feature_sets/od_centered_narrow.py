@@ -5,7 +5,6 @@ from rtnls_enface.grids.specifications import (
     ODOnlyGridSpecification,
 )
 
-from vascx.fundus.features.bifurcation_angles import BifurcationAngles
 from vascx.fundus.features.caliber import Caliber
 from vascx.fundus.features.cre import CRE, CREMode
 from vascx.fundus.features.luminance import Luminance
@@ -18,7 +17,7 @@ from vascx.fundus.features.tortuosity import (
     TortuosityMode,
 )
 from vascx.fundus.features.vascular_densities import VascularDensity
-from vascx.shared.aggregators import LengthWeightedAggregator, mean
+from vascx.shared.aggregators import LengthWeightedAggregator
 from vascx.shared.features import FeatureSet
 
 
@@ -94,9 +93,8 @@ def make_set(
             VascularDensity(grid_field=OD_RIGHT),
 
             ####  IMAGE QUALITY FEATURES ####
-            # normalize=False: disc–fovea distance is unavailable
-            Sparsity(plot=True, mode=SparsityMode.MEAN, normalize=False),
-            Sparsity(mode=SparsityMode.MEAN, grid_field=OD_FULL, normalize=False),
+            Sparsity(plot=True, mode=SparsityMode.MEAN),
+            Sparsity(mode=SparsityMode.MEAN, grid_field=OD_FULL),
             Sharpness(plot=True, grid_field=OD_FULL),
             Luminance(plot=True),
         ],

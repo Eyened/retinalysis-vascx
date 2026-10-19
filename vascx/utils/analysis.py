@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import shutil
+import logging
 import warnings
 from collections import defaultdict
 from pathlib import Path
@@ -14,6 +15,7 @@ from rtnls_enface.bounds import make_roi_mask_from_bounds
 from vascx.fundus.feature_sets import *
 from vascx.fundus.retina import Retina
 from vascx.shared.features import FeatureSet
+from vascx.shared.inputs import InputContractError, prepare_retina, validate_inputs
 from vascx.utils.biomarker_report import (
     render_biomarker_plots,
     write_report_manifest,
@@ -34,12 +36,18 @@ def _resolve_feature_set(feature_set: FeatureSet | str) -> FeatureSet:
     return resolved
 
 
-def _load_retina_input(ex, retina_cls=Retina):
+def _load_retina_input(ex, retina_cls=Retina, *, use_mm_per_pixel=False, use_fovea=True):
     """Return an existing retina or construct one from an extraction mapping."""
     if isinstance(ex, EnfaceImage):
-        return ex
+        return prepare_retina(ex, use_mm_per_pixel=use_mm_per_pixel, use_fovea=use_fovea)
 
     retina_kwargs = dict(ex)
+    validate_inputs(retina_kwargs.get("mm_per_pixel"), retina_kwargs.get("fovea_location"),
+                    use_mm_per_pixel=use_mm_per_pixel, use_fovea=use_fovea)
+    if not use_mm_per_pixel:
+        retina_kwargs.pop("mm_per_pixel", None)
+    if not use_fovea:
+        retina_kwargs["fovea_location"] = None
     if "bounds" in retina_kwargs and retina_kwargs["bounds"] is not None:
         roi_mask = make_roi_mask_from_bounds(
             retina_kwargs["bounds"],
@@ -59,24 +67,19 @@ def extract_one(
     print_stack_trace: bool = False,
     plots_folder: Optional[str] = None,
     naming: str = "resolved",
+    *,
+    use_mm_per_pixel: bool = False,
+    use_fovea: bool = True,
 ):
     feature_set = _resolve_feature_set(feature_set)
-    # try:
     with warnings.catch_warnings(record=True) as caught_warnings:
         warnings.simplefilter("always")
-        retina = _load_retina_input(ex, retina_cls)
-        features = retina.calc_features(feature_set, plots_folder, naming=naming)
+        retina = _load_retina_input(ex, retina_cls, use_mm_per_pixel=use_mm_per_pixel, use_fovea=use_fovea)
+        features = retina.calc_features(feature_set, plots_folder, naming=naming, use_mm_per_pixel=use_mm_per_pixel, use_fovea=use_fovea)
 
         warning_messages = [str(w.message) for w in caught_warnings]
 
     return features, warning_messages
-    # except Exception as err:
-    #     print(f"Exception when computing features for example {str(ex['id'])}")
-    #     if print_stack_trace:
-    #         traceback.print_exc()
-    #     else:
-    #         print(err)
-    #     return {}, [f"Error computing features for example {str(ex)}"]
 
 
 def extract_multiple(
@@ -86,15 +89,22 @@ def extract_multiple(
     print_stack_trace: bool = False,
     plots_folder: Optional[str] = None,
     naming: str = "resolved",
+    *,
+    use_mm_per_pixel: bool = False,
+    use_fovea: bool = True,
 ):
     """Extract features for multiple examples sequentially."""
     feature_set = _resolve_feature_set(feature_set)
-    return [
-        extract_one(
-            ex, feature_set, retina_cls, print_stack_trace, plots_folder, naming
-        )
-        for ex in examples
-    ]
+    results = []
+    for ex in examples:
+        try:
+            results.append(extract_one(
+                ex, feature_set, retina_cls, print_stack_trace, plots_folder, naming,
+                use_mm_per_pixel=use_mm_per_pixel, use_fovea=use_fovea))
+        except InputContractError as exc:
+            image_id = ex.get("id") if isinstance(ex, Mapping) else getattr(ex, "id", None)
+            results.append((None, [f"Skipped image {image_id}: {exc}"]))
+    return results
 
 
 def extract_in_parallel(
@@ -106,6 +116,9 @@ def extract_in_parallel(
     logger=None,
     plots_folder: Optional[str] = None,
     naming: str = "resolved",
+    *,
+    use_mm_per_pixel: bool = False,
+    use_fovea: bool = True,
 ):
     feature_set = _resolve_feature_set(feature_set)
 
@@ -124,26 +137,24 @@ def extract_in_parallel(
 
     batch_results = Parallel(n_jobs=n_workers, verbose=0)(
         delayed(extract_multiple)(
-            batch, feature_set, retina_cls, print_stack_trace, plots_folder, naming
+            batch, feature_set, retina_cls, print_stack_trace, plots_folder, naming,
+            use_mm_per_pixel=use_mm_per_pixel, use_fovea=use_fovea
         )
         for batch in example_batches
     )
     res = [item for batch in batch_results for item in batch]
 
-    features = [r[0] for r in res]
+    successful = [i for i, r in enumerate(res) if r[0] is not None]
+    features = [res[i][0] for i in successful]
 
     warning_counts: Dict[str, int] = defaultdict(int)
     for r in res:
         for w in r[1]:
             warning_counts[w] += 1
 
-    if logger is not None:
-        for msg, count in warning_counts.items():
-            logger.warning(f"{msg} (x{count})" if count > 1 else msg)
-    # else:
-    #     for msg, count in warning_counts.items():
-    #         suffix = f" (x{count})" if count > 1 else ""
-    #         print(f"Warning: {msg}{suffix}")
+    for msg, count in warning_counts.items():
+        if logger is not None or msg.startswith("Skipped image "):
+            (logger or logging.getLogger(__name__)).warning(f"{msg} (x{count})" if count > 1 else msg)
 
     df = pd.DataFrame(features)
     if examples:
@@ -152,7 +163,10 @@ def extract_in_parallel(
             for ex in examples
         ]
         if all(identifier is not None for identifier in identifiers):
-            df.index = identifiers
+            df.index = [identifiers[i] for i in successful]
+        else:
+            df.index = successful
+    df.attrs["input_contract_failures"] = {i: res[i][1][0] for i in range(len(res)) if res[i][0] is None}
     return df
 
 
@@ -217,6 +231,8 @@ def extract_biomarkers_to_folder(
     report_plot_groups: Optional[Mapping[str, str]] = None,
     report_sample_size: Optional[int] = None,
     overwrite: bool = False,
+    use_mm_per_pixel: bool = False,
+    use_fovea: bool = True,
 ) -> pd.DataFrame:
     """Extract biomarkers and write a self-contained output folder.
 
@@ -248,12 +264,13 @@ def extract_biomarkers_to_folder(
         print_stack_trace=print_stack_trace,
         logger=logger,
         naming=naming,
+        use_mm_per_pixel=use_mm_per_pixel,
+        use_fovea=use_fovea,
     )
-    if len(dataframe) != len(inputs):
-        raise RuntimeError(
-            "Extraction returned a different number of rows than retina inputs"
-        )
-    dataframe.index = identifiers
+    if dataframe.empty:
+        raise ValueError("No images satisfied the run input contract")
+    failed = dataframe.attrs.get("input_contract_failures", {})
+    dataframe.index = [identifier for i, identifier in enumerate(identifiers) if i not in failed]
     if write_biomarker_values:
         dataframe.to_csv(output_path / "biomarkers.csv", index_label="id")
 
@@ -261,6 +278,8 @@ def extract_biomarkers_to_folder(
         resolved_feature_set,
         output_path / "data_dictionary.csv",
         naming=naming,
+        use_mm_per_pixel=use_mm_per_pixel,
+        use_fovea=use_fovea,
     )
 
     if not generate_report:
@@ -272,6 +291,8 @@ def extract_biomarkers_to_folder(
         group_counts = {}
         sample_inputs, sample_ids = [], []
         for identifier, retina_input in zip(identifiers, inputs):
+            if identifier not in dataframe.index:
+                continue
             group = str((report_plot_groups or {}).get(identifier, ""))
             if group_counts.get(group, 0) >= pool_size:
                 continue
@@ -288,16 +309,22 @@ def extract_biomarkers_to_folder(
     if len(set(sample_ids)) != len(sample_ids):
         raise ValueError("Report retina IDs must be unique")
 
-    loaded_samples = [
-        (sample_id, _load_retina_input(retina_input, retina_cls))
-        for sample_id, retina_input in zip(sample_ids, sample_inputs)
-    ]
+    loaded_samples = []
+    for sample_id, retina_input in zip(sample_ids, sample_inputs):
+        try:
+            loaded_samples.append((sample_id, _load_retina_input(
+                retina_input, retina_cls, use_mm_per_pixel=use_mm_per_pixel, use_fovea=use_fovea)))
+        except InputContractError as exc:
+            (logger or logging.getLogger(__name__)).warning("Skipped report image %s: %s", sample_id, exc)
+    sample_ids = [sample_id for sample_id, _ in loaded_samples]
     plot_paths = render_biomarker_plots(
         loaded_samples,
         resolved_feature_set,
         output_path,
         dataframe=dataframe,
         naming=naming,
+        use_mm_per_pixel=use_mm_per_pixel,
+        use_fovea=use_fovea,
         plot_groups=report_plot_groups,
         sample_size=report_sample_size,
     )
@@ -305,6 +332,8 @@ def extract_biomarkers_to_folder(
         resolved_feature_set,
         output_path / "README.md",
         naming=naming,
+        use_mm_per_pixel=use_mm_per_pixel,
+        use_fovea=use_fovea,
         dataset_count=len(dataframe),
         plot_paths=plot_paths,
         include_biomarker_values=write_biomarker_values,
@@ -313,6 +342,8 @@ def extract_biomarkers_to_folder(
         output_path / "report.json",
         feature_set=resolved_feature_set,
         naming=naming,
+        use_mm_per_pixel=use_mm_per_pixel,
+        use_fovea=use_fovea,
         dataset_count=len(dataframe),
         sample_ids=sample_ids,
         plot_paths=plot_paths,

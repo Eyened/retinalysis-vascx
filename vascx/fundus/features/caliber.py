@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from vascx.shared.outputs import FeatureOutput
+
 from typing import TYPE_CHECKING, Callable, Optional
 
 import numpy as np
@@ -42,6 +44,8 @@ class Caliber(LayerFeature):
     general_description = (
         "Retinal vessel caliber describes the width of the retinal vasculature."
     )
+
+    outputs = (FeatureOutput(units="px"),)
 
     def implementation_description(self, layer_name: str = "vessels", **kwargs) -> str:
         from .base import get_layer_description
@@ -112,7 +116,7 @@ class Caliber(LayerFeature):
         else:
             result = self.aggregator(np.asarray(calibers))
 
-        return layer.retina.scale_length_measurement(result)
+        return result
 
     def display_name(self, layer_name: str, key: str = None) -> str:
         from .base import get_aggregator_prefix, get_grid_field_suffix, get_layer_suffix

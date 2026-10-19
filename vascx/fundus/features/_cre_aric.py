@@ -257,6 +257,7 @@ def plot_aric(feature: CRE, ax, layer: VesselTreeLayer, **kwargs):
         for piece in trunk.pieces:
             y, x = (np.asarray(piece.skeleton) + 0.5).T
             ax.plot(x, y, color="0.65", lw=0.7, alpha=0.7, zorder=2)
+    label_positions = {True: [], False: []}
     for i, trunk in enumerate(result.selected):
         color = plt.get_cmap("tab10")(i % 10)
         style = "--" if trunk.replacement_for is not None else "-"
@@ -266,12 +267,17 @@ def plot_aric(feature: CRE, ax, layer: VesselTreeLayer, **kwargs):
                     gid="aric-segment-section")
         points = np.concatenate([p.skeleton for p in trunk.pieces]) + 0.5
         middle = points[len(points) // 2]
-        width = retina.scale_length_measurement(trunk.median_diameter)
-        units = "mm" if retina.mm_per_pixel is not None else "px"
-        right_edge = middle[1] > 0.78 * retina.resolution[1]
+        width = trunk.median_diameter * getattr(ax, "_vascx_display_scale", 1.0)
+        units = getattr(ax, "_vascx_output_schema", feature.output_schema())[0].units
+        right_edge = middle[1] > 0.5 * retina.resolution[1]
+        preferred_y = np.clip(1 - middle[0] / retina.resolution[0], .20, .85)
+        slots = np.linspace(.20, .85, 11)
+        free = [y for y in slots if all(abs(y - used) >= .06 for used in label_positions[right_edge])]
+        label_y = min(free or list(slots), key=lambda y: abs(y - preferred_y))
+        label_positions[right_edge].append(label_y)
         ax.annotate(f"{trunk.segment.index}: median {width:.3g} {units}",
-                    (middle[1], middle[0]), xytext=(-5 if right_edge else 5, 8 if i % 2 == 0 else -12),
-                    ha="right" if right_edge else "left", textcoords="offset points",
+                    (middle[1], middle[0]), xytext=(.97 if right_edge else .03, label_y),
+                    ha="right" if right_edge else "left", textcoords="axes fraction",
                     color="white", fontsize=7,
                     arrowprops=dict(arrowstyle="-", color=color, linewidth=0.5),
                     bbox=dict(facecolor="black", edgecolor=color, linewidth=0.6, alpha=0.8, pad=1))

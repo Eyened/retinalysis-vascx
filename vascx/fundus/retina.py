@@ -251,9 +251,14 @@ class Retina(Fundus):
         raise_on_error: bool = False,
         naming: str = "resolved",
         structured: bool = False,
+        *,
+        use_mm_per_pixel: bool = False,
+        use_fovea: bool = True,
     ):
         from vascx.fundus.features.derived import FeatureEvaluator
 
+        from vascx.shared.inputs import prepare_retina
+        self = prepare_retina(self, use_mm_per_pixel=use_mm_per_pixel, use_fovea=use_fovea)
         evaluator = FeatureEvaluator(self)
         evaluator.validate(feature_set)
         all_features = {}
@@ -293,6 +298,7 @@ class Retina(Fundus):
                     res = None
 
                 # Invalid output shape is a programming error, not a missing measurement.
+                res = feature.convert_output(res, self.mm_per_pixel if use_mm_per_pixel else 1.0)
                 values = feature.output_values(res)
                 if structured:
                     group = group_names[(feature_index, target_name)].name
@@ -306,8 +312,9 @@ class Retina(Fundus):
                 if (
                     plots_folder is not None and res is not None
                 ):  # only save plots if the feature was computed successfully
-                    fig, ax = plt.subplots(1, 1, figsize=(8, 8), dpi=300)
-                    feature.plot(ax, target, computed_value=res)
+                    figsize = getattr(feature, "preferred_plot_size", (8, 8))
+                    fig, ax = plt.subplots(1, 1, figsize=figsize, dpi=300)
+                    feature.plot(ax, target, computed_value=res, use_mm_per_pixel=use_mm_per_pixel, use_fovea=use_fovea)
                     fname_prefix = str(self.id) if self.id is not None else "sample"
                     plot_name = group_names[(feature_index, target_name)].name
                     fname = f"{fname_prefix}_{plot_name}.png"
@@ -372,11 +379,6 @@ class Retina(Fundus):
         if self.mm_per_pixel is not None:
             return float(self.mm_per_pixel)
         return super()._grid_resolution()
-
-    def scale_length_measurement(self, value):
-        if value is None or self.mm_per_pixel is None:
-            return value
-        return float(value) * float(self.mm_per_pixel)
 
     @classmethod
     def from_file(

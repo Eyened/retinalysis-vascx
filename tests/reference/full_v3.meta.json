@@ -16,8 +16,8 @@
     "RAV_546983",
     "RAV_585808"
   ],
-  "feature_count": 71,
-  "accepted_at": "2026-09-30T22:49:26.287177+00:00",
+  "feature_count": 100,
+  "accepted_at": "2026-10-08T10:03:44.411831+00:00",
   "accept_reason": "accepted via --accept-vascx-reference",
   "python_version": "3.12.12"
 }

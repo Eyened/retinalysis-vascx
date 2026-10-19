@@ -22,13 +22,13 @@ __pycache__
 /dist/
 
 # Website dependencies and generated build/test artifacts.
-/website/node_modules/
-/website/build/
-/website/.docusaurus/
-/website/.cache/
-/website/.playwright/
-/website/playwright-report/
-/website/test-results/
-/website/coverage/
-/website/*.log
-/website/*.tsbuildinfo
+/docs/node_modules/
+/docs/build/
+/docs/.docusaurus/
+/docs/.cache/
+/docs/.playwright/
+/docs/playwright-report/
+/docs/test-results/
+/docs/coverage/
+/docs/*.log
+/docs/*.tsbuildinfo

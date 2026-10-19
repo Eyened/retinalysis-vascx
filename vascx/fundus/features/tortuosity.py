@@ -9,6 +9,7 @@ from rtnls_enface.grids.specifications import BaseGridFieldSpecification
 
 from vascx.shared.aggregators import LengthWeightedAggregator, median
 from vascx.shared.segment import Segment
+from vascx.shared.outputs import FeatureOutput
 from vascx.shared.vessels import Vessels
 
 from .base import (
@@ -80,7 +81,7 @@ class Tortuosity(LayerFeature):
                 "straight-line distance between endpoints."
             )
         if measure in {TortuosityMeasure.Curvature.value, "curvature"} or measure_name == "curvature":
-            return f"Calculated by integrating curvature along {layer} {subject}."
+            return f"Calculated as mean absolute curvature sampled uniformly in the spline parameter along {layer} {subject}, in inverse pixels."
         return f"Calculated from changes in direction along {layer} {subject}."
 
     def aggregation_unit(self, **kwargs) -> str:
@@ -116,6 +117,7 @@ class Tortuosity(LayerFeature):
         """
         self.mode = mode
         self.measure = measure
+        self.outputs = (FeatureOutput(units={TortuosityMeasure.Distance: "dimensionless", TortuosityMeasure.Curvature: "px⁻¹", TortuosityMeasure.Inflections: "count"}[measure]),)
         self.length_measure = length_measure
         self.min_numpoints = min_numpoints
         self.max_segment_len = self._validate_max_segment_len(max_segment_len)
@@ -168,12 +170,6 @@ class Tortuosity(LayerFeature):
             return 1.5
         return None
 
-    def _get_curvature_scale(self, layer: VesselTreeLayer):
-        if layer.retina.fovea_location is None:
-            warnings.warn("Fovea location not known, using default scale.")
-            return 1.0
-        return layer.retina.disc_fovea_distance
-
     def _resolved_spline_error_fraction(self) -> float:
         if self.spline_error_fraction is not None:
             return self.spline_error_fraction
@@ -203,9 +199,7 @@ class Tortuosity(LayerFeature):
             return tortuosity
         elif self.measure == TortuosityMeasure.Curvature:
             spline = segment.get_spline(error_fraction=spline_error_fraction)
-            return np.mean(spline.curvatures()) * self._get_curvature_scale(
-                segment.layer
-            )
+            return np.mean(spline.curvatures()) if spline is not None else np.nan
         elif self.measure == TortuosityMeasure.Inflections:
             spline = segment.get_spline(error_fraction=spline_error_fraction)
             return len(spline.inflection_points(every=10))
@@ -229,10 +223,7 @@ class Tortuosity(LayerFeature):
 
         disc_fovea_distance = getattr(layer.retina, "disc_fovea_distance", None)
         if disc_fovea_distance is None or not np.isfinite(disc_fovea_distance):
-            warnings.warn(
-                "Disc-fovea distance not known, skipping tortuosity segment splitting."
-            )
-            return None
+            raise ValueError("Disc-fovea distance is required for fractional segment splitting")
         max_segment_len_pixels = self.max_segment_len * float(disc_fovea_distance)
         if max_segment_len_pixels <= 0:
             raise ValueError("max_segment_len must resolve to a positive pixel length")

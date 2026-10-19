@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from vascx.shared.outputs import FeatureOutput
+
 from typing import TYPE_CHECKING, Optional
 
 import cv2
@@ -39,6 +41,8 @@ class EdgeStrength(VesselsLayerFeature):
     default_intensity_smooth_sigma = 1.0
     _min_intensity = 1.0
 
+    outputs = (FeatureOutput(units="intensity"),)
+
     def __init__(
         self,
         grid_field: Optional[BaseGridFieldSpecification] = None,
@@ -67,6 +71,10 @@ class EdgeStrength(VesselsLayerFeature):
         self.min_radius = int(min_radius)
         self.band_width = int(band_width)
         self.beta = float(beta)
+        # Brightness normalization changes intensity units, never spatial units.
+        unit = "intensity" if self.beta == 0 else (
+            "dimensionless" if self.beta == 1 else f"intensity^{1 - self.beta:g}")
+        self.outputs = (FeatureOutput(units=unit),)
         self.intensity_smooth_sigma = float(intensity_smooth_sigma)
         self.min_area_within_bounds = validate_min_area_within_bounds(
             min_area_within_bounds

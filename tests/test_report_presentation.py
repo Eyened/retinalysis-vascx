@@ -126,20 +126,28 @@ def test_all_nan_composite_is_saved_and_linked(tmp_path, monkeypatch, sample_cou
         assert len(captions) == 1
         caption = " ".join(captions[0].get_text().split())
         assert "Colored pixels" in caption
-        explanation = ("The left column displays the explanatory plots for arteries, "
-                       "and the right column for veins.")
+        explanation = ("The top row displays the explanatory plots for arteries, "
+                       "and the bottom row for veins. Each column shows the same image.")
         assert (explanation in caption) == paired
         limit = sample_size if sample_size is not None else (3 if paired else 4)
         expected_panels = min(sample_count, limit) * (2 if paired else 1)
         assert sum(len(ax.images) for ax in fig.axes) == expected_panels
+        if paired:
+            assert fig.axes[0].get_subplotspec().get_gridspec().get_geometry() == (2, min(sample_count, limit))
         assert not any(t.get_gid() == "biomarker-caption"
                        for ax in fig.axes for t in ax.texts)
+        # Text remains equally legible when different grids share a web width.
+        for ax in fig.axes:
+            for text in ax.texts:
+                if text.get_text() == "N/A":
+                    assert text.get_fontsize() / fig.get_figwidth() == pytest.approx(1.)
+        assert captions[0].get_fontsize() / fig.get_figwidth() == pytest.approx(9 / 8)
         saved_captions.append(captions[0].get_text())
         return original_savefig(fig, *args, **kwargs)
 
     monkeypatch.setattr(Figure, "savefig", check_caption)
     paths = render_biomarker_plots([(sample_id, retina) for sample_id in sample_ids],
-                                   fs, tmp_path, dataframe=frame, sample_size=sample_size)
+                                   fs, tmp_path, dataframe=frame, sample_size=sample_size, use_fovea=False)
     assert len(saved_captions) == 1
     assert set(paths) == set(variables)
     assert len(list((tmp_path / "plots").glob("*.png"))) == 1

@@ -2,7 +2,12 @@
 title: "🚀 Usage"
 ---
 
+
 ## Command line execution
+
+VascX runs in two stages:
+- **CFI Segmentation.** Extraction of optic disc, vessels and artery vein segmentation and fovea locations.
+- **Biomarker computation.** Extraction of biomarkers from the segmentations.
 
 To run the two stages of VascX on a folder with input CFIs:
 
@@ -11,9 +16,28 @@ vascx run-models <PATH_TO_IMAGES> <PATH_TO_FOLDER_FOR_SEGMENTATIONS>
 vascx calc-biomarkers <PATH_TO_FOLDER_FOR_SEGMENTATIONS> <PATH_TO_BIOMARKER_REPORT> --feature-set full_v3 --n-jobs 8
 ```
 
-:::tip
-Use `vascx run-models --help` or `vascx calc-biomarkers --help` to get help.
+:::tip[Example]
+For example, to run VascX on the provided samples folder in our git repository as a test:
+
+```
+git clone git@github.com:Eyened/retinalysis-vascx.git rtnls_vascx
+cd rtnls_vascx
+vascx run-models ./samples/fundus/original/ ./samples/fundus/segmentations
+vascx calc-biomarkers ./samples/fundus/segmentations ./samples/fundus/biomarker_report --feature-set full_v3 --n-jobs 8 --naming resolved
+```
 :::
+
+
+:::tip[Try a small sample first]
+Add `--sample 3` to extract biomarkers and generate the report and explanation plots for up to the first three available images:
+
+```bash
+vascx calc-biomarkers <PATH_TO_FOLDER_FOR_SEGMENTATIONS> <PATH_TO_BIOMARKER_REPORT> --feature-set od_centered --sample 3
+```
+
+The same sample is used in the plots, with a maximum of 16 images per figure. If fewer images are available, VascX uses those. See [Visual biomarker explanations](./outputs/explanations.md) for details.
+:::
+
 
 #### Arguments
 - `PATH_TO_IMAGES` should point to a folder with input CFIs in standard imaging formats. DICOM is supported via `pydicom`. Alternatively `PATH_TO_IMAGES` may be the path to a CSV file with `id` and `path` columns, and one image per row. If provided in this way, each `path` should be an absolute path to a valid image file and the corresponding unique `id` will be used to name the output and intermediate results for that image. This is useful when the source images are not all in a single folder.
@@ -38,24 +62,38 @@ Use `vascx run-models --help` or `vascx calc-biomarkers --help` to get help.
 - The same folder should be passed to the second stage as input as shown above. 
 - `PATH_TO_BIOMARKER_REPORT` is an output folder containing the biomarker values, metadata, README, manifest, and sample plots.
 - The `--feature-set` is used to specify a set of biomarkers to extract. The underscore spelling `--feature_set` remains available as an alias.
+  :::info VascX feature sets
+  The feature set defines the features that VascX extracts from the images. For most analyses, we recommend using the [od_centered](./reliability/od-centered.mdx) and the [macula_centered](./reliability/macula-centered.mdx) feature sets, for CFIs centered on the optic disc and macula, respectively.
+  :::
 - The `--n-jobs` option indicates how many CPU jobs to start. For optimal performance, we recommend to set to the number of CPU threads available divided by two, as a rule of thumb.
 - By default, `run-models` picks the first available CUDA GPU, Apple MPS acceleration, or CPU. Override this with `--device`, passing any string accepted by `torch.device` (for example `cuda:0`, `mps`, or `cpu`).
 - An optional `--logfile PATH_TO_LOGFILE_TXT` can be added to store warnings.
 
-:::tip[Example]
-For example, to run VascX on the provided samples folder in our git repository:
+:::tip
+Use `vascx run-models --help` or `vascx calc-biomarkers --help` to get help.
+:::
+
+## Output
+
+`vascx calc-biomarkers` writes a self-contained output folder with the biomarkers and related information:
 
 ```
-git clone git@github.com:Eyened/retinalysis-vascx.git rtnls_vascx
-cd rtnls_vascx
-vascx run-models ./samples/fundus/original/ ./samples/fundus/segmentations
-vascx calc-biomarkers ./samples/fundus/segmentations ./samples/fundus/biomarker_report --feature-set full_v3 --n-jobs 8 --naming resolved
+PATH_TO_BIOMARKER_REPORT/
+├── biomarkers.csv            // output biomarkers
+├── data_dictionary.csv       // biomarker names, descriptions and units
+├── README.md                 // Description / summary of computed biomarkers
+├── report.json               // other extraction metada
+└── plots/                    // sample explanation plots
+    └── <variable>.png
 ```
-:::
+
+We recommend reading `README.md` and viewing the explanation plots to understand what each biomarker measures. 
+
+For more information about how to interpret biomarker names, and how to 
 
 
 ## Jupyter notebooks
-As an alternative, we also provide notebooks for running the three stages:
+As an alternative for running VascX, we also provide notebooks for running the three stages, and the fourth post-processing stage:
 
 1. Preprocessing. See [this notebook](https://github.com/Eyened/retinalysis-vascx/blob/main/notebooks/0_preprocess.ipynb). This step is CPU-heavy and benefits from parallelization (see notebook).
 

@@ -120,8 +120,7 @@ vascx calc-biomarkers ./samples/fundus/segmentations ./samples/fundus/biomarker_
 ```text
 PATH_TO_BIOMARKER_REPORT/
 ├── biomarkers.csv
-├── biomarkers.metadata.csv
-├── biomarkers.names.json
+├── data_dictionary.csv
 ├── README.md
 ├── report.json
 └── plots/
@@ -129,7 +128,9 @@ PATH_TO_BIOMARKER_REPORT/
         └── <image-id>.png
 ```
 
-`biomarkers.metadata.csv` contains the machine variable, human-friendly display name, and description for every biomarker. `biomarkers.names.json` preserves the existing variable-to-display-name JSON format. By default, the report visualizes up to three input images; use `--report-samples` or repeated `--report-image` options to select them. Use `--no-report` to skip README, manifest, and plot generation while still writing biomarkers and metadata. Existing report-owned outputs are protected unless `--overwrite` is passed.
+`data_dictionary.csv` contains the machine variable, human-friendly display name, description and units for every biomarker, plus image metadata. Without `--sample`, report figures show up to three images for artery/vein features and four for other features. Use `--sample N` to extract biomarkers for up to the first N available images and illustrate the same sample, capped at sixteen images per figure. For example, `--sample 10` extracts and plots up to ten images; `--sample 20` extracts up to twenty and plots the first sixteen. Repeated `--report-image` options select particular images for the figures within these limits. Use `--no-report` to skip README, manifest, and plot generation while still writing biomarkers and metadata. Existing report-owned outputs are protected unless `--overwrite` is passed.
+
+`biomarkers.csv` also includes `crop_scale_factor`: the number of original-input pixels per processed-image pixel. Multiply pixel lengths by this factor, areas by its square, and divide inverse-pixel measurements (such as curvature) by it to restore the original image scale before applying device conversion factors. For example, a width of 10 processed pixels with a factor of 2 becomes 20 original pixels. The factor is blank if preprocessing scale is unavailable. It refers to the image supplied to VascX and restores scale, not the original coordinate origin of centroids. See the [post-processing notebook](./notebooks/3_post_process.ipynb) for an example using the data dictionary's units. Outputs already calibrated to millimetres include this correction and must not be rescaled again.
 
 By default, CLI output uses feature-set-aware `resolved` names; pass `--naming canonical` to preserve the full canonical convention.
 VascX parameter names typically follow the format:
@@ -265,9 +266,9 @@ Only models for enabled steps are required. For example, a run with `--no-qualit
 
 For most datasets, the standard [feature extraction notebook](./notebooks/2_feature_extraction.ipynb) and `vascx calc-biomarkers` command are the simplest way to compute biomarkers. Advanced users can create `Retina` objects manually when they need to pass custom parameters per image, such as an explicit scaling factor `mm_per_pixel` from an acquisition platform. The [advanced feature extraction notebook](./notebooks/advanced/2_feature_extraction_advanced.ipynb) is an alternative to `2_feature_extraction.ipynb` that demonstrates this using the sample folder.
 
-`mm_per_pixel` is millimetres per pixel of the **processed image**, not the original acquisition. Extraction defaults to `use_mm_per_pixel=False, use_fovea=True`. When enabled, calibration must be finite and positive for each image; enabled fovea coordinates must both be finite (outside-image coordinates are allowed). Disabled inputs are ignored. Validation happens during each image’s execution: single-image calls raise `InputContractError`; bulk calls log and skip that image. Missing discs remain measurement failures, with `od_valid=0` and unavailable measurements. With fovea disabled, fovea-dependent measurements are unavailable while independent measurements continue.
+`mm_per_pixel` is millimetres per pixel of the **original image supplied to VascX**. VascX adjusts it for preprocessing using `crop_scale_factor` (original pixels per processed pixel). The standard loaders recover this factor from the saved preprocessing bounds, including for existing runs. When constructing a `Retina` manually, pass `crop_scale_factor` explicitly; use `1` only if the image was not resized. Unknown crop scale prevents calibrated extraction rather than assuming that the scales match. Extraction defaults to `use_mm_per_pixel=False, use_fovea=True`. When enabled, calibration must be finite and positive for each image; enabled fovea coordinates must both be finite (outside-image coordinates are allowed). Disabled inputs are ignored. Validation happens during each image’s execution: single-image calls raise `InputContractError`; bulk calls log and skip that image. Missing discs remain measurement failures, with `od_valid=0` and unavailable measurements. With fovea disabled, fovea-dependent measurements are unavailable while independent measurements continue.
 
-Feature `compute()` methods always return native units. Shared output conversion scales caliber, CRE, sparsity, sharpness, and optic-disc lengths by `mm_per_pixel`, optic-disc area by its square, and curvature by its inverse. The existing dictionary and report describe the effective units; names do not change. Explicitly enabled calibration also controls physical grids such as ETDRS. Otherwise their existing 4.75 mm / disc–fovea-distance fallback remains, while measurements stay in pixels.
+Feature `compute()` methods always return native units. Shared output conversion scales caliber, CRE, sparsity, sharpness, and optic-disc lengths by `mm_per_pixel × crop_scale_factor`, optic-disc area by the square of this combined factor, and curvature by its inverse. The existing dictionary and report describe the effective units; names do not change. Explicitly enabled calibration also controls physical grids such as ETDRS. Otherwise their existing 4.75 mm / disc–fovea-distance fallback remains, while measurements stay in pixels.
 
 ```python
 frame = extract_biomarkers_to_folder(
@@ -613,6 +614,22 @@ from vascx.utils.analysis import extract_in_parallel
 
 df = extract_in_parallel(examples, "full_v3", n_jobs=8)
 ```
+
+The `hemifields` and `hemifields_rs` sets measure vascular density, median and
+standard-deviation caliber, bifurcation features, length-weighted segment distance
+tortuosity (`max_segment_len=0.2`, spline lengths), luminance, background Lab,
+and sharpness in each of three regions: the full circle, its superior hemifield,
+and its inferior hemifield. The divider follows the optic-disc–fovea axis.
+Each set contains 24 feature configurations and exports 63 scalar columns,
+including separate artery/vein measurements and compound-feature components.
+
+| Feature set | Circle geometry |
+| --- | --- |
+| `hemifields` | Same as `macula_centered`: center at the fovea; radius is the disc–fovea distance plus the disc radius. |
+| `hemifields_rs` | Same as `macula_centered_rs`: center and radius multiplier 0.9; band crop fraction 0.12. |
+
+All features use their default visibility thresholds. Select either set by name,
+for example `extract_in_parallel(examples, "hemifields_rs", n_jobs=8)`.
 
 Use `extract_biomarkers_to_folder` to write the same report bundle as the CLI:
 

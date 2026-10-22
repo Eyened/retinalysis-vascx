@@ -26,11 +26,14 @@ def test_feature_set_regression(
     run_vascx(
         "calc-biomarkers", biomarker_cli_input, output,
         "--feature-set", feature_set_name, "--n-jobs", "1",
-        "--naming", "canonical", "--report-samples", "0", cwd=tmp_path,
+        "--naming", "canonical", "--no-report", cwd=tmp_path,
     )
-    for name in ["biomarkers.csv", "data_dictionary.csv", "README.md", "report.json"]:
+    for name in ["biomarkers.csv", "data_dictionary.csv"]:
         assert (output / name).is_file(), f"missing {name}"
     current = pd.read_csv(output / "biomarkers.csv", index_col=0)
+    # Crop metadata is tested separately; reference tables describe biomarkers only.
+    assert current["crop_scale_factor"].gt(0).all()
+    current = current.drop(columns="crop_scale_factor")
     if accept_vascx_reference:
         write_reference_artifacts(feature_set_name, current)
 

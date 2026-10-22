@@ -5,9 +5,11 @@ module.exports = {
     'installation',
     'usage',
     { type: 'category', label: '📁 Outputs', collapsed: false,
-      items: ['outputs/csv', 'outputs/explanations', 'outputs/analysis-and-qc'] },
+      items: ['outputs/scaling', 'outputs/analysis-and-qc', 'outputs/explanations'] },
     { type: 'category', label: '🧠 Advanced', collapsed: false,
       items: [
+        'advanced/naming',
+        'advanced/custom-feature-sets',
         'advanced/offline-usage',
         'advanced/skipping-steps-during-re-execution',
         'advanced/advanced-extraction',

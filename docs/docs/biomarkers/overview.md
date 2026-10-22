@@ -26,7 +26,7 @@ and [OD-centered images](pathname:///retinalysis-vascx/assets/biomarkers/od-cent
 
 Native spatial measurements use pixels of the processed image. Enabling
 `use_mm_per_pixel` converts lengths to mm, areas to mm², and curvature to mm⁻¹
-using each image's calibration; angles, ratios, counts and Lab values do not
+using each original image's calibration and its `crop_scale_factor`; angles, ratios, counts and Lab values do not
 change. The data dictionary records the effective units. The Rotterdam Study
 examples instead use pixels corrected to the report's reference device, and
 present vascular density as a percentage.

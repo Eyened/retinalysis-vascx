@@ -44,9 +44,9 @@ def fs(*features):
     return FeatureSet('units_' + uuid4().hex, features or [Measured()])
 
 
-def retina(identifier='a', mm=.02, fovea=(15., 16.)):
+def retina(identifier='a', mm=.02, fovea=(15., 16.), crop=1.):
     return Retina(layers={}, resolution=(32, 32), id=identifier,
-                  mm_per_pixel=mm, fovea_location=fovea)
+                  mm_per_pixel=mm, fovea_location=fovea, crop_scale_factor=crop)
 
 
 def test_mixed_vector_and_dictionary_scale_once():
@@ -85,7 +85,7 @@ def test_bulk_skips_preserving_identity_and_report_counts(tmp_path, jobs):
     assert report['dataset']['image_count'] == 2
     assert report['dataset']['report_sample_ids'] == ['a', 'c']
     assert report['inputs'] == {'use_fovea': True, 'use_mm_per_pixel': True}
-    assert pd.read_csv(output / 'data_dictionary.csv').units.tolist() == ['mm', 'mm²', 'mm⁻¹', 'dimensionless', 'mm']
+    assert pd.read_csv(output / 'data_dictionary.csv').units.tolist() == ['mm', 'mm²', 'mm⁻¹', 'dimensionless', 'mm', 'dimensionless']
 
 
 def test_disabled_values_cannot_influence_results_or_mutate_original():
@@ -130,6 +130,7 @@ def test_native_dependency_cache_and_scalar_conversion():
     source.outputs = (FeatureOutput(units='px'),)
     image = ExampleRetina()
     image.mm_per_pixel = .01
+    image.crop_scale_factor = 1.
     result = image.calc_features(fs(source, AVR(source)), use_mm_per_pixel=True)
     assert result['measurement_arteries'] == .02
     assert result['measurement_veins'] == .04

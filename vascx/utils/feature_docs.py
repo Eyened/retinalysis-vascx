@@ -8,6 +8,22 @@ from vascx.shared.features import FeatureSet
 from vascx.shared.naming import make_feature_names, make_output_names
 
 
+CROP_SCALE_METADATA = {
+    "variable": "crop_scale_factor",
+    "display_name": "Crop scale factor",
+    "description": (
+        "Image metadata: original-input pixels per processed-image pixel "
+        "(original crop diameter divided by processed crop diameter). "
+        "Multiply pixel lengths by this factor, areas by its square, and inverse lengths "
+        "by its inverse to restore the original image scale. "
+        "Blank if preprocessing scale is unknown. Original means the image supplied to VascX. "
+        "Already included when mm_per_pixel calibration is enabled; do not apply it again. "
+        "Restores scale only, not the original coordinate origin."
+    ),
+    "units": "dimensionless",
+}
+
+
 @dataclass(frozen=True)
 class BiomarkerDefinition:
     """Describe one output variable produced by a configured feature set."""
@@ -88,7 +104,7 @@ def write_variable_display_mapping(
 
     with out.open("w", newline="", encoding="utf-8") as handle:
         writer = csv.DictWriter(
-            handle, fieldnames=["variable", "display_name", "description", "feature_group", "component", "units"]
+            handle, fieldnames=["variable", "display_name", "description", "units"]
         )
         writer.writeheader()
         for item in definitions:
@@ -97,11 +113,11 @@ def write_variable_display_mapping(
                     "variable": item.variable,
                     "display_name": item.display_name,
                     "description": item.description,
-                    "feature_group": item.feature_group,
-                    "component": item.component,
                     "units": item.units,
                 }
             )
+
+        writer.writerow(CROP_SCALE_METADATA)
 
     return out
 
@@ -113,7 +129,7 @@ def write_biomarker_metadata(
     use_mm_per_pixel: bool = False,
     use_fovea: bool = True,
 ) -> Path:
-    """Write column descriptions, component groups, and units to CSV."""
+    """Write column descriptions and units to CSV."""
     return write_variable_display_mapping(
         feature_set, out_path, as_json=False, naming=naming,
         use_mm_per_pixel=use_mm_per_pixel, use_fovea=use_fovea
@@ -163,10 +179,28 @@ def write_feature_set_readme(
         if include_biomarker_values:
             lines.append("- `biomarkers.csv`: extracted values with one row per image.")
         lines.append(
-            "- `data_dictionary.csv`: variable names, display names, descriptions, component groups, and units."
+            "- `data_dictionary.csv`: variable names, display names, descriptions, and units."
         )
         if plots:
             lines.append("- `plots/`: composite sample visualizations for selected biomarkers.")
+
+    lines.extend([
+        "", "## Image scale metadata", "",
+        "`crop_scale_factor` is the number of original-input pixels per processed-image pixel. "
+        "For example, a factor of 2 turns a width of 10 processed pixels into 20 original pixels. "
+        "To restore the original scale, multiply pixel lengths by this factor, areas by its square, "
+        "and divide inverse-pixel measurements such as curvature by the factor. "
+        "Ratios, angles, counts and colour values are unchanged.",
+        "",
+        "This is image metadata, not a biomarker. It is blank when the preprocessing scale is unknown. "
+        "The original image is the one supplied to VascX; any earlier resizing is outside this factor. "
+        "This restores scale, not the original coordinate origin of positions such as centroids.",
+        "",
+        "By default spatial outputs use processed-image pixels. When millimetre calibration is enabled, "
+        "`mm_per_pixel` must describe the original input image. VascX combines it with "
+        "`crop_scale_factor` before converting measurements and defining physical grids. "
+        "Outputs already in mm, mm² or mm⁻¹ must not be rescaled again.",
+    ])
 
     # Group from complete structured names, before feature-set resolution
     # removes constant parameters. Region and layer belong to each entry.

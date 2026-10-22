@@ -13,10 +13,6 @@ from rtnls_inference.ensembles.ensemble_heatmap_regression import (
     HeatmapRegressionEnsemble,
 )
 from rtnls_inference.ensembles.ensemble_segmentation import SegmentationEnsemble
-from rtnls_inference.ensembles.predict_output import (
-    decollate_predict_full,
-    restore_array_to_preprocessed,
-)
 from tqdm import tqdm
 
 from vascx.inference.device import resolve_device
@@ -68,20 +64,17 @@ def _specialize_ensemble(loaded: EnsembleT, fallback: type[EnsembleT]) -> Ensemb
         return loaded
     if resolved is fallback or isinstance(loaded, resolved):
         return loaded
-    return resolved(loaded.ensemble, loaded.config, loaded.fpath)
+    return resolved(
+        loaded.ensemble, loaded.config, loaded.fpath, **loaded._inference_overrides
+    )
 
 
-def _full_items(ensemble, batch) -> list[dict[str, Any]]:
-    """Run one supported full-contract batch and split its normalized batch axis."""
-    return decollate_predict_full(ensemble.predict_step_full(batch))
-
-
-def _canonical_probability_item(item: dict[str, Any]) -> dict[str, Any]:
+def _segmentation_item(result: dict[str, Any]) -> dict[str, Any]:
+    """Keep probability-map callbacks and expose the final mask for saving."""
     return {
-        "id": item.get("id"),
-        "image": restore_array_to_preprocessed(
-            item["aggregate"], item["geometry"], "bilinear"
-        ),
+        "id": result.get("id"),
+        "image": result["probabilities"],
+        "output": result["output"],
     }
 
 
@@ -110,30 +103,19 @@ def iterate_quality_estimation(
     device: torch.device | None = None,
     model: str | Path = DEFAULT_QUALITY_MODEL,
 ) -> Iterator[Dict[str, Any]]:
-    """Yield quality ensemble inference items."""
-    device = resolve_device(device)
-    ensemble_quality = _load_ensemble(ClassificationEnsemble, model).to(device)
-
-    inputs = {"images": [item.to_serialized_dict() for item in data]}
-    dataloader = ensemble_quality._make_inference_dataloader(
-        inputs,
-        num_workers=8,
-        preprocess=False,
-        batch_size=16,
+    """Yield quality logits through the public inference workflow."""
+    ensemble = (
+        _load_ensemble(ClassificationEnsemble, model).to(resolve_device(device)).eval()
     )
-
-    with torch.no_grad():
-        for batch in tqdm(dataloader):
-            if len(batch) == 0:
-                continue
-
-            items = [
-                {"id": item.get("id"), "logits": item["aggregate"]}
-                for item in _full_items(ensemble_quality, batch)
-            ]
-
-            for item in items:
-                yield item
+    loader = ensemble.make_inference_dataloader(
+        data,
+        input_space="preprocessed",
+        batch_size=16,
+        num_workers=8,
+        ignore_exceptions=True,
+    )
+    for item in ensemble.iter_predictions(loader):
+        yield {"id": item.get("id"), "logits": item["output"]}
 
 
 def run_quality_estimation(
@@ -142,19 +124,24 @@ def run_quality_estimation(
     device: torch.device | None = None,
     model: str | Path = DEFAULT_QUALITY_MODEL,
 ):
-    device = resolve_device(device)
-    data = _create_dtos(fpaths, ids=ids)
-    output_ids, outputs = [], []
-
-    for item in iterate_quality_estimation(data, device=device, model=model):
-        output_ids.append(item["id"])
-        outputs.append(item["logits"].tolist())
-
-    return pd.DataFrame(
-        outputs,
-        index=output_ids,
-        columns=["q1", "q2", "q3"],
+    ensemble = (
+        _load_ensemble(ClassificationEnsemble, model).to(resolve_device(device)).eval()
     )
+    loader = ensemble.make_inference_dataloader(
+        _create_dtos(fpaths, ids=ids),
+        input_space="preprocessed",
+        batch_size=16,
+        num_workers=8,
+        ignore_exceptions=True,
+    )
+    table = ensemble.predict_dataloader(loader).set_index("id")
+    result = table.filter(regex="^logit_").astype(float)
+    if result.empty:
+        result = pd.DataFrame(index=table.index, columns=["q1", "q2", "q3"])
+    else:
+        result.columns = ["q1", "q2", "q3"]
+    result.index.name = None
+    return result
 
 
 def iterate_segmentation_vessels_and_av(
@@ -165,13 +152,16 @@ def iterate_segmentation_vessels_and_av(
     av_model: str | Path = DEFAULT_AV_MODEL,
     vessels_model: str | Path = DEFAULT_VESSELS_MODEL,
 ) -> Iterator[Dict[str, Any]]:
-    """Yield raw segmentation items for AV and vessels."""
+    """Yield final masks and probability maps, keeping both models on the same batch."""
     device = resolve_device(device)
     if not predict_av and not predict_vessels:
         return
-
     ensemble_av = (
-        _load_ensemble(SegmentationEnsemble, av_model).to(device).eval()
+        _load_ensemble(
+            SegmentationEnsemble, av_model, return_postprocess_intermediates=True
+        )
+        .to(device)
+        .eval()
         if predict_av
         else None
     )
@@ -180,66 +170,46 @@ def iterate_segmentation_vessels_and_av(
         if predict_vessels
         else None
     )
-    reference_ensemble = ensemble_av or ensemble_vessels
-    if reference_ensemble is None:
-        return
-
-    inputs = {"images": [item.to_serialized_dict() for item in data]}
-    dataloader = reference_ensemble._make_inference_dataloader(
-        inputs,
-        num_workers=8,
-        preprocess=False,
+    reference = ensemble_av if ensemble_av is not None else ensemble_vessels
+    loader = reference.make_inference_dataloader(
+        data,
+        input_space="preprocessed",
         batch_size=8,
+        num_workers=8,
+        ignore_exceptions=True,
     )
-
-    with torch.no_grad():
-        for batch in tqdm(dataloader):
-            if len(batch) == 0:
-                continue
-
-            if ensemble_av:
-                av_full_items = _full_items(ensemble_av, batch)
-                items_av = []
-                for full_item in av_full_items:
-                    item = _canonical_probability_item(full_item)
-                    processed = ensemble_av.postprocess_item(full_item)
-                    item["refined_mask"] = processed["output"]
-                    item["output_space"] = processed["output_space"]
-                    items_av.append(item)
-            else:
-                items_av = None
-            items_vessels = (
-                [
-                    _canonical_probability_item(item)
-                    for item in _full_items(ensemble_vessels, batch)
-                ]
-                if ensemble_vessels
-                else None
-            )
-
-            num_items = (
-                len(items_av)
-                if items_av is not None
-                else len(items_vessels)
-                if items_vessels is not None
-                else 0
-            )
-
-            for idx in range(num_items):
-                av_item = items_av[idx] if items_av is not None else None
-                vessel_item = items_vessels[idx] if items_vessels is not None else None
-
-                yield {
-                    "id": (
-                        av_item["id"]
-                        if av_item is not None
-                        else vessel_item["id"]
-                        if vessel_item is not None
-                        else None
-                    ),
-                    "av": av_item,
-                    "vessels": vessel_item,
-                }
+    for batch in tqdm(loader):
+        if not batch:
+            continue
+        items_av = []
+        if ensemble_av is not None:
+            predictions = ensemble_av.predict_batch(batch)
+            for result in ensemble_av.postprocess_batch(predictions, batch):
+                items_av.append(
+                    {
+                        **_segmentation_item(result),
+                        "refined_mask": result["output"],
+                        "output_space": result["output_space"],
+                    }
+                )
+            del predictions
+        items_vessels = []
+        if ensemble_vessels is not None:
+            predictions = ensemble_vessels.predict_batch(batch)
+            items_vessels = [
+                _segmentation_item(result)
+                for result in ensemble_vessels.postprocess_batch(predictions, batch)
+            ]
+            del predictions
+        for index in range(len(batch["image"])):
+            av = items_av[index] if items_av else None
+            vessels = items_vessels[index] if items_vessels else None
+            yield {
+                "id": (av if av is not None else vessels)["id"],
+                "av": av,
+                "vessels": vessels,
+            }
+        del items_av, items_vessels, batch
 
 
 def run_segmentation_vessels_and_av(
@@ -293,14 +263,12 @@ def run_segmentation_vessels_and_av(
         else:
             if av_path is not None and result["av"] is not None:
                 fpath = os.path.join(av_path, f"{result['id']}.png")
-                mask = result["av"].get("refined_mask")
-                if mask is None:
-                    mask = np.argmax(result["av"]["image"], -1)
+                mask = result["av"]["output"]
                 Image.fromarray(mask.squeeze().astype(np.uint8)).save(fpath)
 
             if vessels_path is not None and result["vessels"] is not None:
                 fpath = os.path.join(vessels_path, f"{result['id']}.png")
-                mask = np.argmax(result["vessels"]["image"], -1)
+                mask = result["vessels"]["output"]
                 Image.fromarray(mask.squeeze().astype(np.uint8)).save(fpath)
 
 
@@ -309,30 +277,19 @@ def iterate_segmentation_disc(
     device: torch.device | None = None,
     model: str | Path = DEFAULT_DISC_MODEL,
 ) -> Iterator[Dict[str, Any]]:
-    """Yield disc segmentation inference items."""
-    device = resolve_device(device)
-    ensemble_disc = _load_ensemble(SegmentationEnsemble, model).to(device).eval()
-
-    inputs = {"images": [item.to_serialized_dict() for item in data]}
-    dataloader = ensemble_disc._make_inference_dataloader(
-        inputs,
-        num_workers=16,
-        preprocess=False,
-        batch_size=32,
+    """Yield disc probability maps and final masks through the public API."""
+    ensemble = (
+        _load_ensemble(SegmentationEnsemble, model).to(resolve_device(device)).eval()
     )
-
-    with torch.no_grad():
-        for batch in tqdm(dataloader):
-            if len(batch) == 0:
-                continue
-
-            items = [
-                _canonical_probability_item(item)
-                for item in _full_items(ensemble_disc, batch)
-            ]
-
-            for item in items:
-                yield item
+    loader = ensemble.make_inference_dataloader(
+        data,
+        input_space="preprocessed",
+        batch_size=32,
+        num_workers=16,
+        ignore_exceptions=True,
+    )
+    for result in ensemble.iter_predictions(loader):
+        yield _segmentation_item(result)
 
 
 def run_segmentation_disc(
@@ -359,7 +316,7 @@ def run_segmentation_disc(
             callback(item)
         elif output_path is not None:
             fpath = os.path.join(output_path, f"{item['id']}.png")
-            mask = np.argmax(item["image"], -1)
+            mask = item["output"]
             Image.fromarray(mask.squeeze().astype(np.uint8)).save(fpath)
 
 
@@ -368,30 +325,20 @@ def iterate_fovea_detection(
     device: torch.device | None = None,
     model: str | Path = DEFAULT_FOVEA_MODEL,
 ) -> Iterator[Dict[str, Any]]:
-    """Yield fovea detection inference items."""
-    device = resolve_device(device)
-    ensemble_fovea = _load_ensemble(HeatmapRegressionEnsemble, model).to(device)
-
-    inputs = {"images": [item.to_serialized_dict() for item in data]}
-    dataloader = ensemble_fovea._make_inference_dataloader(
-        inputs,
-        num_workers=8,
-        preprocess=False,
-        batch_size=8,
+    """Yield fovea coordinates in preprocessed-image space."""
+    ensemble = (
+        _load_ensemble(HeatmapRegressionEnsemble, model)
+        .to(resolve_device(device))
+        .eval()
     )
-
-    with torch.no_grad():
-        for batch in tqdm(dataloader):
-            if len(batch) == 0:
-                continue
-
-            items = [
-                ensemble_fovea.postprocess_item(item)
-                for item in _full_items(ensemble_fovea, batch)
-            ]
-
-            for item in items:
-                yield item
+    loader = ensemble.make_inference_dataloader(
+        data,
+        input_space="preprocessed",
+        batch_size=8,
+        num_workers=8,
+        ignore_exceptions=True,
+    )
+    yield from ensemble.iter_predictions(loader)
 
 
 def run_fovea_detection(
@@ -400,20 +347,20 @@ def run_fovea_detection(
     device: torch.device | None = None,
     model: str | Path = DEFAULT_FOVEA_MODEL,
 ) -> pd.DataFrame:
-    device = resolve_device(device)
-    data = _create_dtos(rgb_paths, ids=ids)
-    output_ids, outputs = [], []
-
-    for item in iterate_fovea_detection(data, device=device, model=model):
-        output_ids.append(item["id"])
-        outputs.append(
-            [
-                *item["keypoints"][0].tolist(),
-            ]
-        )
-
-    return pd.DataFrame(
-        outputs,
-        index=output_ids,
-        columns=["x_fovea", "y_fovea"],
+    ensemble = (
+        _load_ensemble(HeatmapRegressionEnsemble, model)
+        .to(resolve_device(device))
+        .eval()
     )
+    loader = ensemble.make_inference_dataloader(
+        _create_dtos(rgb_paths, ids=ids),
+        input_space="preprocessed",
+        batch_size=8,
+        num_workers=8,
+        ignore_exceptions=True,
+    )
+    table = ensemble.predict_dataloader(loader).set_index("id")
+    result = table.reindex(columns=["x0", "y0"]).astype(float)
+    result.columns = ["x_fovea", "y_fovea"]
+    result.index.name = None
+    return result

@@ -8,10 +8,15 @@ exported as `background_lab_l`, `background_lab_a`, and `background_lab_b`.
 Unenhanced RGB pixels are converted to Lab **before** taking each channel's median.
 
 The background mask excludes vessels, the optic disc and the darkest pixels,
-dilates these exclusions, and clips to the visible retina. It covers the full
-visible background independently of the vascular measurement grid. Unavailable
-inputs or an empty background yield missing values. These colour coordinates
-are unaffected by spatial calibration.
+dilates these exclusions, and clips to the visible retina. By default, it covers
+the full visible background independently of the vascular measurement grid.
+Pass `BackgroundLab(grid_field=field)` to intersect that background mask with a
+selected grid field. Grid visibility must meet `min_area_within_bounds`, resolved
+from the feature, field, then grid specification, with a default of 0.80. This
+checks the visible fraction of the grid before vessel and disc exclusions.
+Unavailable inputs, insufficient grid visibility, or an empty sampled background
+yield three missing values. Feature names and plots identify the selected region.
+These colour coordinates are unaffected by spatial calibration.
 
 The retinal pigmentation score (RPS) is a separate, dataset-level postprocessing
 step: `vascx.utils.rps.calculate_rps(df, a_column, b_column)` fits PCA to the finite

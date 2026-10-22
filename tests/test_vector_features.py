@@ -260,7 +260,7 @@ def test_bifurcation_visibility_precedence_and_visible_empty_region(
 def test_bifurcation_compound_names_and_feature_set_migration():
     from tests.regression_helpers import discover_feature_set_names
     from vascx.fundus.features.bifurcation import Bifurcation
-    expected = {'full', 'full_v2', 'full_v3', 'macula_centered', 'macula_centered_rs',
+    expected = {'full', 'full_v2', 'full_v3', 'hemifields', 'hemifields_rs', 'macula_centered', 'macula_centered_rs',
                 'od_centered', 'od_centered_rs', 'od_centered_narrow_rs'}
     actual = set()
     for name in discover_feature_set_names():

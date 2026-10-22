@@ -110,7 +110,7 @@ def test_mapping_uses_selected_machine_and_display_names(tmp_path):
     resolved_names = make_output_names(
         FeatureSet.get_by_name(feature_set_name), _targets, "resolved"
     )
-    assert {row["variable"] for row in rows} == {item.name for item in resolved_names.values()}
+    assert {row["variable"] for row in rows} == {item.name for item in resolved_names.values()} | {"crop_scale_factor"}
     assert len({row["display_name"] for row in rows}) == len(rows)
     assert all(row["description"] for row in rows)
 
@@ -208,13 +208,11 @@ def test_calc_biomarkers_writes_output_bundle_metadata(tmp_path, monkeypatch):
         FeatureSet.get_by_name("full_v3"), _targets, "resolved"
     )
     metadata = pd.read_csv(metadata_csv)
-    assert set(metadata["variable"]) == {item.name for item in expected.values()}
+    assert set(metadata["variable"]) == {item.name for item in expected.values()} | {"crop_scale_factor"}
     assert metadata.columns.tolist() == [
         "variable",
         "display_name",
         "description",
-        "feature_group",
-        "component",
         "units",
     ]
     assert metadata["description"].str.len().gt(0).all()
@@ -248,4 +246,4 @@ def test_python_output_defaults_to_resolved_names(tmp_path):
     assert {item.variable for item in get_biomarker_definitions(feature_set)} == expected
     output = tmp_path / "default_names.csv"
     write_variable_display_mapping(feature_set, output)
-    assert set(pd.read_csv(output)["variable"]) == expected
+    assert set(pd.read_csv(output)["variable"]) == expected | {"crop_scale_factor"}

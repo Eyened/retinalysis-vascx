@@ -110,7 +110,7 @@ class Feature(ABC):
     def output_description(self, component: str, use_mm_per_pixel=False, **kwargs) -> str:
         output = next(item for item in self.reported_schema(use_mm_per_pixel) if item.key == component)
         native = next(item for item in self.output_schema() if item.key == component)
-        conversion = (f"Converted from native {native.units} using per-image mm_per_pixel."
+        conversion = (f"Converted from native {native.units} using original-image mm_per_pixel × crop_scale_factor."
                       if use_mm_per_pixel and spatial_power(native.units) else "")
         return " ".join(text for text in (self.description(**kwargs), output.description,
                          conversion, f"Units: {output.units}." if output.units else "") if text)
@@ -253,7 +253,7 @@ class Feature(ABC):
 
         Pass ``plot_caption=False`` to omit the caption in custom layouts.
         """
-        from .inputs import prepare_retina
+        from .inputs import prepare_retina, processed_mm_per_pixel
         use_mm = kwargs.pop("use_mm_per_pixel", False)
         use_fovea = kwargs.pop("use_fovea", True)
         retina = getattr(layer, "retina", layer)
@@ -265,7 +265,7 @@ class Feature(ABC):
         # Supplied computed_value is already in reported units.
         display_scale = kwargs.pop("display_scale", None)
         if display_scale is None:
-            display_scale = retina.mm_per_pixel if use_mm else 1.0
+            display_scale = processed_mm_per_pixel(retina) if use_mm else 1.0
         schema = kwargs.pop("display_schema", self.reported_schema(use_mm))
         plot_fovea = kwargs.pop("plot_fovea", True)
         plot_caption = kwargs.pop("plot_caption", True)

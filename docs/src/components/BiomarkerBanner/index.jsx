@@ -29,7 +29,7 @@ export default function BiomarkerBanner() {
       <div className={styles.intro}>
         <span className={styles.eyebrow}>Retinalysis</span>
         <div className={styles.wordmark}>Vasc<span>X</span></div>
-        <p className={styles.subtitle}>Retinal vascular <br />analysis, made visible.</p>
+        <p className={styles.subtitle}>Explainable retinal vascular biomarkers</p>
         <Link className={styles.explore} to="/biomarkers/overview/">Explore the biomarkers <span aria-hidden="true">↗</span></Link>
       </div>
       <div className={styles.mosaic}>

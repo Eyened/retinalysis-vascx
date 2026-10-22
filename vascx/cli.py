@@ -562,19 +562,15 @@ def make_examples(input_path, *, use_fovea=True):
     "--sample",
     type=click.IntRange(min=1),
     default=None,
-    help="Extract only the first N examples for testing.",
+    help=("Extract biomarkers for up to the first N available images and use "
+          "them in report plots (maximum 16 images per plot)."),
 )
 @click.option(
     "--report/--no-report",
     default=True,
     show_default=True,
-    help="Generate README, manifest, and sample biomarker plots.",
-)
-@click.option(
-    "--report-samples",
-    type=click.IntRange(min=0),
-    default=None,
-    help="Images per report grid (default: 3 for A/V features, 4 for other features).",
+    help=("Generate README, manifest, and biomarker plots (without --sample: "
+          "up to 3 images for artery/vein features, 4 for other features)."),
 )
 @click.option(
     "--report-image",
@@ -595,8 +591,8 @@ def make_examples(input_path, *, use_fovea=True):
     help="Biomarker naming convention for output columns.",
 )
 @click.option("--use-fovea/--no-use-fovea", default=True, show_default=True)
-@click.option("--use-mm-per-pixel", is_flag=True, help="Require and use calibration for every image.")
-@click.option("--mm-per-pixel-csv", type=click.Path(exists=True), help="CSV with id and mm_per_pixel columns in processed-image coordinates.")
+@click.option("--use-mm-per-pixel", is_flag=True, help="Convert spatial biomarkers to mm using original-image calibration and the preprocessing crop scale.")
+@click.option("--mm-per-pixel-csv", type=click.Path(exists=True), help="CSV with id and mm_per_pixel columns: millimetres per pixel of the original image supplied to VascX.")
 def calc_biomarkers(
     input_path,
     output_folder,
@@ -605,7 +601,6 @@ def calc_biomarkers(
     logfile,
     sample,
     report,
-    report_samples,
     report_images,
     use_fovea,
     use_mm_per_pixel,
@@ -690,7 +685,7 @@ def calc_biomarkers(
             naming=naming,
             generate_report=report,
             report_retinas=report_retinas,
-            report_sample_size=report_samples,
+            report_sample_size=min(sample, 16) if sample is not None else None,
             overwrite=overwrite,
             use_mm_per_pixel=use_mm_per_pixel,
             use_fovea=use_fovea,

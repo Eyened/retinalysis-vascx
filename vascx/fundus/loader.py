@@ -7,9 +7,17 @@ from typing import List, Union
 from rtnls_enface.loader import FundusLoader
 from rtnls_enface.utils.plotting import plot_grid
 from vascx.fundus.retina import Retina
+from vascx.shared.units import crop_scale_from_bounds
 
 
 class RetinaLoader(FundusLoader):
+    def get_item(self, id):
+        # The parent converts original bounds to an ROI and removes the bounds.
+        item = super().get_item(id)
+        if item.get("crop_scale_factor") is None:
+            item["crop_scale_factor"] = crop_scale_from_bounds(self.items[id].get("bounds"))
+        return item
+
     def make_object(self, id):
         return Retina.from_file(**self.get_item(id))
 

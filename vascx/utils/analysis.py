@@ -15,6 +15,7 @@ from rtnls_enface.bounds import make_roi_mask_from_bounds
 from vascx.fundus.feature_sets import *
 from vascx.fundus.retina import Retina
 from vascx.shared.features import FeatureSet
+from vascx.shared.units import crop_scale_from_bounds
 from vascx.shared.inputs import InputContractError, prepare_retina, validate_inputs
 from vascx.utils.biomarker_report import (
     render_biomarker_plots,
@@ -42,8 +43,11 @@ def _load_retina_input(ex, retina_cls=Retina, *, use_mm_per_pixel=False, use_fov
         return prepare_retina(ex, use_mm_per_pixel=use_mm_per_pixel, use_fovea=use_fovea)
 
     retina_kwargs = dict(ex)
+    if retina_kwargs.get("crop_scale_factor") is None:
+        retina_kwargs["crop_scale_factor"] = crop_scale_from_bounds(retina_kwargs.get("bounds"))
     validate_inputs(retina_kwargs.get("mm_per_pixel"), retina_kwargs.get("fovea_location"),
-                    use_mm_per_pixel=use_mm_per_pixel, use_fovea=use_fovea)
+                    use_mm_per_pixel=use_mm_per_pixel, use_fovea=use_fovea,
+                    crop_scale_factor=retina_kwargs["crop_scale_factor"])
     if not use_mm_per_pixel:
         retina_kwargs.pop("mm_per_pixel", None)
     if not use_fovea:
@@ -76,6 +80,8 @@ def extract_one(
         warnings.simplefilter("always")
         retina = _load_retina_input(ex, retina_cls, use_mm_per_pixel=use_mm_per_pixel, use_fovea=use_fovea)
         features = retina.calc_features(feature_set, plots_folder, naming=naming, use_mm_per_pixel=use_mm_per_pixel, use_fovea=use_fovea)
+
+        features["crop_scale_factor"] = getattr(retina, "crop_scale_factor", None)
 
         warning_messages = [str(w.message) for w in caught_warnings]
 

@@ -57,9 +57,11 @@ class Retina(Fundus):
         self,
         *args,
         mm_per_pixel: Optional[float] = None,
+        crop_scale_factor: Optional[float] = None,
         **kwargs,
     ):
         mm_per_pixel = self._resolve_mm_per_pixel(mm_per_pixel)
+        self.crop_scale_factor = crop_scale_factor
         super().__init__(*args, scaling_factor=mm_per_pixel, **kwargs)
 
     # Cache broadcast index grids for per-pixel geometry.
@@ -257,8 +259,9 @@ class Retina(Fundus):
     ):
         from vascx.fundus.features.derived import FeatureEvaluator
 
-        from vascx.shared.inputs import prepare_retina
+        from vascx.shared.inputs import prepare_retina, processed_mm_per_pixel
         self = prepare_retina(self, use_mm_per_pixel=use_mm_per_pixel, use_fovea=use_fovea)
+        output_scale = processed_mm_per_pixel(self) if use_mm_per_pixel else 1.0
         evaluator = FeatureEvaluator(self)
         evaluator.validate(feature_set)
         all_features = {}
@@ -298,7 +301,7 @@ class Retina(Fundus):
                     res = None
 
                 # Invalid output shape is a programming error, not a missing measurement.
-                res = feature.convert_output(res, self.mm_per_pixel if use_mm_per_pixel else 1.0)
+                res = feature.convert_output(res, output_scale)
                 values = feature.output_values(res)
                 if structured:
                     group = group_names[(feature_index, target_name)].name
@@ -373,11 +376,18 @@ class Retina(Fundus):
 
     @property
     def mm_per_pixel(self) -> Optional[float]:
+        """Millimetres per pixel of the original image supplied to VascX."""
         return self.scaling_factor
+
+    @property
+    def processed_mm_per_pixel(self) -> Optional[float]:
+        """Calibration adjusted for the preprocessing crop and resize."""
+        from vascx.shared.inputs import processed_mm_per_pixel
+        return None if self.mm_per_pixel is None else processed_mm_per_pixel(self)
 
     def _grid_resolution(self) -> float:
         if self.mm_per_pixel is not None:
-            return float(self.mm_per_pixel)
+            return self.processed_mm_per_pixel
         return super()._grid_resolution()
 
     @classmethod
@@ -392,6 +402,7 @@ class Retina(Fundus):
         threshold=0.5,
         mm_per_pixel: Optional[float] = None,
         id: Any = None,
+        crop_scale_factor: Optional[float] = None,
         **kwargs,
     ):
         # assert av_path is not None or vessels_path is not None, (
@@ -426,6 +437,7 @@ class Retina(Fundus):
             layers=layers,
             fovea_location=fovea_location,
             mm_per_pixel=mm_per_pixel,
+            crop_scale_factor=crop_scale_factor,
             bounds=bounds,
             roi_mask=roi_mask,
             id=id,

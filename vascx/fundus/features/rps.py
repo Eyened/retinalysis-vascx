@@ -30,12 +30,19 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Optional
 
 import numpy as np
+from rtnls_enface.grids.specifications import BaseGridFieldSpecification
 from skimage.color import rgb2lab
 
-from .base import RetinaFeature
+from .base import (
+    RetinaFeature,
+    get_grid_field_suffix,
+    grid_field_masks_and_fraction,
+    resolve_min_area_within_bounds,
+    validate_min_area_within_bounds,
+)
 from vascx.shared.features import FeatureOutput
 
 if TYPE_CHECKING:
@@ -49,8 +56,12 @@ class BackgroundLab(RetinaFeature):
     Uses unenhanced RGB and ``Retina.background_mask``: excludes artery/vein
     masks, the optic disc, and darkest pixels, dilates the exclusions, and
     clips to the visible retina. Missing RGB, AV layers, disc, or background
-    produces a missing value. This measures the full visible background,
-    independently of the feature set's vascular measurement grid.
+    produces a missing value. With no ``grid_field``, this measures the full
+    visible background. A grid field restricts the existing background mask.
+
+    Grid visibility is evaluated before background exclusions, using
+    ``min_area_within_bounds`` from the feature, field, or grid, in that order,
+    falling back to 0.80. Insufficient visibility produces a missing vector.
 
     The upstream RPS implementation uses skimage grayscale thresholding and
     no explicit field-of-view clipping; VascX retains its existing mask.
@@ -68,8 +79,19 @@ class BackgroundLab(RetinaFeature):
         FeatureOutput("b", "b*", "Median CIELAB blue–yellow coordinate over retinal background pixels."),
     )
 
-    def __init__(self, *, plot: bool = False):
-        super().__init__(plot=plot)
+    default_min_area_within_bounds = 0.80
+
+    def __init__(
+        self,
+        grid_field: Optional[BaseGridFieldSpecification] = None,
+        *,
+        min_area_within_bounds: Optional[float] = None,
+        plot: bool = False,
+    ):
+        self.min_area_within_bounds = validate_min_area_within_bounds(
+            min_area_within_bounds
+        )
+        super().__init__(grid_field_spec=grid_field, plot=plot)
 
     def compute(self, retina: "Retina") -> np.ndarray:
         if retina.image is None:
@@ -80,6 +102,17 @@ class BackgroundLab(RetinaFeature):
         mask = retina.background_mask
         if image.shape[:2] != mask.shape:
             raise ValueError("RGB image and background mask must have matching shapes")
+        if self.grid_field_spec is not None:
+            _, in_bounds_mask, fraction = grid_field_masks_and_fraction(
+                retina, self.grid_field_spec
+            )
+            if fraction < resolve_min_area_within_bounds(
+                self.grid_field_spec,
+                self.min_area_within_bounds,
+                self.default_min_area_within_bounds,
+            ):
+                return np.full(3, np.nan)
+            mask = mask & in_bounds_mask
         if not np.any(mask):
             return np.full(3, np.nan)
         # Convert pixels before taking the median (Lab is nonlinear).
@@ -89,11 +122,9 @@ class BackgroundLab(RetinaFeature):
     def feature_name_tokens(self) -> list[str]:
         return ["background", "lab"]
 
-    def parameter_name_tokens(self) -> list[str]:
-        return []
-
     def display_name(self, key: str = None, **kwargs) -> str:
-        return "Background Lab - IM"
+        field = get_grid_field_suffix(self.grid_field_spec)
+        return f"Background Lab{field} - IM"
 
     def implementation_description(self, **kwargs) -> str:
         return (
@@ -105,14 +136,20 @@ class BackgroundLab(RetinaFeature):
         return "Reported as the median across the sampled background pixels."
 
     def _plot(self, ax, retina: "Retina", **kwargs):
-        """Unmasked retinal background pixels retain their original RGB colour;
-        excluded pixels are dimmed.
+        """Sampled retinal background pixels retain their original RGB colour;
+        excluded pixels are dimmed and the configured grid field is overlaid.
         """
         if retina.image is None:
             return ax
         from skimage.util import img_as_float
 
         image = img_as_float(retina.image)
-        display = np.where(retina.background_mask[..., None], image, image * 0.15)
+        mask = retina.background_mask
+        field = self._get_grid_field(retina)
+        if field is not None:
+            mask = mask & field.mask.astype(bool) & retina.mask
+        display = np.where(mask[..., None], image, image * 0.15)
         ax.imshow(display)
+        if field is not None:
+            field.plot(ax)
         return ax

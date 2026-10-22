@@ -367,6 +367,8 @@ def write_report_manifest(
         "measurement_definition": "native-spatial-v2",
         "inputs": {"use_mm_per_pixel": use_mm_per_pixel, "use_fovea": use_fovea},
         "calibration": "mm_per_pixel" if use_mm_per_pixel else "pixels",
+        "calibration_pixel_space": "original" if use_mm_per_pixel else None,
+        "image_metadata_columns": ["crop_scale_factor"],
         "created_utc": datetime.now(timezone.utc).isoformat(),
         "vascx_version": _package_version(),
         "feature_set": feature_set.name,

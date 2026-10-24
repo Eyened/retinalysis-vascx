@@ -7,7 +7,6 @@ import numpy as np
 from vascx.faz.features.base import FAZLayerFeature
 from vascx.faz.layer import FAZLayer
 from vascx.shared.features import FeatureSet
-from vascx.shared.naming import make_feature_names, make_output_names
 from vascx.utils import load_av_segmentation, load_image
 
 from rtnls_enface.faz_enface import FAZEnface
@@ -33,8 +32,9 @@ class FAZRetina(FAZEnface):
     def calc_features(self, feature_set: FeatureSet, naming: str = "resolved", structured: bool = False):
         all_features = {}
         target_names = lambda _feature: tuple(self.layers.keys())
-        feature_names = make_output_names(feature_set, target_names, naming=naming)
-        groups = make_feature_names(feature_set, target_names, naming=naming)
+        names = feature_set.names(naming, target_names_for_feature=target_names)
+        feature_names = names.outputs
+        groups = names.groups
         for feature_index, feature in enumerate(feature_set):
             if not isinstance(feature, FAZLayerFeature):
                 continue

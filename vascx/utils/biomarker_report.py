@@ -17,7 +17,6 @@ from matplotlib.text import Text
 
 from vascx.fundus.retina import Retina
 from vascx.shared.features import FeatureSet
-from vascx.shared.naming import make_feature_names, make_output_names
 from vascx.utils.feature_docs import get_biomarker_definitions
 
 PlotPaths = Dict[str, List[Tuple[str, str]]]
@@ -169,10 +168,9 @@ def render_biomarker_plots(
     root = Path(output_folder)
     plots_folder = root / "plots"
     plots_folder.mkdir(parents=True, exist_ok=True)
-    names = make_feature_names(
-        feature_set, Retina._target_names_for_feature, naming=naming
-    )
-    outputs = make_output_names(feature_set, Retina._target_names_for_feature, naming=naming)
+    index = feature_set.names(naming)
+    names = index.groups
+    outputs = index.outputs
     grouped_retinas: Dict[str, List[Tuple[str, Retina]]] = {}
     from vascx.shared.inputs import InputContractError, prepare_retina
     for image_id, retina in retinas:

@@ -12,7 +12,6 @@ module.exports = {
         'advanced/custom-feature-sets',
         'advanced/offline-usage',
         'advanced/skipping-steps-during-re-execution',
-        'advanced/advanced-extraction',
         'advanced/code-changes'
       ] },
     { type: 'category', label: 'Test-retest reliability', collapsed: false,

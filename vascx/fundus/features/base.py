@@ -315,6 +315,8 @@ def _make_name_parts(feature: Feature, layer_name: str) -> List[NamePart]:
 
 
 class RetinaFeature(Feature):
+    target_names = ("retina",)
+
     def __init__(
         self,
         grid_field_spec: Optional[BaseGridFieldSpecification] = None,
@@ -368,6 +370,8 @@ class RetinaFeature(Feature):
 
 
 class LayerFeature(Feature):
+    target_names = ("arteries", "veins")
+
     def __init__(
         self,
         grid_field_spec: Optional[BaseGridFieldSpecification] = None,
@@ -423,6 +427,8 @@ class LayerFeature(Feature):
 
 
 class VesselsLayerFeature(Feature):
+    target_names = ("vessels",)
+
     def __init__(
         self,
         grid_field_spec: Optional[BaseGridFieldSpecification] = None,

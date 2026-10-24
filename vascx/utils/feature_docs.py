@@ -5,7 +5,6 @@ from pathlib import Path
 from typing import Dict, List, Mapping, Optional, Sequence, Tuple, Union
 
 from vascx.shared.features import FeatureSet
-from vascx.shared.naming import make_feature_names, make_output_names
 
 
 CROP_SCALE_METADATA = {
@@ -56,11 +55,10 @@ def get_biomarker_definitions(
     use_fovea: bool = True,
 ) -> List[BiomarkerDefinition]:
     """Return ordered, variable-level metadata for a feature set."""
-    from vascx.fundus.retina import Retina
-
     fs = _resolve_feature_set(feature_set)
-    names = make_output_names(fs, Retina._target_names_for_feature, naming=naming)
-    groups = make_feature_names(fs, Retina._target_names_for_feature, naming=naming)
+    index = fs.names(naming)
+    names = index.outputs
+    groups = index.groups
     definitions = []
     for (feature_index, target, component), item in names.items():
         feature = fs.features[feature_index]

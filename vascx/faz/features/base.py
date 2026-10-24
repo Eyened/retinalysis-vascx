@@ -11,6 +11,8 @@ if TYPE_CHECKING:
 
 
 class FAZLayerFeature(Feature):
+    target_names = ("arteries", "veins", "vessels")
+
     def __init__(self, *, plot: bool = False) -> None:
         super().__init__(plot=plot)
 

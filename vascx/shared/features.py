@@ -6,11 +6,12 @@ from textwrap import fill
 from typing import TYPE_CHECKING, Any, Iterable, List, Sequence, Tuple
 
 from .naming import (
-    FeatureName,
+    FeatureBinding,
+    FeatureSetNames,
+    build_feature_set_names,
     NamePart,
     NamingConvention,
     coerce_naming_convention,
-    make_feature_names,
 )
 
 from .outputs import FeatureOutput, output_values, validate_schema
@@ -40,6 +41,13 @@ def _add_plot_caption(ax, caption: str) -> None:
 
 
 class FeatureSet:
+    """A complete feature selection with shared canonical and resolved name indexes.
+
+    Assemble all features, including derived measurements, before construction.
+    Membership is read-only. After changing a feature's naming parameters, call
+    ``rebuild_names()`` before extracting, plotting or writing metadata.
+    """
+
     _registry = {}
 
     def __init__(
@@ -50,9 +58,55 @@ class FeatureSet:
         description: str = "",
     ):
         self.name = name
-        self.features = list(features)
+        self._features = tuple(features)
         self.description = description
+        self.rebuild_names()
         self.__class__._register_instance(self)
+
+    @property
+    def features(self) -> tuple["Feature", ...]:
+        return self._features
+
+    def rebuild_names(self) -> None:
+        """Refresh all names after deliberately changing feature parameters."""
+        self._name_indexes = {}
+        self._default_targets = tuple(tuple(feature.target_names) for feature in self)
+        self._name_indexes[self._default_targets] = build_feature_set_names(
+            self, self._default_targets
+        )
+
+    def names(
+        self,
+        naming: NamingConvention | str = "resolved",
+        *,
+        target_names_for_feature=None,
+    ) -> FeatureSetNames:
+        """Return the shared index; optional target layouts support FAZ layers."""
+        convention = coerce_naming_convention(naming)
+        targets = self._default_targets if target_names_for_feature is None else tuple(
+            tuple(target_names_for_feature(feature)) for feature in self
+        )
+        if targets not in self._name_indexes:
+            self._name_indexes[targets] = build_feature_set_names(self, targets)
+        return self._name_indexes[targets][convention]
+
+    def resolve(
+        self,
+        name: str,
+        naming: NamingConvention | str = "resolved",
+        *,
+        target_names_for_feature=None,
+    ) -> FeatureBinding:
+        """Look up an output column without reconstructing its feature settings."""
+        index = self.names(naming, target_names_for_feature=target_names_for_feature)
+        try:
+            return index.by_name[name]
+        except KeyError:
+            raise KeyError(
+                f"Unknown {coerce_naming_convention(naming).value} output {name!r} "
+                f"in feature set {self.name!r}. "
+                "Use feature_set.names().by_name to list resolved output names."
+            ) from None
 
     def __iter__(self):
         return iter(self.features)
@@ -74,6 +128,7 @@ class FeatureSet:
 
 
 class Feature(ABC):
+    target_names: tuple[str, ...] = ()
     outputs = (FeatureOutput(units="dimensionless"),)
     general_description: str = ""
     plot_in_report: bool = False

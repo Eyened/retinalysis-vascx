@@ -115,8 +115,10 @@ def test_cli_calibration_uses_original_pixels(biomarker_cli_input, tmp_path):
     features = fs(ODMorphology())
     runner = CliRunner()
     native_folder, physical_folder = tmp_path / 'native', tmp_path / 'physical'
+    # Seed 2 selects the two CHASEDB1 fixtures with fully visible optic discs.
     args = ['calc-biomarkers', str(biomarker_cli_input), str(native_folder),
-            '--feature-set', features.name, '--sample', '2', '--n-jobs', '1', '--no-report']
+            '--feature-set', features.name, '--sample', '2', '--seed', '2',
+            '--n-jobs', '1', '--no-report']
     result = runner.invoke(cli, args)
     assert result.exit_code == 0, result.output
     native = pd.read_csv(native_folder / 'biomarkers.csv', index_col='id')

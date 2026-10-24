@@ -29,13 +29,13 @@ vascx calc-biomarkers ./samples/fundus/segmentations ./samples/fundus/biomarker_
 
 
 :::tip[Try a small sample first]
-Add `--sample 3` to extract biomarkers and generate the report and explanation plots for up to the first three available images:
+Add `--sample 3` to extract biomarkers and generate the report and explanation plots for a random sample of up to three available images:
 
 ```bash
 vascx calc-biomarkers <PATH_TO_FOLDER_FOR_SEGMENTATIONS> <PATH_TO_BIOMARKER_REPORT> --feature-set od_centered --sample 3
 ```
 
-The same sample is used in the plots, with a maximum of 16 images per figure. If fewer images are available, VascX uses those. See [Visual biomarker explanations](./outputs/explanations.md) for details.
+The sample is reproducible (default seed `0`); add `--seed 1` to choose another sample. The same sample is used in the plots, with a maximum of 16 images per figure. If fewer images are available, VascX uses those. See [Visual biomarker explanations](./outputs/explanations.md) for details.
 :::
 
 

@@ -81,6 +81,8 @@ fs_my_features = FeatureSet(
 )
 ```
 
+Assemble the complete list, including any derived measurements such as AVR, before constructing `FeatureSet`. Its feature membership is read-only, and its output names are built during construction. If you later change a feature's parameters, call `feature_set.rebuild_names()` before using the set again.
+
 This computes median caliber and two regional density measurements separately for arteries and veins, plus the optic-disc measurements. `plot=True` includes sample explanation figures for that measurement in the output report; it does not change the biomarker value.
 
 The grid's `min_area_within_bounds=0.9` requires at least 90% of the requested field to be visible for these caliber and density measurements. Otherwise, the measurement is missing. Measurements use the visible retinal area within the chosen field. This helps avoid comparing a complete region in one image with a small visible fragment in another.

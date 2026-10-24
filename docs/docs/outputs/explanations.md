@@ -15,94 +15,32 @@ There are several ways to generate such visual explanations on your images.
 
 ## Start with a small sample
 
-To see the measurements before processing a whole dataset, add `--sample 3`:
+To see the measurements before processing a whole dataset, add `--sample N`, for example:
 
 ```bash
-vascx calc-biomarkers segmentations report_preview --feature-set od_centered --sample 3
+vascx calc-biomarkers <SEGMENTATIONS> <OUTPUT_FOLDER> --feature-set od_centered --sample 3
 ```
 
-Here, `segmentations` is the output folder from `vascx run-models`, and `report_preview` is a new folder for the results. Replace these paths and the feature set with your own. The command reuses the existing images and segmentations, so it does not rerun model inference.
+When `--sample N` is provided, VascX will randomly sample `N` images from the input folder for extraction, and will plot their visual explanations. Plots contain at most **16 images per figure**, so `N > 16` has no effect on the plots. The figures cover the biomarkers in the feature set. Related biomarkers can share a figure, so there is not necessarily a separate plot for every column.
 
-**This extracts biomarkers for up to the first three available images and generates their report and explanation plots.** If only one or two images are available, VascX uses those. The sample consists of the first images in filename order; it is not a random selection.
+Here, `<SEGMENTATIONS>` is the output folder from `vascx run-models`, and `<OUTPUT_FOLDER>` is a new folder for the results. The command reuses the existing images and segmentations from `vascx run-models`, so it does not rerun model inference.
 
-Open `report_preview/plots/` to view the figures. You can also open `report_preview/README.md` in a Markdown viewer to follow links from the biomarker descriptions to the figures. The folder includes `biomarkers.csv` with measurements for the sample and `data_dictionary.csv` with their definitions and units.
+The default random seed is `0`, so repeating the command with the same available images and sample size selects the same images. To choose another sample, add `--seed` with a different integer.
 
-**`--sample` controls both extraction and the number of images in the plots.** Use any positive number: `--sample 10` extracts biomarkers for up to ten images and includes them in each figure. Plots contain at most **16 images per figure**. For example, `--sample 20` extracts biomarkers for up to twenty images and illustrates the first sixteen. If fewer images are available, VascX uses those. The remaining images outside the extraction sample are not processed.
+Open `<OUTPUT_FOLDER>/plots/` to view the figures. The folder also contains `README.md` with biomarker descriptions, `biomarkers.csv` with measurements for the sample and `data_dictionary.csv` with their definitions and units.
 
-The figures cover the biomarkers selected for plotting in the feature set. Related measurements can share a figure, so there is not necessarily a separate plot for every column.
+## Generate explanations for specific images
 
+For more flexibility, use the [explanation plotting notebook](https://github.com/Eyened/retinalysis-vascx/blob/main/notebooks/4_plot_explanations.ipynb) to plot a chosen biomarker on your own selection of images.
 
+Open the notebook in Jupyter and set:
 
+- `INPUT_DIR`: the folder containing your prepared images and segmentations, such as the output of `vascx run-models`.
+- `FEATURE_SET_NAME`: the feature set used for your analysis.
+- `FEATURE_NAME`: the resolved column name from your biomarker table, such as `cre_arteries` or `diam_crcl_veins`.
+- `IMAGE_IDS`: the image IDs to display, in your preferred order.
+- `OUTPUT_PATH`: where to save the figure. You can also adjust the number of columns with `N_COLS`.
 
-## Include visual explanations in a full run
+Run the cells to view the explanations together and save the figure. The notebook uses `RetinaLoader` to load the selected images and the feature set's measurement settings to draw the plots. It computes only the selected measurement and any measurements it depends on; it does not rerun model inference or extract the full feature set for the folder.
 
-Once you are happy with the sample, remove `--sample` and choose a new output folder:
-
-```bash
-vascx calc-biomarkers segmentations report --feature-set od_centered
-```
-
-Without `--sample`, this extracts biomarkers for all available images and illustrates a small selection automatically: up to three images for artery/vein figures and four for other figures, using fewer when fewer are available.
-
-To illustrate particular images, use their IDs with `--report-image`:
-
-```bash
-vascx calc-biomarkers segmentations report_selected --feature-set od_centered \
-  --report-image DRIVE_22 --report-image HRF_04_g
-```
-
-Replace these example IDs with IDs from your input data. This selects the images for the **figures**; biomarkers are still extracted for the whole folder. The usual three/four-image plot limits apply without `--sample`. If you also use `--sample`, the requested IDs must be within that sample, and the sample size controls how many are shown, up to sixteen.
-
-Report figures are generated by default. `--no-report` disables them and the README, while retaining the biomarker table and dictionary. The illustrated examples help explain the measurements; they do not replace checking the quality of your full dataset.
-
-## Explore the figures in a notebook
-
-
-For a ready-to-run example, open the [feature-set visualisation notebook](https://github.com/Eyened/retinalysis-vascx/blob/main/notebooks/4_plot_feature_set.ipynb). Choose a feature set and an image ID near the top, then run the cells to see its measurements side by side. It uses the sample images, segmentations and landmarks in the repository.
-
-The [single-feature plotting notebook](https://github.com/Eyened/retinalysis-vascx/blob/main/notebooks/features/plot_feature_single.ipynb) shows how to draw one chosen biomarker across several images and save the figure. For example, to draw a CRE explanation yourself, run this from the repository root:
-
-```python
-from matplotlib import pyplot as plt
-from vascx.fundus.features.cre import CRE, CREMode
-from vascx.fundus.loader import RetinaLoader
-
-# Load one of the prepared sample images bundled with the repository.
-images = RetinaLoader.from_folder("samples/fundus")
-retina = images.by_id("DRIVE_22")
-
-# Show the full-region CRE measurement for arteries in this image.
-fig, ax = plt.subplots(figsize=(7, 7))
-CRE(CREMode.Full).plot(ax, retina.arteries)
-fig.savefig("cre_explanation.png", dpi=150, bbox_inches="tight")
-plt.show()
-```
-
-When inspecting your own results, use the measurement settings from your feature set. The automatically generated report already uses those settings for you.
-
-## Written explanations and column definitions
-
-Your report's `README.md` describes the biomarkers and their measurement regions. `data_dictionary.csv` lists each output column's readable name, description and units; you can open it in a spreadsheet. See [Understanding biomarker names](../advanced/naming.md) for help interpreting the headings and using display names.
-
-You can generate these written explanations without processing images:
-
-```bash
-vascx write-readme biomarker_guide.md --feature-set od_centered
-vascx write-mapping biomarker_dictionary.csv --feature-set od_centered
-```
-
-Use the feature set from your analysis. Add `--naming canonical` for canonical exports, or `--use-mm-per-pixel` if you enabled millimetre calibration. These commands describe the measurements but do not generate figures.
-
-In Python, you can look up the same information for a particular column:
-
-```python
-from vascx.utils.feature_docs import get_biomarker_definitions
-
-for biomarker in get_biomarker_definitions("od_centered"):
-    if biomarker.variable == "cre_arteries":
-        print(biomarker.display_name)
-        print(biomarker.description)
-        print("Units:", biomarker.units)
-```
-
-Replace the feature-set and column names with those from your results.
+Some columns share a plot: selecting `od_area`, for example, shows the optic-disc explanation. Selecting an AVR column shows the underlying arterial and venous measurements and their ratio. The defaults use prepared sample images bundled with the repository so you can try it before choosing your own data.

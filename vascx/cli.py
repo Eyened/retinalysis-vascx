@@ -1,4 +1,5 @@
 import os
+import random
 from pathlib import Path
 
 import click
@@ -562,8 +563,15 @@ def make_examples(input_path, *, use_fovea=True):
     "--sample",
     type=click.IntRange(min=1),
     default=None,
-    help=("Extract biomarkers for up to the first N available images and use "
-          "them in report plots (maximum 16 images per plot)."),
+    help=("Extract biomarkers for a random sample of up to N available images "
+          "and use them in report plots (maximum 16 images per plot)."),
+)
+@click.option(
+    "--seed",
+    type=int,
+    default=0,
+    show_default=True,
+    help="Random seed for reproducible --sample selection; ignored without --sample.",
 )
 @click.option(
     "--report/--no-report",
@@ -600,6 +608,7 @@ def calc_biomarkers(
     n_jobs,
     logfile,
     sample,
+    seed,
     report,
     report_images,
     use_fovea,
@@ -636,8 +645,10 @@ def calc_biomarkers(
 
     original_count = len(examples)
     if sample is not None and sample < original_count:
-        examples = examples[:sample]
-        click.echo(f"Using the first {sample} of {original_count} examples")
+        examples = random.Random(seed).sample(examples, sample)
+        click.echo(
+            f"Using a random sample of {sample} of {original_count} examples (seed={seed})"
+        )
     elif sample is not None:
         click.echo(f"--sample={sample} >= {original_count}; using all examples")
 

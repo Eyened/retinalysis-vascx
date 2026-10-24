@@ -46,159 +46,154 @@ def make_set(name: str, description: str, grid_description: str, multiplier: flo
     DISC_TEMP = GridFieldSpecification(DISC_GRID, DiscCenteredHemifield.Temporal)
     DISC_NASAL = GridFieldSpecification(DISC_GRID, DiscCenteredHemifield.Nasal)
     
-    result = FeatureSet(
-        name,
-        [
-            TemporalAngle(plot=True),
+    features = [
+        TemporalAngle(plot=True),
 
-            # bifurcation features (full, superior, inferior)
-            Bifurcation(plot=True, grid_field=DISC_FULL),
-            *([
-                Bifurcation(grid_field=DISC_SUP),
-                Bifurcation(grid_field=DISC_INF),
-                Bifurcation(grid_field=DISC_TEMP),
-                Bifurcation(grid_field=DISC_NASAL)
-            ] if include_hemifields else []),
+        # bifurcation features (full, superior, inferior)
+        Bifurcation(plot=True, grid_field=DISC_FULL),
+        *([
+            Bifurcation(grid_field=DISC_SUP),
+            Bifurcation(grid_field=DISC_INF),
+            Bifurcation(grid_field=DISC_TEMP),
+            Bifurcation(grid_field=DISC_NASAL)
+        ] if include_hemifields else []),
 
-            # caliber (full, superior, inferior)
-            Caliber(plot=True, grid_field=DISC_FULL, aggregator=LengthWeightedAggregator()),
-            *([
-                Caliber(grid_field=DISC_SUP, aggregator=LengthWeightedAggregator()),
-                Caliber(grid_field=DISC_INF, aggregator=LengthWeightedAggregator()),
-                Caliber(grid_field=DISC_TEMP, aggregator=LengthWeightedAggregator()),
-                Caliber(grid_field=DISC_NASAL, aggregator=LengthWeightedAggregator())
-            ] if include_hemifields else []),
+        # caliber (full, superior, inferior)
+        Caliber(plot=True, grid_field=DISC_FULL, aggregator=LengthWeightedAggregator()),
+        *([
+            Caliber(grid_field=DISC_SUP, aggregator=LengthWeightedAggregator()),
+            Caliber(grid_field=DISC_INF, aggregator=LengthWeightedAggregator()),
+            Caliber(grid_field=DISC_TEMP, aggregator=LengthWeightedAggregator()),
+            Caliber(grid_field=DISC_NASAL, aggregator=LengthWeightedAggregator())
+        ] if include_hemifields else []),
 
-            # CRE: full, nasal, and temporal regions
-            CRE(CREMode.Full, plot=True, min_circles=2),
-            *([
-                CRE(CREMode.Nasal, min_circles=2),
-                CRE(CREMode.Temporal, min_circles=2)
-            ] if include_hemifields else []),
+        # CRE: full, nasal, and temporal regions
+        CRE(CREMode.Full, plot=True, min_circles=2),
+        *([
+            CRE(CREMode.Nasal, min_circles=2),
+            CRE(CREMode.Temporal, min_circles=2)
+        ] if include_hemifields else []),
 
-            # ARIC-style trunks; regional variants extend the full-field protocol.
-            CRE(CREMode.Full, measure=CREMeasure.ARIC, plot=True),
-            *([
-                CRE(CREMode.Nasal, measure=CREMeasure.ARIC),
-                CRE(CREMode.Temporal, measure=CREMeasure.ARIC),
-                CRE(CREMode.Full, measure=CREMeasure.ARIC, hemifield=HemifieldField.Superior),
-                CRE(CREMode.Full, measure=CREMeasure.ARIC, hemifield=HemifieldField.Inferior)
-            ] if include_hemifields else []),
+        # ARIC-style trunks; regional variants extend the full-field protocol.
+        CRE(CREMode.Full, measure=CREMeasure.ARIC, plot=True),
+        *([
+            CRE(CREMode.Nasal, measure=CREMeasure.ARIC),
+            CRE(CREMode.Temporal, measure=CREMeasure.ARIC),
+            CRE(CREMode.Full, measure=CREMeasure.ARIC, hemifield=HemifieldField.Superior),
+            CRE(CREMode.Full, measure=CREMeasure.ARIC, hemifield=HemifieldField.Inferior)
+        ] if include_hemifields else []),
 
-            # tortuosity (segments) — Distance and Curvature
-            # whole image (length-weighted normalized)
-            Tortuosity(plot=True,
+        # tortuosity (segments) — Distance and Curvature
+        # whole image (length-weighted normalized)
+        Tortuosity(plot=True,
+            mode=TortuosityMode.Segments,
+            max_segment_len=0.2,
+            measure=TortuosityMeasure.Distance,
+            length_measure=LengthMeasure.Splines,
+            grid_field=DISC_FULL,
+            aggregator=LengthWeightedAggregator(),
+        ),
+        Tortuosity(
+            mode=TortuosityMode.Segments,
+            measure=TortuosityMeasure.Curvature,
+            length_measure=LengthMeasure.Splines,
+            grid_field=DISC_FULL,
+            aggregator=LengthWeightedAggregator(),
+        ),
+
+        # tortuosity distance per region
+        *([
+            Tortuosity(
                 mode=TortuosityMode.Segments,
                 max_segment_len=0.2,
                 measure=TortuosityMeasure.Distance,
                 length_measure=LengthMeasure.Splines,
-                grid_field=DISC_FULL,
+                grid_field=DISC_SUP,
+                aggregator=LengthWeightedAggregator(),
+            ),
+            Tortuosity(
+                mode=TortuosityMode.Segments,
+                max_segment_len=0.2,
+                measure=TortuosityMeasure.Distance,
+                length_measure=LengthMeasure.Splines,
+                grid_field=DISC_INF,
+                aggregator=LengthWeightedAggregator(),
+            ),
+            Tortuosity(
+                mode=TortuosityMode.Segments,
+                max_segment_len=0.2,
+                measure=TortuosityMeasure.Distance,
+                length_measure=LengthMeasure.Splines,
+                grid_field=DISC_TEMP,
+                aggregator=LengthWeightedAggregator(),
+            ),
+            Tortuosity(
+                mode=TortuosityMode.Segments,
+                max_segment_len=0.2,
+                measure=TortuosityMeasure.Distance,
+                length_measure=LengthMeasure.Splines,
+                grid_field=DISC_NASAL,
+                aggregator=LengthWeightedAggregator(),
+            ),
+
+            # tortuosity curvature per region
+            Tortuosity(
+                mode=TortuosityMode.Segments,
+                measure=TortuosityMeasure.Curvature,
+                length_measure=LengthMeasure.Splines,
+                grid_field=DISC_SUP,
                 aggregator=LengthWeightedAggregator(),
             ),
             Tortuosity(
                 mode=TortuosityMode.Segments,
                 measure=TortuosityMeasure.Curvature,
                 length_measure=LengthMeasure.Splines,
-                grid_field=DISC_FULL,
+                grid_field=DISC_INF,
                 aggregator=LengthWeightedAggregator(),
             ),
-
-            # tortuosity distance per region
-            *([
-                Tortuosity(
-                    mode=TortuosityMode.Segments,
-                    max_segment_len=0.2,
-                    measure=TortuosityMeasure.Distance,
-                    length_measure=LengthMeasure.Splines,
-                    grid_field=DISC_SUP,
-                    aggregator=LengthWeightedAggregator(),
-                ),
-                Tortuosity(
-                    mode=TortuosityMode.Segments,
-                    max_segment_len=0.2,
-                    measure=TortuosityMeasure.Distance,
-                    length_measure=LengthMeasure.Splines,
-                    grid_field=DISC_INF,
-                    aggregator=LengthWeightedAggregator(),
-                ),
-                Tortuosity(
-                    mode=TortuosityMode.Segments,
-                    max_segment_len=0.2,
-                    measure=TortuosityMeasure.Distance,
-                    length_measure=LengthMeasure.Splines,
-                    grid_field=DISC_TEMP,
-                    aggregator=LengthWeightedAggregator(),
-                ),
-                Tortuosity(
-                    mode=TortuosityMode.Segments,
-                    max_segment_len=0.2,
-                    measure=TortuosityMeasure.Distance,
-                    length_measure=LengthMeasure.Splines,
-                    grid_field=DISC_NASAL,
-                    aggregator=LengthWeightedAggregator(),
-                ),
-
-                # tortuosity curvature per region
-                Tortuosity(
-                    mode=TortuosityMode.Segments,
-                    measure=TortuosityMeasure.Curvature,
-                    length_measure=LengthMeasure.Splines,
-                    grid_field=DISC_SUP,
-                    aggregator=LengthWeightedAggregator(),
-                ),
-                Tortuosity(
-                    mode=TortuosityMode.Segments,
-                    measure=TortuosityMeasure.Curvature,
-                    length_measure=LengthMeasure.Splines,
-                    grid_field=DISC_INF,
-                    aggregator=LengthWeightedAggregator(),
-                ),
-                Tortuosity(
-                    mode=TortuosityMode.Segments,
-                    measure=TortuosityMeasure.Curvature,
-                    length_measure=LengthMeasure.Splines,
-                    grid_field=DISC_TEMP,
-                    aggregator=LengthWeightedAggregator(),
-                ),
-                Tortuosity(
-                    mode=TortuosityMode.Segments,
-                    measure=TortuosityMeasure.Curvature,
-                    length_measure=LengthMeasure.Splines,
-                    grid_field=DISC_NASAL,
-                    aggregator=LengthWeightedAggregator(),
-                ),
-            ] if include_hemifields else []),
-
-            # vascular densities (full, superior, inferior)
-            VascularDensity(plot=True, grid_field=DISC_FULL),
-            *([
-                VascularDensity(grid_field=DISC_SUP),
-                VascularDensity(grid_field=DISC_INF),
-                VascularDensity(grid_field=DISC_TEMP),
-                VascularDensity(grid_field=DISC_NASAL)
-            ] if include_hemifields else []),
-
-            FractalDimension(q=0, grid_field=DISC_FULL, plot=True),
-
-            # optic disc features
-            ODMorphology(plot=True),
-            ####  IMAGE QUALITY FEATURES ####
-
-            # Sparsity features
-            Sparsity(plot=True, mode=SparsityMode.MEAN),
-            Sparsity(
-                mode=SparsityMode.MEAN, grid_field=DISC_FULL
+            Tortuosity(
+                mode=TortuosityMode.Segments,
+                measure=TortuosityMeasure.Curvature,
+                length_measure=LengthMeasure.Splines,
+                grid_field=DISC_TEMP,
+                aggregator=LengthWeightedAggregator(),
             ),
-            Sharpness(plot=True, grid_field=DISC_FULL),
-            Luminance(plot=True),
-            BackgroundLab(plot=True),
-        ],
-        description=description,
-    )
-    
-    result.features.extend(AVR(source) for source in list(result)
-                            if isinstance(source, CRE))
-    return result
+            Tortuosity(
+                mode=TortuosityMode.Segments,
+                measure=TortuosityMeasure.Curvature,
+                length_measure=LengthMeasure.Splines,
+                grid_field=DISC_NASAL,
+                aggregator=LengthWeightedAggregator(),
+            ),
+        ] if include_hemifields else []),
+
+        # vascular densities (full, superior, inferior)
+        VascularDensity(plot=True, grid_field=DISC_FULL),
+        *([
+            VascularDensity(grid_field=DISC_SUP),
+            VascularDensity(grid_field=DISC_INF),
+            VascularDensity(grid_field=DISC_TEMP),
+            VascularDensity(grid_field=DISC_NASAL)
+        ] if include_hemifields else []),
+
+        FractalDimension(q=0, grid_field=DISC_FULL, plot=True),
+
+        # optic disc features
+        ODMorphology(plot=True),
+        ####  IMAGE QUALITY FEATURES ####
+
+        # Sparsity features
+        Sparsity(plot=True, mode=SparsityMode.MEAN),
+        Sparsity(
+            mode=SparsityMode.MEAN, grid_field=DISC_FULL
+        ),
+        Sharpness(plot=True, grid_field=DISC_FULL),
+        Luminance(plot=True),
+        BackgroundLab(plot=True),
+    ]
+    features.extend(AVR(source) for source in list(features)
+                    if isinstance(source, CRE))
+    return FeatureSet(name, features, description=description)
 
 
 fs_od_centered = make_set(

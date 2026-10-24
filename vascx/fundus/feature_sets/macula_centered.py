@@ -42,104 +42,98 @@ def make_set(name: str, description: str, grid_description: str, center: float=1
     CIRCLE_CROPPED_SUP = GridFieldSpecification(CIRCLE_CROPPED_GRID, CircleField.Superior)
     CIRCLE_CROPPED_INF = GridFieldSpecification(CIRCLE_CROPPED_GRID, CircleField.Inferior)
 
-    result = FeatureSet(
-        name,
-        [
-            TemporalAngle(plot=True),
+    features = [
+        TemporalAngle(plot=True),
 
-            # bifurcation features (full, superior, inferior)
-            Bifurcation(plot=True, grid_field=CIRCLE_CROPPED_FIELD),
-            # optional hemifield features
-            *([
-                Bifurcation(grid_field=CIRCLE_CROPPED_SUP),
-                Bifurcation(grid_field=CIRCLE_CROPPED_INF)
-            ] if include_hemifields else []),
+        # bifurcation features (full, superior, inferior)
+        Bifurcation(plot=True, grid_field=CIRCLE_CROPPED_FIELD),
+        # optional hemifield features
+        *([
+            Bifurcation(grid_field=CIRCLE_CROPPED_SUP),
+            Bifurcation(grid_field=CIRCLE_CROPPED_INF)
+        ] if include_hemifields else []),
 
-            # caliber (length-weighted)
-            Caliber(plot=True, grid_field=CIRCLE_CROPPED_FIELD, aggregator=LengthWeightedAggregator()),
-            Caliber(grid_field=ETDRS_FULL, aggregator=LengthWeightedAggregator()),
-            # optional hemifield features
-            *([
-                Caliber(grid_field=CIRCLE_CROPPED_SUP, aggregator=LengthWeightedAggregator()),
-                Caliber(grid_field=CIRCLE_CROPPED_INF, aggregator=LengthWeightedAggregator())
-            ] if include_hemifields else []),
+        # caliber (length-weighted)
+        Caliber(plot=True, grid_field=CIRCLE_CROPPED_FIELD, aggregator=LengthWeightedAggregator()),
+        Caliber(grid_field=ETDRS_FULL, aggregator=LengthWeightedAggregator()),
+        # optional hemifield features
+        *([
+            Caliber(grid_field=CIRCLE_CROPPED_SUP, aggregator=LengthWeightedAggregator()),
+            Caliber(grid_field=CIRCLE_CROPPED_INF, aggregator=LengthWeightedAggregator())
+        ] if include_hemifields else []),
 
-            # CRE: temporal count variants and standalone superior/inferior regions
-            CRE(CREMode.Temporal, plot=True),
-            CRE(CREMode.Temporal, max_vessels=3),
-            CRE(CREMode.Temporal, max_vessels=6),
+        # CRE: temporal count variants and standalone superior/inferior regions
+        CRE(CREMode.Temporal, plot=True),
+        CRE(CREMode.Temporal, max_vessels=3),
+        CRE(CREMode.Temporal, max_vessels=6),
 
-            # ARIC-style trunks; regional variants extend the full-field protocol.
-            CRE(CREMode.Temporal, measure=CREMeasure.ARIC),
+        # ARIC-style trunks; regional variants extend the full-field protocol.
+        CRE(CREMode.Temporal, measure=CREMeasure.ARIC),
 
-            # tortuosity (segments) — Distance and Curvature
-            # whole image (length-weighted normalized)
-            Tortuosity(plot=True,
-                mode=TortuosityMode.Segments,
-                max_segment_len=0.2,
-                measure=TortuosityMeasure.Distance,
-                length_measure=LengthMeasure.Splines,
-                grid_field=CIRCLE_CROPPED_FIELD,
-                aggregator=LengthWeightedAggregator(),
-            ),
-            Tortuosity(
-                mode=TortuosityMode.Segments,
-                measure=TortuosityMeasure.Curvature,
-                length_measure=LengthMeasure.Splines,
-                grid_field=CIRCLE_CROPPED_FIELD,
-                aggregator=LengthWeightedAggregator(),
-            ),
-            # ETDRS total (length-weighted normalized)
-            Tortuosity(
-                mode=TortuosityMode.Segments,
-                max_segment_len=0.2,
-                measure=TortuosityMeasure.Distance,
-                length_measure=LengthMeasure.Splines,
-                grid_field=ETDRS_FULL,
-                aggregator=LengthWeightedAggregator(),
-            ),
-            Tortuosity(
-                mode=TortuosityMode.Segments,
-                measure=TortuosityMeasure.Curvature,
-                length_measure=LengthMeasure.Splines,
-                grid_field=ETDRS_FULL,
-                aggregator=LengthWeightedAggregator(),
-            ),
+        # tortuosity (segments) — Distance and Curvature
+        # whole image (length-weighted normalized)
+        Tortuosity(plot=True,
+            mode=TortuosityMode.Segments,
+            max_segment_len=0.2,
+            measure=TortuosityMeasure.Distance,
+            length_measure=LengthMeasure.Splines,
+            grid_field=CIRCLE_CROPPED_FIELD,
+            aggregator=LengthWeightedAggregator(),
+        ),
+        Tortuosity(
+            mode=TortuosityMode.Segments,
+            measure=TortuosityMeasure.Curvature,
+            length_measure=LengthMeasure.Splines,
+            grid_field=CIRCLE_CROPPED_FIELD,
+            aggregator=LengthWeightedAggregator(),
+        ),
+        # ETDRS total (length-weighted normalized)
+        Tortuosity(
+            mode=TortuosityMode.Segments,
+            max_segment_len=0.2,
+            measure=TortuosityMeasure.Distance,
+            length_measure=LengthMeasure.Splines,
+            grid_field=ETDRS_FULL,
+            aggregator=LengthWeightedAggregator(),
+        ),
+        Tortuosity(
+            mode=TortuosityMode.Segments,
+            measure=TortuosityMeasure.Curvature,
+            length_measure=LengthMeasure.Splines,
+            grid_field=ETDRS_FULL,
+            aggregator=LengthWeightedAggregator(),
+        ),
 
-            # vascular densities (full, superior, inferior)
-            VascularDensity(plot=True, grid_field=CIRCLE_CROPPED_FIELD, min_area_within_bounds=0.95),
-            *([
-                VascularDensity(grid_field=CIRCLE_CROPPED_SUP, min_area_within_bounds=0.95),
-                VascularDensity(grid_field=CIRCLE_CROPPED_INF, min_area_within_bounds=0.95)
-            ] if include_hemifields else []),
+        # vascular densities (full, superior, inferior)
+        VascularDensity(plot=True, grid_field=CIRCLE_CROPPED_FIELD, min_area_within_bounds=0.95),
+        *([
+            VascularDensity(grid_field=CIRCLE_CROPPED_SUP, min_area_within_bounds=0.95),
+            VascularDensity(grid_field=CIRCLE_CROPPED_INF, min_area_within_bounds=0.95)
+        ] if include_hemifields else []),
 
-            FractalDimension(q=0, grid_field=CIRCLE_CROPPED_FIELD, plot=True),
+        FractalDimension(q=0, grid_field=CIRCLE_CROPPED_FIELD, plot=True),
 
-            # optic disc features
-            ODMorphology(plot=True),
-            ####  IMAGE QUALITY FEATURES ####
+        # optic disc features
+        ODMorphology(plot=True),
+        ####  IMAGE QUALITY FEATURES ####
 
-            # Sparsity features
-            Sparsity(plot=True, mode=SparsityMode.MEAN),
-            Sparsity(
-                mode=SparsityMode.MEAN, grid_field=CIRCLE_CROPPED_FIELD
-            ),
-            Sparsity(
-                mode=SparsityMode.MEAN, grid_field=ETDRS_FULL
-            ),
-            Sharpness(plot=True, grid_field=CIRCLE_CROPPED_FIELD),
-            Sharpness(grid_field=ETDRS_FULL),
-            Luminance(plot=True),
-            BackgroundLab(plot=True),
-        ],
-        description=description,
-    )
-
-        
-    sources = [feature for feature in result if isinstance(feature, CRE)
-                and feature.max_vessels == feature.default_max_vessels()]
-    result.features.extend(AVR(source) for source in sources)
-    return result
+        # Sparsity features
+        Sparsity(plot=True, mode=SparsityMode.MEAN),
+        Sparsity(
+            mode=SparsityMode.MEAN, grid_field=CIRCLE_CROPPED_FIELD
+        ),
+        Sparsity(
+            mode=SparsityMode.MEAN, grid_field=ETDRS_FULL
+        ),
+        Sharpness(plot=True, grid_field=CIRCLE_CROPPED_FIELD),
+        Sharpness(grid_field=ETDRS_FULL),
+        Luminance(plot=True),
+        BackgroundLab(plot=True),
+    ]
+    sources = [feature for feature in features if isinstance(feature, CRE)
+               and feature.max_vessels == feature.default_max_vessels()]
+    features.extend(AVR(source) for source in sources)
+    return FeatureSet(name, features, description=description)
 
 
 fs_macula_centered = make_set(

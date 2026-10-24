@@ -19,7 +19,6 @@ from vascx.fundus.features.base import LayerFeature, RetinaFeature, VesselsLayer
 from vascx.fundus.layer import VesselTreeLayer
 from vascx.fundus.vessels_layer import FundusVesselsLayer
 from vascx.shared.features import FeatureSet
-from vascx.shared.naming import make_feature_names, make_output_names
 from vascx.shared.segment import Segment
 from vascx.utils import load_av_segmentation
 
@@ -143,13 +142,7 @@ class Retina(Fundus):
 
     @classmethod
     def _target_names_for_feature(cls, feature) -> list[str]:
-        if isinstance(feature, RetinaFeature):
-            return ["retina"]
-        if isinstance(feature, LayerFeature):
-            return ["arteries", "veins"]
-        if isinstance(feature, VesselsLayerFeature):
-            return ["vessels"]
-        return []
+        return list(feature.target_names)
 
     @classmethod
     def _register_canonical_name(
@@ -266,16 +259,9 @@ class Retina(Fundus):
         evaluator.validate(feature_set)
         all_features = {}
         seen_names: Dict[str, object] = {}
-        name_cache = getattr(feature_set, "_vascx_name_cache", {})
-        cache_key = (self.__class__, str(naming))
-        feature_names = name_cache.get(cache_key)
-        if feature_names is None:
-            feature_names = make_output_names(
-                feature_set, self._target_names_for_feature, naming=naming
-            )
-            name_cache[cache_key] = feature_names
-            feature_set._vascx_name_cache = name_cache
-        group_names = make_feature_names(feature_set, self._target_names_for_feature, naming=naming)
+        names = feature_set.names(naming, target_names_for_feature=self._target_names_for_feature)
+        feature_names = names.outputs
+        group_names = names.groups
         for feature_index, feature in enumerate(feature_set):
             feature_label = feature.__class__.__name__
             targets = self.feature_targets(feature)
@@ -332,8 +318,8 @@ class Retina(Fundus):
     def make_feature_display_names(
         cls, feature_set: FeatureSet, naming: str = "resolved"
     ) -> Dict[str, str]:
-        names = make_output_names(feature_set, cls._target_names_for_feature, naming=naming)
-        return {item.name: item.display_name for item in names.values()}
+        names = feature_set.names(naming, target_names_for_feature=cls._target_names_for_feature)
+        return {item.name: item.display_name for item in names.outputs.values()}
 
     def plot(
         self,

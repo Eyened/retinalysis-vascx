@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass, replace
 from enum import Enum
+from types import MappingProxyType
 from typing import TYPE_CHECKING, Callable, Dict, Iterable, Optional, Sequence, Tuple
 
 if TYPE_CHECKING:
@@ -225,3 +226,72 @@ def make_output_names(
 ) -> Dict[Tuple[int, str, str], FeatureName]:
     """Names of scalar output columns, keyed by (feature index, target, component)."""
     return _make_names(feature_set, target_names_for_feature, naming, expand_outputs=True)
+
+
+@dataclass(frozen=True)
+class FeatureBinding:
+    """One named output and the configured feature, target and component behind it."""
+
+    feature: "Feature"
+    feature_index: int
+    target: str
+    component: str
+    name: str
+    display_name: str
+    canonical_name: str
+    resolved_name: str
+
+
+@dataclass(frozen=True)
+class FeatureSetNames:
+    """Read-only views of a feature set's group names, output names and bindings."""
+
+    _groups: dict
+    _outputs: dict
+    _by_name: dict
+
+    @property
+    def groups(self):
+        return MappingProxyType(self._groups)
+
+    @property
+    def outputs(self):
+        return MappingProxyType(self._outputs)
+
+    @property
+    def by_name(self):
+        return MappingProxyType(self._by_name)
+
+
+def build_feature_set_names(feature_set: "FeatureSet", targets: tuple) -> dict:
+    """Build both conventions together for one complete set and target layout."""
+    targets_by_feature = {id(feature): names for feature, names in zip(feature_set, targets)}
+
+    def target_names(feature):
+        return targets_by_feature[id(feature)]
+
+    outputs = {
+        convention: make_output_names(feature_set, target_names, convention)
+        for convention in NamingConvention
+    }
+    result = {}
+    for convention in NamingConvention:
+        bindings = {}
+        for key, item in outputs[convention].items():
+            index, target, component = key
+            bindings[item.name] = FeatureBinding(
+                feature=feature_set.features[index],
+                feature_index=index,
+                target=target,
+                component=component,
+                name=item.name,
+                display_name=item.display_name,
+                canonical_name=outputs[NamingConvention.CANONICAL][key].name,
+                resolved_name=outputs[NamingConvention.RESOLVED][key].name,
+            )
+        result[convention] = FeatureSetNames(
+            make_feature_names(feature_set, target_names, convention),
+            outputs[convention],
+            bindings,
+        )
+    return result

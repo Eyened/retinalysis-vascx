@@ -1,4 +1,6 @@
 """CLI samples determine both extraction rows and report figure contents."""
+import json
+import random
 from pathlib import Path
 from types import SimpleNamespace
 
@@ -26,9 +28,12 @@ from vascx.utils.feature_docs import get_biomarker_definitions
         (24, 10, 10, 10, 10, []),
         (24, 16, 16, 16, 16, []),
         (24, 20, 20, 16, 16, []),
+        (1, 3, 1, 1, 1, []),
         (2, 10, 2, 2, 2, []),
+        (4, 4, 4, 4, 4, []),
+        (24, None, 24, 3, 4, ["--seed", "1"]),
         (4, 100, 4, 4, 4, []),
-        (24, 10, 10, 2, 2, ["--report-image", "image_02", "--report-image", "image_04"]),
+        (24, 10, 10, 2, 2, ["--seed", "1", "--report-image", "image_02", "--report-image", "image_04"]),
         (24, 10, 10, 0, 0, ["--no-report"]),
     ],
 )
@@ -83,8 +88,13 @@ def test_sample_controls_extracted_rows_and_plot_panels(
         args += ["--sample", str(sample)]
     result = CliRunner().invoke(cli, args + extra_args)
     assert result.exit_code == 0, result.output
-    assert extracted_ids == ids[:extracted]
-    assert pd.read_csv(output / "biomarkers.csv")["id"].tolist() == ids[:extracted]
+    assert len(extracted_ids) == len(set(extracted_ids)) == extracted
+    assert set(extracted_ids).issubset(ids)
+    if sample is None or sample >= available:
+        assert extracted_ids == ids
+    else:
+        assert extracted_ids != ids[:extracted]
+    assert pd.read_csv(output / "biomarkers.csv")["id"].tolist() == extracted_ids
     assert (output / "data_dictionary.csv").is_file()
     if "--no-report" in extra_args:
         assert saved_panels == {}
@@ -95,7 +105,13 @@ def test_sample_controls_extracted_rows_and_plot_panels(
         "luminance": other_images,
     }
     assert (output / "README.md").is_file()
-    assert (output / "report.json").is_file()
+    manifest = json.loads((output / "report.json").read_text())
+    requested_ids = [
+        extra_args[i + 1] for i, arg in enumerate(extra_args) if arg == "--report-image"
+    ]
+    assert manifest["dataset"]["report_sample_ids"] == (
+        requested_ids or extracted_ids[:max(paired_images, other_images)]
+    )
 
 
 def test_sampling_help_and_removed_report_samples_option(tmp_path):
@@ -103,7 +119,9 @@ def test_sampling_help_and_removed_report_samples_option(tmp_path):
     help_result = runner.invoke(cli, ["calc-biomarkers", "--help"])
     assert help_result.exit_code == 0
     help_text = " ".join(help_result.output.split())
-    assert "first N available images" in help_text
+    assert "random sample of up to N available images" in help_text
+    assert "--seed INTEGER" in help_text
+    assert "ignored without --sample. [default: 0]" in help_text
     assert "maximum 16 images per plot" in help_text
     assert "--report-samples" not in help_text
 
@@ -113,3 +131,58 @@ def test_sampling_help_and_removed_report_samples_option(tmp_path):
     ])
     assert result.exit_code != 0
     assert "No such option: --report-samples" in result.output
+
+
+@pytest.fixture
+def sampling_cli(tmp_path, monkeypatch):
+    """Capture the selected inputs without running image processing."""
+    ids = [f"image_{i:02d}" for i in range(40)]
+    monkeypatch.setattr(
+        "vascx.cli.make_examples", lambda _path, **kwargs: [{"id": i} for i in ids],
+    )
+    calls = []
+
+    def extract(*, retinas, **kwargs):
+        selected = [image["id"] for image in retinas]
+        calls.append(selected)
+        return pd.DataFrame({"value": 1.0}, index=selected)
+
+    monkeypatch.setattr("vascx.cli.extract_biomarkers_to_folder", extract)
+    runner = CliRunner()
+
+    def run(*options):
+        return runner.invoke(cli, [
+            "calc-biomarkers", str(tmp_path), str(tmp_path / "report"),
+            "--feature-set", "od_centered", "--sample", "8", *options,
+        ])
+
+    return run, ids, calls
+
+
+def test_random_sample_is_reproducible_and_seed_does_not_change_global_rng(sampling_cli):
+    run, ids, calls = sampling_cli
+    global_state = random.getstate()
+    for options in [(), (), ("--seed", "0"), ("--seed", "1"), ("--seed", "1")]:
+        result = run(*options)
+        assert result.exit_code == 0, result.output
+        assert random.getstate() == global_state
+
+    assert calls[0] == calls[1] == calls[2]
+    assert calls[3] == calls[4]
+    assert set(calls[0]) != set(calls[3])
+    for selected in calls:
+        assert len(selected) == len(set(selected)) == 8
+        assert set(selected).issubset(ids)
+        assert set(selected) != set(ids[:8])
+
+
+def test_report_image_must_belong_to_random_sample(sampling_cli):
+    run, ids, calls = sampling_cli
+    result = run()
+    assert result.exit_code == 0, result.output
+    unselected = next(image_id for image_id in ids if image_id not in calls[0])
+
+    result = run("--report-image", unselected)
+    assert result.exit_code != 0
+    assert f"Unknown --report-image ID(s): {unselected}" in result.output
+    assert len(calls) == 1

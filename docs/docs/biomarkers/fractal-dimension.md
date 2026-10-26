@@ -4,43 +4,40 @@ title: "Fractal dimension"
 
 <!-- Authored page: edit directly. Neither documentation generator overwrites this text. -->
 
-**FractalDimension.** Generalized dimensions `q=0`, `q=1`, and `q=2` describe
-how vessel coverage and vessel-pixel distribution scale with box size. For box
-masses $m_i > 0$, let $p_i = m_i / \sum_j m_j$. D0, D1, and D2 are the slopes
-against $-\log(s)$ of $\log(N)$, $-\sum_i p_i\log(p_i)$, and
-$-\log(\sum_i p_i^2)$, respectively. The dimensions are unitless finite-scale
-estimates; no OD-fovea normalization is applied.
+**Fractal dimension** describes how the retinal vessel pattern fills space at
+different scales. Higher values generally indicate a more space-filling pattern.
 
-Defaults use the filled binary vessel mask, an image-origin-aligned grid, and
-powers-of-two box sizes starting at 4 pixels and ending at half the shorter
-bounding-box extent of the visible analysis region. At least four scales are
-required. All nonempty boxes count, including fully occupied boxes and boxes
-crossing the region or image boundary; only vessel pixels inside the region
-contribute mass. Explicit grid fields require at least 80% coverage by default; a feature or
-grid `min_area_within_bounds` setting can override this threshold. Empty masks, inadequate coverage,
-and insufficient scales return missing values. No rotations, occupancy filtering,
-or post-fit ordering/clamping are applied. These choices draw on AutoMorph's
-dyadic box counting and PVBM's generalized dimensions but reproduce neither
-package exactly. The scale range, mask representation and region must be kept
-consistent when comparing estimates.
+VascX measures this by placing a grid over the vessel segmentation and counting
+the squares that contain vessels. It repeats this with different square sizes.
+The rate at which the count increases as the squares get smaller gives the
+fractal dimension. This method is called **box counting**.
 
-`FractalDimension(q=0, grid_field=...)` selects one scalar output.
-`representation="skeleton"` instead measures centerline pixels (skeletonized
-before region clipping); `min_box_size` and `max_box_fraction` configure the
-scale range. Nondefault settings appear in canonical names. `get_result(layer)`
-returns the three dimensions, box sizes/counts, scale curves, fit coefficients,
-R-squared values and any missing-value reason. Results are shared between q
-selectors on the same immutable layer. Coarse box sums reuse finer sums; plotting
-uses the same cached fits.
+The `macula_centered` and `od_centered` feature sets report **D0**, separately for
+arteries and veins within their circular analysis region. For example,
+`fd_d0_crcl_arteries` is the arterial D0 measurement.
 
-The macula-centered and OD-centered feature sets include D0 for arteries and
-veins in their configured circular region. The **sparsity** set additionally
-includes D0/D1/D2 over multiple regions. The D0 panel displays all three values
-and fits as diagnostics, alongside a cyan vessel-mask overlay and gold counted
-boxes at one scale. Showing D1 and D2 in the panel does not add them to a feature
-set that exports only D0.
+## D0, D1 and D2
+
+VascX supports three related measures:
+
+- **D0** counts every square containing vessels equally. This is the default.
+- **D1** also takes into account how vessel pixels are distributed between squares.
+- **D2** gives more weight to squares containing more vessel pixels.
+
+All three are unitless. The `sparsity` feature set includes all three measures.
+Keep the image resolution, analysis region and measurement settings consistent
+when comparing results.
+
+A result is missing if there are no vessels in the region, too little of the
+region is visible, or the region is too small to measure at enough square sizes.
 
 ## Report examples
+
+Cyan highlights the vessels being measured, and gold squares show which boxes
+were counted at one size. The small graph shows the measurements across box
+sizes and the fitted lines used to calculate the dimensions.
+
+The plots display D0, D1 and D2, even when the feature set only exports D0.
 
 ### Macula-centered
 

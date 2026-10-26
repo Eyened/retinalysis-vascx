@@ -15,10 +15,8 @@ module.exports = {
         'advanced/code-changes'
       ] },
     { type: 'category', label: 'Test-retest reliability', collapsed: false,
-      link: { type: 'doc', id: 'reliability/overview' },
-      items: ['reliability/macula-centered', 'reliability/od-centered'] },
+      items: ['reliability/overview', 'reliability/macula-centered', 'reliability/od-centered'] },
     { type: 'category', label: 'Biomarkers', collapsed: false,
-      link: { type: 'doc', id: 'biomarkers/overview' },
       items: [
         { type: 'doc', label: 'Bifurcation features', id: 'biomarkers/bifurcation' },
         { type: 'category', label: 'CREs, diameters, and AVR',
@@ -26,7 +24,7 @@ module.exports = {
         { type: 'doc', label: 'Tortuosity', id: 'biomarkers/tortuosity' },
         { type: 'doc', label: 'Optic disc morphology', id: 'biomarkers/optic-disc' },
         { type: 'category', label: 'Image quality',
-          items: ['biomarkers/sharpness', 'biomarkers/luminance', 'biomarkers/variance-of-laplacian'] },
+          items: ['biomarkers/sharpness', 'biomarkers/luminance'] },
         { type: 'category', label: 'Other',
           items: ['biomarkers/sparsity', 'biomarkers/fractal-dimension',
             'biomarkers/vascular-density', 'biomarkers/background-lab', 'biomarkers/temporal-angle'] },

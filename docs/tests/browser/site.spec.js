@@ -108,7 +108,9 @@ test('reliability overview, concise metadata and QC guidance are linked', async 
   await sidebar.getByRole('link', { name: 'Test-retest reliability', exact: true }).click();
   await expect(page.getByRole('heading', { name: 'Test-retest reliability', exact: true })).toBeVisible();
   await expect(page.getByRole('img', { name: /paired images by device comparison$/ })).toHaveCount(2);
-  await expect(page.getByRole('columnheader', { name: 'F1 analysed', exact: true })).toBeVisible();
+  await expect(page.getByRole('heading', { name: /^F1 \(OD-centered\)/ })).toBeVisible();
+  await expect(page.getByRole('heading', { name: /^F2 \(Macula-centered\)/ })).toBeVisible();
+  await expect(page.getByRole('columnheader', { name: 'Analysed pairs', exact: true })).toHaveCount(2);
   await page.goto('reliability/od-centered/');
   const metadata = page.locator('article table').first();
   await expect(metadata.locator('tbody tr')).toHaveCount(2);

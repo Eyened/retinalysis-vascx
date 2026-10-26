@@ -69,7 +69,7 @@ To run the two stages of VascX on a folder with input CFIs:
 
 ```
 vascx run-models <PATH_TO_IMAGES> <PATH_TO_FOLDER_FOR_SEGMENTATIONS>
-vascx calc-biomarkers <PATH_TO_FOLDER_FOR_SEGMENTATIONS> <PATH_TO_BIOMARKER_REPORT> --feature-set full_v3 --n-jobs 8
+vascx calc-biomarkers <PATH_TO_FOLDER_FOR_SEGMENTATIONS> <PATH_TO_BIOMARKER_REPORT> --feature-set od_centered --n-jobs 8
 ```
 
 > [!TIP]
@@ -110,7 +110,7 @@ For example, to run VascX on the provided samples folder in our git repository:
 git clone git@github.com:Eyened/retinalysis-vascx.git rtnls_vascx
 cd rtnls_vascx
 vascx run-models ./samples/fundus/original/ ./samples/fundus/segmentations
-vascx calc-biomarkers ./samples/fundus/segmentations ./samples/fundus/biomarker_report --feature-set full_v3 --n-jobs 8 --naming resolved
+vascx calc-biomarkers ./samples/fundus/segmentations ./samples/fundus/biomarker_report --feature-set od_centered --n-jobs 8 --naming resolved
 ```
 
 ## Outputs
@@ -157,7 +157,7 @@ Some of the tokens may be ommited if they match defaults or if they do not apply
 A CSV mapping between the selected biomarker names in the output CSV and publication-friendly display names can be generated with the same `--naming` option:
 
 ```
-vascx write-mapping --feature_set full_v3 PATH_TO_MAPPING_CSV --naming resolved
+vascx write-mapping --feature_set od_centered PATH_TO_MAPPING_CSV --naming resolved
 ```
 
 
@@ -612,7 +612,7 @@ Ready-to-run feature sets are available under `vascx/fundus/feature_sets` and ca
 ```python
 from vascx.utils.analysis import extract_in_parallel
 
-df = extract_in_parallel(examples, "full_v3", n_jobs=8)
+df = extract_in_parallel(examples, "od_centered", n_jobs=8)
 ```
 
 The `hemifields` and `hemifields_rs` sets measure vascular density, median and
@@ -638,7 +638,7 @@ from vascx.utils.analysis import extract_biomarkers_to_folder
 
 df = extract_biomarkers_to_folder(
     examples,
-    "full_v3",
+    "od_centered",
     "biomarker_report",
     n_jobs=8,
     naming="resolved",

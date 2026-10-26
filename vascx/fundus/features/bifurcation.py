@@ -290,7 +290,6 @@ class Bifurcation(LayerFeature):
 
     def _plot(self, ax, layer, **kwargs):
         """Two short daughter-direction rays and an arc mark each opening angle.
-        Markers are unfilled so the underlying vessels remain visible.
         Each label gives angle (integer degrees) | branching coefficient | JED
         (two decimals). N/A denotes unavailable diameter measurements. The outline
         shows the measurement region; the summary reports all four components.

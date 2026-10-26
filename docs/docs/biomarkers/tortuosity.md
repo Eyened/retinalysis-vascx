@@ -24,7 +24,7 @@ $$
 T_i^{\text{INF}} = N^{(i)}_{\text{inflections}}.
 $$
 
-When reporting a single score over multiple segments, the configured aggregator is applied; the macula-centered and OD-centered sets use a length-weighted mean:
+When reporting a single score over multiple segments, VascX use a length-weighted mean by default:
 
 $$
 T_{\text{tot}} = \sum_{i \in S} \left( \frac{\ell_i}{\sum_{j \in S} \ell_j} \right) t_i,
@@ -32,7 +32,7 @@ $$
 
 with $t_i$ any of the measures above.
 
-Curvature is reported in inverse pixels, or inverse mm when calibration is enabled. It is no longer multiplied by optic-disc–fovea distance. Distance ratios remain dimensionless and inflections remain counts. Fractional segment splitting requires an available disc–fovea distance.
+Curvature is reported in inverse pixels. Distance ratios are dimensionless and inflections are counts. Fractional segment splitting requires an available disc–fovea distance.
 
 ## Report examples
 

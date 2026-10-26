@@ -4,40 +4,27 @@ title: "Optic disc features"
 
 <!-- Authored page: edit directly. Neither documentation generator overwrites this text. -->
 
-`ODMorphology` describes optic disc visibility, position, size, and shape.
-It replaces the standalone `DiscFoveaDistance` feature in built-in feature sets.
-Its fixed vector is flattened into columns with the `od_` prefix, including
-`od_fovea_distance`. With fitted disc centroid $c_{OD}$ and fovea position $p_f$,
-
-$$
-d_{ODF} = \lVert c_{OD} - p_f \rVert_2.
-$$
+`ODMorphology` describes optic disc (OD) visibility, position, size, and shape. VascX models the optic disc by fitting a **partial ellipse** to the optic disc segmentation (see examples below). The fitting is designed to work when part of the OD is not visible / out of bounds. This allows VascX to estimate the position of the OD that is out of bounds, and calculate more accurate centroid coordinates and optic-disc fovea distance. Several OD biomarkers (ovality index, circularity, area, torsion and ellipse axes) are additionally computed when the OD is fully within bounds.
 
 | Component / variable | Availability and meaning |
 | --- | --- |
-| `valid` | Always 0 or 1; 1 means VascX accepted a fitted optic-disc ellipse, including a clipped disc. |
-| `fraction_outside_bounds` | For valid discs: reconstructed ellipse fraction outside the image or fundus ROI. |
-| `centroid_x`, `centroid_y` | Fitted ellipse center in pixels, x = column and y = row. Estimated from the visible contour when the outside fraction is greater than zero. |
-| `fovea_distance` | Centroid–fovea distance in pixels, when the fovea is available. Also estimated for clipped discs. |
+| `valid` | Normally, `valid=1`. Zero indicates that the OD was likely not segmented correctly or is fully out of bounds |
+| `fraction_outside_bounds` | Reconstructed ellipse fraction outside the image or fundus ROI. |
+| `centroid_x`, `centroid_y` | Fitted ellipse center in pixels, x = column and y = row. |
+| `fovea_distance` | Distance between OD centroid and fovea in pixels. |
 | `ellipse_a`, `ellipse_b` | Fully visible discs only: semi-major and semi-minor axis lengths in pixels. |
 | `ovality_index` | Fully visible discs only: a/b, with 1 indicating a circle. |
-| `circularity` | Fully visible discs only: 4πA/P² using segmentation pixel area and a four-direction Crofton perimeter. Approximately 1 for a circle; pixel discretization can produce values slightly above 1. |
-| `area` | Fully visible discs only: cleaned segmentation area in pixels². |
-| `area_norm` | Fully visible discs with a finite, nonzero fovea distance: area / distance². |
-| `torsion` | Fully visible discs with a distinct fovea: unsigned acute angle (0–90°) between the major axis and the perpendicular to the disc–fovea line. Missing for equal axes; unstable near a circular shape. |
+| `circularity` | Fully visible discs only: 4πA/P² using segmentation pixel area and a four-direction Crofton perimeter. Approximately 1 for a circle. |
+| `area` | Fully visible discs only: optic disc segmentation area in pixels². |
+| `area_norm` | Fully visible discs only: `area` divided by `fovea_distance`. |
+| `torsion` | Fully visible discs only: unsigned acute angle (0–90°) between the major axis and the perpendicular to the disc–fovea line. Missing for equal axes; unstable near a circular shape. |
 
-Unavailable components are NaN. Fully visible means the reconstructed ellipse
-has no area outside the visible bounds. Pixel coordinates and sizes refer to the
-loaded/preprocessed image (normally 1024×1024). With `use_mm_per_pixel=True`, lengths and coordinates are converted to mm and areas to mm². Centroids are measured from the processed image’s top-left origin; they do not align anatomy between images.
-Area and circularity use the cleaned segmentation; the axes, centroid, ovality,
-and torsion use the fitted ellipse. The torsion reference follows
-[the disc–fovea perpendicular definition](https://doi.org/10.1038/s41598-019-38960-6).
+Unavailable components are NaN. Fully visible means the fitted ellipse has no area outside the CFI bounds. Centroids are measured from the processed image’s top-left origin; they do not align anatomy between images. Area and circularity use the binary segmentation; the axes, centroid, ovality,
+and torsion use the fitted ellipse. The torsion reference follows [the disc–fovea perpendicular definition](https://doi.org/10.1038/s41598-019-38960-6).
 
-The plot shows the full fundus with segmentation, ellipse, semi-axes and torsion
-reference. All twelve measurements are overlaid near the bottom in a full-width,
-semi-transparent box. Clipped
-centroids and distances are marked as estimates; unavailable measurements remain
-visible as N/A.
+:::info Scaling biomarkers in pixels
+Measurements in pixels are relative to the preprocessed image that is input to VascX. See [Biomarker scaling](../outputs/scaling.md) to learn how to map these measurements back to the original image, and how to harmonize them if necessary.
+:::
 
 
 ## Report examples
@@ -49,11 +36,3 @@ visible as N/A.
 ### OD-centered
 
 ![OD-centered optic disc features](/assets/biomarkers/od-centered/od.jpg)
-
-An accepted fit requires finite visible ellipse–segmentation IoU of at least 0.80
-and must not reach the optimizer's extrapolation limits. Ovality (major/minor
-semi-axis ratio) must be strictly below 1.5, including for clipped discs. No area
-or area/ODFD² acceptance threshold is applied. Overlap is evaluated
-only inside the image and fundus ROI, so a clipped disc can still be accepted.
-Low contour error on a short arc does not override poor overlap. Rejected fits
-set the disc to `None` and produce `od_valid = 0`; other OD components are NaN.

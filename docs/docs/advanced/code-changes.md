@@ -25,5 +25,5 @@ Ready-to-run feature sets are available under `vascx/fundus/feature_sets` and ca
 ```python
 from vascx.utils.analysis import extract_in_parallel
 
-df = extract_in_parallel(examples, "full_v3", n_jobs=8)
+df = extract_in_parallel(examples, "od_centered", n_jobs=8)
 ```

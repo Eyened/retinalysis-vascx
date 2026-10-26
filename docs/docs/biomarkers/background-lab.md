@@ -2,47 +2,23 @@
 title: "Background Lab and pigmentation score"
 ---
 
-`BackgroundLab` measures median CIELAB lightness (L*), green–red (a*) and
-blue–yellow (b*) coordinates over the retinal background. It returns one vector,
+**BackgroundLab** measures median CIELAB lightness (L*), green–red (a*) and
+blue–yellow (b*) coordinates over the retinal background, excluding vessels and the optic disc. It returns one vector,
 exported as `background_lab_l`, `background_lab_a`, and `background_lab_b`.
-Unenhanced RGB pixels are converted to Lab **before** taking each channel's median.
+RGB pixels are converted to Lab **before** taking each channel's median.
 
-The background mask excludes vessels, the optic disc and the darkest pixels,
-dilates these exclusions, and clips to the visible retina. By default, it covers
-the full visible background independently of the vascular measurement grid.
-Pass `BackgroundLab(grid_field=field)` to intersect that background mask with a
-selected grid field. Grid visibility must meet `min_area_within_bounds`, resolved
-from the feature, field, then grid specification, with a default of 0.80. This
-checks the visible fraction of the grid before vessel and disc exclusions.
-Unavailable inputs, insufficient grid visibility, or an empty sampled background
-yield three missing values. Feature names and plots identify the selected region.
-These colour coordinates are unaffected by spatial calibration.
+The **retinal pigmentation score (RPS)** is a separate, dataset-level postprocessing
+step. Because the [RPS is calculated relative to a cohort](https://www.nature.com/articles/s41467-024-55198-7), the RPS is not output directly by VascX. Instead, VascX includes a utility to facilitate computation: `vascx.utils.rps.calculate_rps(df, a_column, b_column)` accepts a dataframe and column names for the **a** and **b** Lab components. It uses PCA to compute the RPS following the [original implementation](https://github.com/uw-biomedical-ml/retinal-pigmentation-score). 
 
-The retinal pigmentation score (RPS) is a separate, dataset-level postprocessing
-step: `vascx.utils.rps.calculate_rps(df, a_column, b_column)` fits PCA to the finite
-median a* and b* values without standardizing them. RPS is the centered first
-component score; its sign is flipped if both loadings are positive, following
-the original implementation. L* is not used. Missing input rows retain NaN scores.
+:::tip Attribution
+If you use retinal pigment score in VascX, don't forget to cite the [original authors](https://www.nature.com/articles/s41467-024-55198-7):
 
-Filter for image quality before fitting. Scores from independently fitted datasets
-or batches are not necessarily comparable. The reports below show the Lab
-measurements used as inputs, rather than a fitted RPS.
+    Rajesh, A.E., Olvera-Barrios, A., Warwick, A.N. et al. Machine learning derived retinal pigment score from ophthalmic imaging shows ethnicity is not biology. Nat Commun 16, 60 (2025). https://doi.org/10.1038/s41467-024-55198-7
+:::
 
-## RPS reproducibility
-
-The [macula-centered](../reliability/macula-centered.mdx) and
-[OD-centered](../reliability/od-centered.mdx) reliability results include `rps`
-under **Other**. One PCA is fitted to the unique comparison images pooled across
-F1, F2 and all included devices, after the common pair-level quality filters.
-Only finite a* and b* measurements enter the fit, and each image counts once even
-when it appears in several comparisons. The same PCA scores are used for every
-device comparison; ICCs additionally require both images to have an RPS value.
-
-This measures reproducibility of a **Rotterdam-fitted RPS**. It does not evaluate
-transfer of the paper's UK Biobank PCA. The PCA is refitted whenever the ICC assets
-are regenerated, so changing the eligible cohort can change the score definition.
-RPS is derived from the existing Lab measurements during comparison analysis;
-extraction exports and reports remain unchanged.
+:::caution
+Filter for image quality before fitting. Scores from independently fitted datasets or batches are not necessarily comparable.
+:::
 
 ## Report examples
 

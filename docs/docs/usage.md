@@ -13,7 +13,7 @@ To run the two stages of VascX on a folder with input CFIs:
 
 ```
 vascx run-models <PATH_TO_IMAGES> <PATH_TO_FOLDER_FOR_SEGMENTATIONS>
-vascx calc-biomarkers <PATH_TO_FOLDER_FOR_SEGMENTATIONS> <PATH_TO_BIOMARKER_REPORT> --feature-set full_v3 --n-jobs 8
+vascx calc-biomarkers <PATH_TO_FOLDER_FOR_SEGMENTATIONS> <PATH_TO_BIOMARKER_REPORT> --feature-set od_centered --n-jobs 8
 ```
 
 :::tip[Example]
@@ -23,7 +23,7 @@ For example, to run VascX on the provided samples folder in our git repository a
 git clone git@github.com:Eyened/retinalysis-vascx.git rtnls_vascx
 cd rtnls_vascx
 vascx run-models ./samples/fundus/original/ ./samples/fundus/segmentations
-vascx calc-biomarkers ./samples/fundus/segmentations ./samples/fundus/biomarker_report --feature-set full_v3 --n-jobs 8 --naming resolved
+vascx calc-biomarkers ./samples/fundus/segmentations ./samples/fundus/biomarker_report --feature-set od_centered --n-jobs 8 --naming resolved
 ```
 :::
 

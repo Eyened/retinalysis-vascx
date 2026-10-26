@@ -10,9 +10,7 @@ $$
 D = \frac{|B \cap R|}{|R|}.
 $$
 
-The pipeline returns a fraction (0–1). The Rotterdam Study reports and reliability
-exports present it as a percentage (100 × D). Neither calibration nor device
-spatial correction changes this fraction.
+The pipeline returns a fraction (0–1). The Rotterdam Study reports and reliability exports present it as a percentage (100 × D). 
 
 ## Report examples
 

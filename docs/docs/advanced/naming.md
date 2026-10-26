@@ -37,7 +37,7 @@ Longer names usually identify a particular variant. For example, `cre_max_vessel
 
 Resolved names leave out settings that are shared by the relevant measurements in a feature set. The measurement itself is unchanged.
 
-For example, `macula_centered` uses length-weighted caliber measurements. Its resolved column `diam_crcl_arteries` therefore leaves out `lw`. In `full_v3`, both median and length-weighted caliber are included, so you will see prefixes such as `md_diam_arteries` and `lw_diam_arteries` to tell them apart. Similarly, `od_fovea_distance` leaves out the longer name's `_retina` ending.
+For example, `macula_centered` uses length-weighted caliber measurements. Its resolved column `diam_crcl_arteries` therefore leaves out `lw`. If a custom feature set includes both median and length-weighted caliber, its names retain `md` and `lw` to tell those measurements apart. Similarly, `od_fovea_distance` leaves out the longer name's `_retina` ending.
 
 **Read a resolved name together with its feature set.** For example, `cre_arteries` uses the temporal vessels in `macula_centered`, but the full region around the disc in `od_centered`. Both are arterial CRE measurements, but their definitions differ. Keep the report with the table, especially when comparing exports from different feature sets.
 

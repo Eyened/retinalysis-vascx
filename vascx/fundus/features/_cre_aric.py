@@ -281,12 +281,6 @@ def plot_aric(feature: CRE, ax, layer: VesselTreeLayer, **kwargs):
                     color="white", fontsize=7,
                     arrowprops=dict(arrowstyle="-", color=color, linewidth=0.5),
                     bbox=dict(facecolor="black", edgecolor=color, linewidth=0.6, alpha=0.8, pad=1))
-    status = "valid" if result.valid else "N/A"
-    lines = [f"ARIC: {status}; vessels={len(result.selected)}/{feature.max_vessels}; "
-             f"minimum={feature.required_aric_vessels}; coverage={result.coverage:.1%}", *result.flags]
-    ax.text(0.02, 0.02, "\n".join(lines), transform=ax.transAxes,
-            va="bottom", ha="left", color="white", fontsize=7,
-            bbox=dict(facecolor="black", alpha=0.65, pad=3))
     h, w = retina.resolution
     ax.set_xlim(0, w)
     ax.set_ylim(h, 0)

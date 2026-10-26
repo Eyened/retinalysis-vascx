@@ -1,52 +1,53 @@
 ---
-title: Test-retest reliability
+title: Overview & methods
+mdx:
+  format: mdx
 ---
 
-We evaluated agreement between fundus cameras using **Rotterdam Study** images of the same eye at the same study visit, separately for **F1 (OD-centered)** and **F2 (macula-centered)**. One image per device was selected within each visit/eye/field group. These comparisons measure reproducibility across devices.
+import DevicePairCounts from '@site/static/assets/reliability/device-pair-counts.mdx';
 
-## Cohort and quality control
+The **Rotterdam Study** contains thousands of cases of repeat imaging, taken using two different cameras during the same visit, and capturing the same eye. We used these images to evaluate the test-retest reproducibility of VascX biomarkers across fundus cameras. We evaluated reproducibility separately for **F1 (OD-centered)** and **F2 (macula-centered)**.
 
-Both members of a pair must pass the EyePACS-trained quality model (`bad` is excluded), with required metadata, calibration and cached inputs available. Missing quality labels are excluded. Up to **200 pairs per device comparison per field** were sampled without replacement (seed 0). Both images must also have finite scaled `sharpness_crcl` ≤ 3; higher values indicate more blur. This study-specific filter is applied after sampling; rejected pairs are not replaced. No sparsity cutoff was applied.
+:::info About generalisation
+The images used in these test-retest comparisons were not used for training the segmentation models. However, our segmentation models were trained on other images from the Rotterdam Study. For that reason, the ICC scores presented here should be considered internal validation.
+:::
 
-Excluded comparisons (devices are too similar): Triton plus–Triton plus - Fundus; Triton–Triton plus - Fundus.
+## Image selection and quality control
 
-### Images per device
+We performed image selection and [quality-control](../outputs/analysis-and-qc.md) for the test-retest validation as follows:
+1. **Sampling.** Up to **500 pairs per device pair per field** were sampled without replacement (seed 0).
+2. **Global QC.** We excluded images classified as `bad` by the EyePACS-trained quality model.
+3. **Bluriness filter.** We applied an additional filter on `sharpness_crcl` ≤ 3 to filter out blurry images.
 
-Counts are unique images within each device and field. **Sampled** counts include pairs present in the saved export, after initial QC; **analysed** counts include images contributing to at least one estimable ICC after blur QC and measurement availability checks. Images shared between device comparisons are counted once. Excluded comparisons are omitted.
-
-| Device | F1 sampled | F1 analysed | F2 sampled | F2 analysed |
-| --- | ---: | ---: | ---: | ---: |
-| TOPCON 3D OCT-1000 | 200 | 181 | 200 | 191 |
-| TOPCON 3D OCT-1000 MARK II | 200 | 140 | 200 | 145 |
-| TOPCON 3D OCT-2000 FA Plus | 643 | 476 | 650 | 507 |
-| TOPCON Analog Device #2 | 0 | 0 | 200 | 173 |
-| TOPCON DRI OCT Triton plus | 219 | 132 | 227 | 144 |
-| TOPCON DRI OCT Triton plus - Fundus | 89 | 60 | 147 | 104 |
-| TOPCON TRC-50DX + D7100 | 422 | 306 | 470 | 361 |
-| TOPCON TRC-50EX + DXC-950P | 604 | 493 | 1011 | 841 |
-| TOPCON TRC-50IX + D7100 | 206 | 147 | 212 | 163 |
-| TOPCON TRC-50VT - Analog Fundus Camera | 0 | 0 | 200 | 151 |
-
-[Download image counts](pathname:///retinalysis-vascx/assets/reliability/device-image-counts.csv)
+:::info 
+For more information about the test-retest reproducibility analysis, see [our manuscript](https://tvst.arvojournals.org/article.aspx?articleid=2818595).
+:::
 
 ## Scaling and ICC
 
-Device- and field-specific geometric factors, estimated from registered image pairs, express spatial measurements in **TOPCON TRC-50EX + DXC-950P reference pixels**. Lengths are divided by the factor, areas by its square, and inverse lengths multiplied by it; ratios, angles and counts are unchanged. This corrects scale, not anatomical position.
+To adjust for differences in device FoV / scale, distance biomarkers were scaled [as described here](../outputs/scaling.md). We used [retinalysis-registration](https://github.com/Eyened/retinalysis-registration) to register the image pairs, and used the scaling factors of the registration transforms to calculate a single canonical scaling factor per device. These were then used to rescale the biomarkers in pixel units to a canonical scale.
 
-**ICC(2,1)** is the two-way random-effects, absolute-agreement, single-measurement intraclass correlation, computed with Pingouin. Each matched pair is a target and the two devices are raters. Results include a **95% confidence interval** and the complete-pair count; at least **60 pairs per biomarker** are required. Missing measurements are excluded pairwise. Undefined estimates are omitted from plots but retained in the downloadable results.
+**ICC(2,1)** is the two-way random-effects, absolute-agreement, single-measurement intraclass correlation. Each matched pair is a target and the two devices are raters. Results include a **95% confidence interval** and the complete-pair count; at least **60 pairs per biomarker** are required. Missing measurements are excluded pairwise. 
 
-## Paired examples
+## Image pairs per device comparison
 
-Each device comparison shows up to **8 matched pairs** horizontally: the first device above, the second below. These images come from pairs contributing to at least one reported ICC. Comparisons with no estimable ICC are omitted. The reproducible figure sample uses seed **17**, independently of cohort selection. Click a figure to expand it.
+Counts are matched image pairs within each device comparison and field. **Sampled** counts include pairs present in the saved export, after global QC; **analysed** counts include pairs contributing to at least one estimable ICC after blur QC and excluding uncomputable biomarkers. Biomarkers are uncomputable when VascX cannot produce an output, due to, for example, the RoI being out of bounds. 
 
-### F1: OD-centered
+
+<DevicePairCounts />
+
+
+
+
+### Paired image samples
+
+Each device comparison shows **8 sample pairs** horizontally: the first device above, the second below. These images come from pairs contributing to at least one reported ICC.
+
+#### F1: OD-centered
 
 ![F1 paired images by device comparison](/assets/reliability/od-centered/paired-images.jpg)
 
-[View od-centered ICC results](./od-centered.mdx)
-
-### F2: Macula-centered
+#### F2: Macula-centered
 
 ![F2 paired images by device comparison](/assets/reliability/macula-centered/paired-images.jpg)
 
-[View macula-centered ICC results](./macula-centered.mdx)

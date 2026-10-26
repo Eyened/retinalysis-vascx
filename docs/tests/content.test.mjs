@@ -42,3 +42,13 @@ test('page and component asset URLs resolve locally', () => {
     }
   }
 });
+
+
+test('the reliability overview is authored and imports generated pair counts', () => {
+  const page = fs.readFileSync(path.join(root, 'docs/reliability/overview.md'), 'utf8');
+  const generated = JSON.parse(fs.readFileSync(path.join(root, 'generated-assets.json')));
+  assert.ok(!Object.hasOwn(generated, 'docs/reliability/overview.md'));
+  assert.match(page, /import DevicePairCounts from '@site\/static\/assets\/reliability\/device-pair-counts.mdx'/);
+  assert.match(page, /<DevicePairCounts \/>/);
+  assert.ok(Object.hasOwn(generated, 'static/assets/reliability/device-pair-counts.mdx'));
+});

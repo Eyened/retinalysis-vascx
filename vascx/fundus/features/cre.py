@@ -597,8 +597,7 @@ class CRE(LayerFeature):
                 "Green marks the measurement region. Colored paths show "
                 "selected trunk sections in the region; labels give safeguarded whole-segment "
                 "median widths. Dashed paths "
-                "mark daughter substitutions; gray paths are unselected candidates. "
-                "The panel reports coverage, vessel count, and quality flags."
+                "mark daughter substitutions; gray paths are unselected candidates."
             )
         return super().plot_description()
 

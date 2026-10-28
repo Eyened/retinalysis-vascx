@@ -105,8 +105,10 @@ for (const [route, label] of [
 test('reliability overview, concise metadata and QC guidance are linked', async ({ page }) => {
   await page.goto('./');
   const sidebar = page.locator('.theme-doc-sidebar-container');
-  await sidebar.getByRole('link', { name: 'Test-retest reliability', exact: true }).click();
-  await expect(page.getByRole('heading', { name: 'Test-retest reliability', exact: true })).toBeVisible();
+  // Follow the destination, independent of category labels and page titles.
+  await sidebar.locator('a[href$="/reliability/overview/"]').click();
+  await expect(page).toHaveURL(/\/reliability\/overview\/$/);
+  await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
   await expect(page.getByRole('img', { name: /paired images by device comparison$/ })).toHaveCount(2);
   await expect(page.getByRole('heading', { name: /^F1 \(OD-centered\)/ })).toBeVisible();
   await expect(page.getByRole('heading', { name: /^F2 \(Macula-centered\)/ })).toBeVisible();
@@ -122,8 +124,9 @@ test('reliability overview, concise metadata and QC guidance are linked', async 
                        'Study design, quality control and paired examples']) {
     await expect(page.getByRole('link', { name: label, exact: true })).toHaveCount(0);
   }
-  await sidebar.getByRole('link', { name: 'Analysis and QC', exact: true }).click();
-  await expect(page.getByRole('heading', { name: 'Analysis and QC', exact: true })).toBeVisible();
+  await sidebar.locator('a[href$="/outputs/analysis-and-qc/"]').click();
+  await expect(page).toHaveURL(/\/outputs\/analysis-and-qc\/$/);
+  await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
   await expect(page.locator('article')).toContainText('EyePACS');
 });
 

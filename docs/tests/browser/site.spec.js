@@ -105,8 +105,8 @@ for (const [route, label] of [
 test('reliability overview, concise metadata and QC guidance are linked', async ({ page }) => {
   await page.goto('./');
   const sidebar = page.locator('.theme-doc-sidebar-container');
-  // Follow the destination, independent of category labels and page titles.
-  await sidebar.locator('a[href$="/reliability/overview/"]').click();
+  // Category toggles can share the destination URL; select only navigation links.
+  await sidebar.getByRole('link').and(sidebar.locator('a[href$="/reliability/overview/"]')).click();
   await expect(page).toHaveURL(/\/reliability\/overview\/$/);
   await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
   await expect(page.getByRole('img', { name: /paired images by device comparison$/ })).toHaveCount(2);
@@ -124,7 +124,7 @@ test('reliability overview, concise metadata and QC guidance are linked', async 
                        'Study design, quality control and paired examples']) {
     await expect(page.getByRole('link', { name: label, exact: true })).toHaveCount(0);
   }
-  await sidebar.locator('a[href$="/outputs/analysis-and-qc/"]').click();
+  await sidebar.getByRole('link').and(sidebar.locator('a[href$="/outputs/analysis-and-qc/"]')).click();
   await expect(page).toHaveURL(/\/outputs\/analysis-and-qc\/$/);
   await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
   await expect(page.locator('article')).toContainText('EyePACS');

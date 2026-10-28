@@ -77,11 +77,13 @@ def setup(tmp_path, monkeypatch):
             return public_loader(data, **options)
 
         monkeypatch.setattr(ensemble, "make_inference_dataloader", loader)
-        monkeypatch.setattr(
-            ensemble,
-            "predict_step_full",
-            lambda *args: pytest.fail("inspection API used"),
-        )
+        predict = ensemble.predict_batch
+
+        def production_prediction(batch, *, fields=None):
+            assert fields is None
+            return predict(batch)
+
+        monkeypatch.setattr(ensemble, "predict_batch", production_prediction)
         return ensemble
 
     monkeypatch.setattr(inference, "_load_ensemble", load)
@@ -114,7 +116,7 @@ def test_numeric_outputs_preserve_vascx_columns_and_values(setup, kind, empty):
 
 def test_numeric_iterators_keep_their_existing_result_fields(setup):
     paths, _ = setup
-    data = inference._create_dtos(paths)
+    data = inference._create_inputs(paths)
     quality = list(
         inference.iterate_quality_estimation(data, device="cpu", model="quality")
     )

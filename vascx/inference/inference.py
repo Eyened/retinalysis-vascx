@@ -6,7 +6,7 @@ import numpy as np
 import pandas as pd
 import torch
 from PIL import Image
-from rtnls_inference.dtos_inference import ModelInputDTO
+from rtnls_inference.inputs import ImageInput
 from rtnls_inference.ensembles import get_ensemble_class
 from rtnls_inference.ensembles.ensemble_classification import ClassificationEnsemble
 from rtnls_inference.ensembles.ensemble_heatmap_regression import (
@@ -78,11 +78,11 @@ def _segmentation_item(result: dict[str, Any]) -> dict[str, Any]:
     }
 
 
-def _create_dtos(
+def _create_inputs(
     rgb_paths: List[Path],
     ids: Optional[List[str]] = None,
-) -> List[ModelInputDTO]:
-    """Helper to create ModelInputDTOs from paths."""
+) -> List[ImageInput]:
+    """Create input records from paths; the inference dataset validates them."""
     if ids is None:
         ids = [p.stem for p in rgb_paths]
 
@@ -90,16 +90,13 @@ def _create_dtos(
         raise ValueError("rgb_paths and ids must have the same length")
 
     return [
-        ModelInputDTO(
-            id=str(id_val),
-            image=str(rgb_path),
-        )
+        {"id": str(id_val), "image": str(rgb_path)}
         for id_val, rgb_path in zip(ids, rgb_paths)
     ]
 
 
 def iterate_quality_estimation(
-    data: List[ModelInputDTO],
+    data: List[ImageInput],
     device: torch.device | None = None,
     model: str | Path = DEFAULT_QUALITY_MODEL,
 ) -> Iterator[Dict[str, Any]]:
@@ -128,7 +125,7 @@ def run_quality_estimation(
         _load_ensemble(ClassificationEnsemble, model).to(resolve_device(device)).eval()
     )
     loader = ensemble.make_inference_dataloader(
-        _create_dtos(fpaths, ids=ids),
+        _create_inputs(fpaths, ids=ids),
         input_space="preprocessed",
         batch_size=16,
         num_workers=8,
@@ -145,7 +142,7 @@ def run_quality_estimation(
 
 
 def iterate_segmentation_vessels_and_av(
-    data: List[ModelInputDTO],
+    data: List[ImageInput],
     device: torch.device | None = None,
     predict_av: bool = True,
     predict_vessels: bool = True,
@@ -229,7 +226,7 @@ def run_segmentation_vessels_and_av(
 
     Args:
         rgb_paths: List of paths to RGB fundus images
-        ids: Optional list of ids to pass to _make_inference_dataloader
+        ids: Optional list of ids to pass to make_inference_dataloader
         av_path: Folder where to store output AV segmentations
         vessels_path: Folder where to store output vessel segmentations
         device: Device to run inference on
@@ -248,7 +245,7 @@ def run_segmentation_vessels_and_av(
     should_predict_vessels = (vessels_path is not None) or predict_vessels
 
     device = resolve_device(device)
-    data = _create_dtos(rgb_paths, ids=ids)
+    data = _create_inputs(rgb_paths, ids=ids)
 
     for result in iterate_segmentation_vessels_and_av(
         data,
@@ -273,7 +270,7 @@ def run_segmentation_vessels_and_av(
 
 
 def iterate_segmentation_disc(
-    data: List[ModelInputDTO],
+    data: List[ImageInput],
     device: torch.device | None = None,
     model: str | Path = DEFAULT_DISC_MODEL,
 ) -> Iterator[Dict[str, Any]]:
@@ -309,7 +306,7 @@ def run_segmentation_disc(
     if output_path is not None:
         output_path.mkdir(exist_ok=True, parents=True)
 
-    data = _create_dtos(rgb_paths, ids=ids)
+    data = _create_inputs(rgb_paths, ids=ids)
 
     for item in iterate_segmentation_disc(data, device=device, model=model):
         if callback is not None:
@@ -321,7 +318,7 @@ def run_segmentation_disc(
 
 
 def iterate_fovea_detection(
-    data: List[ModelInputDTO],
+    data: List[ImageInput],
     device: torch.device | None = None,
     model: str | Path = DEFAULT_FOVEA_MODEL,
 ) -> Iterator[Dict[str, Any]]:
@@ -353,7 +350,7 @@ def run_fovea_detection(
         .eval()
     )
     loader = ensemble.make_inference_dataloader(
-        _create_dtos(rgb_paths, ids=ids),
+        _create_inputs(rgb_paths, ids=ids),
         input_space="preprocessed",
         batch_size=8,
         num_workers=8,

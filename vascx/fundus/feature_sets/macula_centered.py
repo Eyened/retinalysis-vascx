@@ -31,7 +31,7 @@ from vascx.shared.features import FeatureSet
 
 
 
-def make_set(name: str, description: str, grid_description: str, center: float=1.0, radius_multiplier: float=1.0, band_crop: bool=False, include_hemifields: bool=False) -> FeatureSet:
+def make_set(name: str, description: str, grid_description: str, center: float=1.0, radius_multiplier: float=1.0, band_crop: bool=False) -> FeatureSet:
 
     ETDRS_FULL = GridFieldSpecification(ETDRSGridSpecification(description="a fovea-centered ETDRS grid with ring radii of 0.5, 1.5, and 3.0 mm"), ETDRSRing.FullGrid)
 
@@ -39,28 +39,17 @@ def make_set(name: str, description: str, grid_description: str, center: float=1
         band_crop_fraction=0.12 if band_crop else 0.0, center=center, radius_multiplier=radius_multiplier, name="crcl", description=grid_description
     )
     CIRCLE_CROPPED_FIELD = GridFieldSpecification(CIRCLE_CROPPED_GRID, CircleField.FullGrid)
-    CIRCLE_CROPPED_SUP = GridFieldSpecification(CIRCLE_CROPPED_GRID, CircleField.Superior)
-    CIRCLE_CROPPED_INF = GridFieldSpecification(CIRCLE_CROPPED_GRID, CircleField.Inferior)
 
     features = [
         TemporalAngle(plot=True),
 
         # bifurcation features (full, superior, inferior)
         Bifurcation(plot=True, grid_field=CIRCLE_CROPPED_FIELD),
-        # optional hemifield features
-        *([
-            Bifurcation(grid_field=CIRCLE_CROPPED_SUP),
-            Bifurcation(grid_field=CIRCLE_CROPPED_INF)
-        ] if include_hemifields else []),
 
         # caliber (length-weighted)
         Caliber(plot=True, grid_field=CIRCLE_CROPPED_FIELD, aggregator=LengthWeightedAggregator()),
         Caliber(grid_field=ETDRS_FULL, aggregator=LengthWeightedAggregator()),
-        # optional hemifield features
-        *([
-            Caliber(grid_field=CIRCLE_CROPPED_SUP, aggregator=LengthWeightedAggregator()),
-            Caliber(grid_field=CIRCLE_CROPPED_INF, aggregator=LengthWeightedAggregator())
-        ] if include_hemifields else []),
+
 
         # CRE: temporal count variants and standalone superior/inferior regions
         CRE(CREMode.Temporal, plot=True),
@@ -106,11 +95,6 @@ def make_set(name: str, description: str, grid_description: str, center: float=1
 
         # vascular densities (full, superior, inferior)
         VascularDensity(plot=True, grid_field=CIRCLE_CROPPED_FIELD, min_area_within_bounds=0.95),
-        *([
-            VascularDensity(grid_field=CIRCLE_CROPPED_SUP, min_area_within_bounds=0.95),
-            VascularDensity(grid_field=CIRCLE_CROPPED_INF, min_area_within_bounds=0.95)
-        ] if include_hemifields else []),
-
         FractalDimension(q=0, grid_field=CIRCLE_CROPPED_FIELD, plot=True),
 
         # optic disc features
@@ -140,12 +124,6 @@ fs_macula_centered = make_set(
     name="macula_centered",
     description="Biomarkers optimized for macula-centered fundus images.",
     grid_description="a circular grid centered on the fovea with radius equal to the optic-disc–fovea distance plus the optic-disc radius")
-
-fs_macula_centered_hemifields = make_set(
-    name="macula_centered_hemifields",
-    description="macula_centered feature set expanded with hemifield features",
-    grid_description="a circular grid centered on the fovea with radius equal to the optic-disc–fovea distance plus the optic-disc radius",
-    include_hemifields=True)
 
 fs_macula_centered_rs = make_set(
     name="macula_centered_rs", 

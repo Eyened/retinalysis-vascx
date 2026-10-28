@@ -35,53 +35,32 @@ from vascx.shared.features import FeatureSet
 
 
 # Feature set for OD-centered images where the fovea location is known
-def make_set(name: str, description: str, grid_description: str, multiplier: float=7 / 6, band_crop: bool=False, min_area_within_bounds: float=None, include_hemifields: bool=False) -> FeatureSet:
+def make_set(name: str, description: str, grid_description: str, multiplier: float=7 / 6, band_crop: bool=False, min_area_within_bounds: float=None) -> FeatureSet:
     DISC_GRID = DiscCenteredGridSpecification(multiplier=multiplier, band_crop_fraction=0.06 if band_crop else 0.0, name="crcl", description=grid_description, min_area_within_bounds=min_area_within_bounds)
     DISC_FULL = GridFieldSpecification(
         grid_spec=DISC_GRID,
         field=DiscCenteredRing.FullGrid,
     )
-    DISC_SUP = GridFieldSpecification(DISC_GRID, DiscCenteredHemifield.Superior)
-    DISC_INF = GridFieldSpecification(DISC_GRID, DiscCenteredHemifield.Inferior)
-    DISC_TEMP = GridFieldSpecification(DISC_GRID, DiscCenteredHemifield.Temporal)
-    DISC_NASAL = GridFieldSpecification(DISC_GRID, DiscCenteredHemifield.Nasal)
+
     
     features = [
         TemporalAngle(plot=True),
 
         # bifurcation features (full, superior, inferior)
         Bifurcation(plot=True, grid_field=DISC_FULL),
-        *([
-            Bifurcation(grid_field=DISC_SUP),
-            Bifurcation(grid_field=DISC_INF),
-            Bifurcation(grid_field=DISC_TEMP),
-            Bifurcation(grid_field=DISC_NASAL)
-        ] if include_hemifields else []),
+
 
         # caliber (full, superior, inferior)
         Caliber(plot=True, grid_field=DISC_FULL, aggregator=LengthWeightedAggregator()),
-        *([
-            Caliber(grid_field=DISC_SUP, aggregator=LengthWeightedAggregator()),
-            Caliber(grid_field=DISC_INF, aggregator=LengthWeightedAggregator()),
-            Caliber(grid_field=DISC_TEMP, aggregator=LengthWeightedAggregator()),
-            Caliber(grid_field=DISC_NASAL, aggregator=LengthWeightedAggregator())
-        ] if include_hemifields else []),
+
 
         # CRE: full, nasal, and temporal regions
         CRE(CREMode.Full, plot=True, min_circles=2),
-        *([
-            CRE(CREMode.Nasal, min_circles=2),
-            CRE(CREMode.Temporal, min_circles=2)
-        ] if include_hemifields else []),
+        CRE(CREMode.Nasal, min_circles=2),
+        CRE(CREMode.Temporal, min_circles=2),
 
         # ARIC-style trunks; regional variants extend the full-field protocol.
         CRE(CREMode.Full, measure=CREMeasure.ARIC, plot=True),
-        *([
-            CRE(CREMode.Nasal, measure=CREMeasure.ARIC),
-            CRE(CREMode.Temporal, measure=CREMeasure.ARIC),
-            CRE(CREMode.Full, measure=CREMeasure.ARIC, hemifield=HemifieldField.Superior),
-            CRE(CREMode.Full, measure=CREMeasure.ARIC, hemifield=HemifieldField.Inferior)
-        ] if include_hemifields else []),
 
         # tortuosity (segments) — Distance and Curvature
         # whole image (length-weighted normalized)
@@ -101,80 +80,8 @@ def make_set(name: str, description: str, grid_description: str, multiplier: flo
             aggregator=LengthWeightedAggregator(),
         ),
 
-        # tortuosity distance per region
-        *([
-            Tortuosity(
-                mode=TortuosityMode.Segments,
-                max_segment_len=0.2,
-                measure=TortuosityMeasure.Distance,
-                length_measure=LengthMeasure.Splines,
-                grid_field=DISC_SUP,
-                aggregator=LengthWeightedAggregator(),
-            ),
-            Tortuosity(
-                mode=TortuosityMode.Segments,
-                max_segment_len=0.2,
-                measure=TortuosityMeasure.Distance,
-                length_measure=LengthMeasure.Splines,
-                grid_field=DISC_INF,
-                aggregator=LengthWeightedAggregator(),
-            ),
-            Tortuosity(
-                mode=TortuosityMode.Segments,
-                max_segment_len=0.2,
-                measure=TortuosityMeasure.Distance,
-                length_measure=LengthMeasure.Splines,
-                grid_field=DISC_TEMP,
-                aggregator=LengthWeightedAggregator(),
-            ),
-            Tortuosity(
-                mode=TortuosityMode.Segments,
-                max_segment_len=0.2,
-                measure=TortuosityMeasure.Distance,
-                length_measure=LengthMeasure.Splines,
-                grid_field=DISC_NASAL,
-                aggregator=LengthWeightedAggregator(),
-            ),
-
-            # tortuosity curvature per region
-            Tortuosity(
-                mode=TortuosityMode.Segments,
-                measure=TortuosityMeasure.Curvature,
-                length_measure=LengthMeasure.Splines,
-                grid_field=DISC_SUP,
-                aggregator=LengthWeightedAggregator(),
-            ),
-            Tortuosity(
-                mode=TortuosityMode.Segments,
-                measure=TortuosityMeasure.Curvature,
-                length_measure=LengthMeasure.Splines,
-                grid_field=DISC_INF,
-                aggregator=LengthWeightedAggregator(),
-            ),
-            Tortuosity(
-                mode=TortuosityMode.Segments,
-                measure=TortuosityMeasure.Curvature,
-                length_measure=LengthMeasure.Splines,
-                grid_field=DISC_TEMP,
-                aggregator=LengthWeightedAggregator(),
-            ),
-            Tortuosity(
-                mode=TortuosityMode.Segments,
-                measure=TortuosityMeasure.Curvature,
-                length_measure=LengthMeasure.Splines,
-                grid_field=DISC_NASAL,
-                aggregator=LengthWeightedAggregator(),
-            ),
-        ] if include_hemifields else []),
-
         # vascular densities (full, superior, inferior)
         VascularDensity(plot=True, grid_field=DISC_FULL),
-        *([
-            VascularDensity(grid_field=DISC_SUP),
-            VascularDensity(grid_field=DISC_INF),
-            VascularDensity(grid_field=DISC_TEMP),
-            VascularDensity(grid_field=DISC_NASAL)
-        ] if include_hemifields else []),
 
         FractalDimension(q=0, grid_field=DISC_FULL, plot=True),
 
@@ -201,13 +108,6 @@ fs_od_centered = make_set(
     description="Biomarkers optimized for optic-disc–centered fundus images with a view of the fovea.",
     grid_description="an optic-disc-centered annulus extending 0.7 times the optic-disc–fovea distance beyond the disc margin",
     band_crop=False)
-
-fs_od_centered_hemifields = make_set(
-    name="od_centered_hemifields",
-    description="od_centered feature set expanded with hemifield features",
-    grid_description="an optic-disc-centered annulus extending 0.7 times the optic-disc–fovea distance beyond the disc margin",
-    band_crop=False,
-    include_hemifields=True)
 
 fs_od_centered_rs = make_set(
     name="od_centered_rs",

@@ -2,9 +2,3 @@ include README.md
 include LICENSE
 include development.md
 include tox.ini
-recursive-include tests *.py
-recursive-include samples/fundus *.csv *.png *.jpg
-recursive-include tests/reference *.json *.yaml *.parquet
-
-include scripts/compare_rps.py
-recursive-include samples/rps *.csv *.json

@@ -1,5 +1,5 @@
 ## Updates
-- 29/10/2026: New improved documentation, including test-retest reproducibility scores on our datasets, is now [available here](https://eyened.github.io/retinalysis-vascx/).
+- 29/10/2026: [New improved documentation](https://eyened.github.io/retinalysis-vascx/), including test-retest reproducibility scores on the Rotterdam Study.
 - 01/10/2026: New CRE implementation that follows the [ARIC vessel measurement manual.](https://aric.cscc.unc.edu/aric9/sites/default/files/public/visitdocuments/v5/14b1%20ARIC%20NCS%20VM%20Protocol%2011.23.10.pdf#page=17).
 - 12/09/2026: New [VascX app available](https://eyened.github.io/retinalysis-vascx-app/). It runs VascX in the browser using GPU and visualizes biomarkers. Running time is about ~10s per image on a Mac M4/M5 laptop, and much slower on CPU. It is meant as a demo and for small runs with <500 images. For best performance on larger sets, use the Python package with a GPU.
 - 12/09/2026: New convnextv2 segmentation models are available and they are the new default models in VascX. They have better performance and run faster than the previous UNet ensembles.

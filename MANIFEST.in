@@ -2,3 +2,9 @@ include README.md
 include LICENSE
 include development.md
 include tox.ini
+
+# Keep website assets and development fixtures out of source distributions.
+prune docs
+prune notebooks
+prune samples
+prune tests

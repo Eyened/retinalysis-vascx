@@ -9,7 +9,6 @@ from click.testing import CliRunner
 
 from vascx.cli import cli
 from vascx.fundus.feature_sets import *  # noqa: F401,F403
-from vascx.fundus.feature_sets.macula_centered import fs_macula_centered_rs
 from vascx.fundus.features.base import get_grid_field_tokens
 from vascx.fundus.features.caliber import Caliber
 from vascx.fundus.features.tortuosity import (
@@ -131,20 +130,23 @@ def test_cli_naming_options_default_to_resolved():
 
 
 def test_resolved_grid_name_keeps_identity_and_drops_shared_parameters():
-    names = make_feature_names(fs_macula_centered_rs, _targets, "resolved")
-    target = next(
-        item
-        for (feature_index, target_name), item in names.items()
-        if target_name == "veins"
-        and isinstance(list(fs_macula_centered_rs)[feature_index], Caliber)
-        and list(fs_macula_centered_rs)[feature_index].grid_field_spec.field
-        == CircleField.Inferior
-        and list(
-            fs_macula_centered_rs
-        )[feature_index].grid_field_spec.grid_spec.name
-        == "crcl"
+    grid = CircleGridSpecification(
+        center=0.9, radius_multiplier=0.9, band_crop_fraction=0.12, name="crcl"
     )
+    feature_set = FeatureSet(
+        "test_naming_grid_identity",
+        [
+            Caliber(
+                grid_field=GridFieldSpecification(grid, field),
+                aggregator=LengthWeightedAggregator(),
+            )
+            for field in (CircleField.Inferior, CircleField.Superior)
+        ],
+    )
+    names = make_feature_names(feature_set, _targets, "resolved")
+    target = names[(0, "veins")]
     assert target.name == "diam_crcl_inferior_veins"
+    assert names[(1, "veins")].name == "diam_crcl_superior_veins"
     assert "multiplier" not in target.name
     assert "center" not in target.name
     assert "radius_multiplier" not in target.name

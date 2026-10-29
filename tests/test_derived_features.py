@@ -105,19 +105,27 @@ def test_distinct_instances_are_independent():
     assert a.calls == b.calls == ["arteries"]
 
 
-def test_legacy_names_and_unchanged_other_sets():
-    expected = {
-        "macula_centered_rs": {"avr_cre", "avr_cre_aric"},
-        "od_centered_rs": {"avr_full_cre", "avr_nasal_cre", "avr_temporal_cre",
-                           "avr_full_cre_aric", "avr_nasal_cre_aric", "avr_temporal_cre_aric",
-                           "avr_full_cre_aric_hf_superior", "avr_full_cre_aric_hf_inferior"},
-    }
-    for fs, names in expected.items():
-        definitions = get_biomarker_definitions(fs)
-        assert {x.variable for x in definitions if x.variable.startswith("avr_")} == names
-        assert all(" / " in x.description for x in definitions if x.variable in names)
-    for fs in ["macula_centered", "od_centered", "od_centered_narrow_rs"]:
-        assert not any(x.variable.startswith("avr_") for x in get_biomarker_definitions(fs))
+@pytest.mark.parametrize("feature_set_name, expected", [
+    ("macula_centered", {"avr_cre", "avr_cre_aric"}),
+    ("macula_centered_rs", {"avr_cre", "avr_cre_aric"}),
+    ("od_centered", {
+        "avr_full_cre", "avr_nasal_cre", "avr_temporal_cre", "avr_cre_aric",
+    }),
+    ("od_centered_rs", {
+        "avr_full_cre", "avr_nasal_cre", "avr_temporal_cre", "avr_cre_aric",
+    }),
+    ("od_centered_narrow_rs", {
+        "avr_full_cre", "avr_nasal_cre", "avr_temporal_cre", "avr_cre_aric",
+    }),
+])
+def test_feature_sets_include_expected_avr_names(feature_set_name, expected):
+    definitions = get_biomarker_definitions(feature_set_name)
+    ratios = [item for item in definitions if item.variable.startswith("avr_")]
+    assert {item.variable for item in ratios} == expected
+    assert all(" / " in item.description for item in ratios)
+
+
+def test_avr_canonical_name_preserves_source_parameters():
     ratio = AVR(CRE(CREMode.Temporal, max_vessels=3))
     assert ratio.canonical_name() == "avr_temporal_cre_max_vessels_3"
 

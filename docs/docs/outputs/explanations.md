@@ -8,7 +8,7 @@ VascX can draw biomarker measurements directly on fundus images, showing the ret
 
 Central retinal equivalent (CRE) summarises the width of the major retinal vessels. The arterial value is often called **CRAE**, and the venous value **CRVE**.
 
-![CRE explanation: measurement circles and selected vessels on fundus images, with arteries in the top row and veins in the bottom row](/assets/biomarkers/od-centered/cre_arteries.jpg)
+![CRE explanation: measurement circles and selected vessels on fundus images, with arteries in the top row and veins in the bottom row](/assets/biomarkers/od-centered/full_cre_arteries.jpg)
 :::
 
 There are several ways to generate such visual explanations on your images.

@@ -49,7 +49,17 @@ Computed combinations:
 
 Computed combinations:
 
-- Computed on the full image. arteries: `cre_arteries`; veins: `cre_veins`.
+- Computed on the full image. arteries: `full_cre_arteries`; veins: `full_cre_veins`.
+### Nasal CRE
+
+Computed combinations:
+
+- Computed on the full image. arteries: `nasal_cre_arteries`; veins: `nasal_cre_veins`.
+### Temporal CRE
+
+Computed combinations:
+
+- Computed on the full image. arteries: `temporal_cre_arteries`; veins: `temporal_cre_veins`.
 ### Full CRE ARIC
 
 Computed combinations:
@@ -59,7 +69,17 @@ Computed combinations:
 
 Computed combinations:
 
-- Computed on the full image. retina: `avr_cre`.
+- Computed on the full image. retina: `avr_full_cre`.
+### Artery-vein ratio of Nasal CRE
+
+Computed combinations:
+
+- Computed on the full image. retina: `avr_nasal_cre`.
+### Artery-vein ratio of Temporal CRE
+
+Computed combinations:
+
+- Computed on the full image. retina: `avr_temporal_cre`.
 ### Artery-vein ratio of Full CRE ARIC
 
 Computed combinations:
@@ -181,7 +201,7 @@ Components:
 
 Computed combinations:
 
-- `rps`: `background_lab_a` and `background_lab_b`, using one PCA fitted across unique QC-eligible comparison images in all configured fields.
+- `rps`: `background_lab_a` and `background_lab_b`, using one PCA fitted across unique QC-eligible comparison images within this feature set.
 
 
 ### Reliability

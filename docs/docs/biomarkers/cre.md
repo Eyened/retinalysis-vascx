@@ -63,7 +63,7 @@ sets include AVR for the default-count circle and ARIC configurations.
 
 ### OD-centered
 
-![OD-centered default CRE measurements](/assets/biomarkers/od-centered/cre_arteries.jpg)
+![OD-centered default CRE measurements](/assets/biomarkers/od-centered/full_cre_arteries.jpg)
 
 ### ARIC-style, OD-centered
 

@@ -1,0 +1,147 @@
+---
+title: Hemifields
+---
+
+import Introduction from '@site/src/content/reliability/hemifields.mdx';
+
+# Hemifields
+
+<Introduction />
+
+| Metadata | Evaluated configuration |
+| --- | --- |
+| VascX version | `1.1.2.dev2+gf9ff26462` |
+| Feature set | `hemifields_rs` |
+
+These results describe this version and export; they do not automatically apply to newer VascX releases.
+
+## Bifurcation features
+
+### Bifurcation
+
+Computed combinations:
+
+- Computed in the full region of a cropped circular grid centered nine-tenths of the way from the optic disc to the fovea, with radius equal to nine-tenths of their separation plus the optic-disc radius. Parameters: center=0.9; radius multiplier=0.9; band crop fraction=0.12. arteries: `bif_angle_mean_crcl_full_arteries`; arteries: `bif_branching_coefficient_mean_crcl_full_arteries`; arteries: `bif_jed_mean_crcl_full_arteries`; arteries: `bif_count_crcl_full_arteries`; veins: `bif_angle_mean_crcl_full_veins`; veins: `bif_branching_coefficient_mean_crcl_full_veins`; veins: `bif_jed_mean_crcl_full_veins`; veins: `bif_count_crcl_full_veins`.
+- Computed in the superior region of a cropped circular grid centered nine-tenths of the way from the optic disc to the fovea, with radius equal to nine-tenths of their separation plus the optic-disc radius. Parameters: center=0.9; radius multiplier=0.9; band crop fraction=0.12. arteries: `bif_angle_mean_crcl_superior_arteries`; arteries: `bif_branching_coefficient_mean_crcl_superior_arteries`; arteries: `bif_jed_mean_crcl_superior_arteries`; arteries: `bif_count_crcl_superior_arteries`; veins: `bif_angle_mean_crcl_superior_veins`; veins: `bif_branching_coefficient_mean_crcl_superior_veins`; veins: `bif_jed_mean_crcl_superior_veins`; veins: `bif_count_crcl_superior_veins`.
+- Computed in the inferior region of a cropped circular grid centered nine-tenths of the way from the optic disc to the fovea, with radius equal to nine-tenths of their separation plus the optic-disc radius. Parameters: center=0.9; radius multiplier=0.9; band crop fraction=0.12. arteries: `bif_angle_mean_crcl_inferior_arteries`; arteries: `bif_branching_coefficient_mean_crcl_inferior_arteries`; arteries: `bif_jed_mean_crcl_inferior_arteries`; arteries: `bif_count_crcl_inferior_arteries`; veins: `bif_angle_mean_crcl_inferior_veins`; veins: `bif_branching_coefficient_mean_crcl_inferior_veins`; veins: `bif_jed_mean_crcl_inferior_veins`; veins: `bif_count_crcl_inferior_veins`.
+
+Components:
+
+| Component | Units | Description |
+| --- | --- | --- |
+| `angle_mean` | degrees | Arithmetic mean of eligible daughter–daughter opening angles. |
+| `branching_coefficient_mean` | dimensionless | Mean of (d1²+d2²)/d0² per eligible bifurcation, using whole-segment mean diameters; d0 is the parent. |
+| `jed_mean` | dimensionless | Mean absolute cubic junctional exponent deviation: cuberoot(abs(d0³-d1³-d2³))/d0. Zero satisfies Murray's law. Uses whole-segment mean diameters, not a fitted exponent. |
+| `count` | count | Number passing region, daughter-length and angle filters, including nodes without valid diameter measurements. Reported even below the minimum required for means. |
+
+### Reliability
+
+![Bifurcation features: device-pair ICCs](/assets/reliability/hemifields/icc-bifurcation.png)
+
+Cells show ICC(2,1), complete-pair count in parentheses, and 95% confidence interval. Only estimable ICCs are shown.
+
+## CREs, MED, diameters, and AVR
+
+### Median Caliber
+
+Computed combinations:
+
+- Computed in the full region of a cropped circular grid centered nine-tenths of the way from the optic disc to the fovea, with radius equal to nine-tenths of their separation plus the optic-disc radius. Parameters: center=0.9; radius multiplier=0.9; band crop fraction=0.12. arteries: `md_diam_crcl_full_arteries`; veins: `md_diam_crcl_full_veins`.
+- Computed in the superior region of a cropped circular grid centered nine-tenths of the way from the optic disc to the fovea, with radius equal to nine-tenths of their separation plus the optic-disc radius. Parameters: center=0.9; radius multiplier=0.9; band crop fraction=0.12. arteries: `md_diam_crcl_superior_arteries`; veins: `md_diam_crcl_superior_veins`.
+- Computed in the inferior region of a cropped circular grid centered nine-tenths of the way from the optic disc to the fovea, with radius equal to nine-tenths of their separation plus the optic-disc radius. Parameters: center=0.9; radius multiplier=0.9; band crop fraction=0.12. arteries: `md_diam_crcl_inferior_arteries`; veins: `md_diam_crcl_inferior_veins`.
+### Std Caliber
+
+Computed combinations:
+
+- Computed in the full region of a cropped circular grid centered nine-tenths of the way from the optic disc to the fovea, with radius equal to nine-tenths of their separation plus the optic-disc radius. Parameters: center=0.9; radius multiplier=0.9; band crop fraction=0.12. arteries: `std_diam_crcl_full_arteries`; veins: `std_diam_crcl_full_veins`.
+- Computed in the superior region of a cropped circular grid centered nine-tenths of the way from the optic disc to the fovea, with radius equal to nine-tenths of their separation plus the optic-disc radius. Parameters: center=0.9; radius multiplier=0.9; band crop fraction=0.12. arteries: `std_diam_crcl_superior_arteries`; veins: `std_diam_crcl_superior_veins`.
+- Computed in the inferior region of a cropped circular grid centered nine-tenths of the way from the optic disc to the fovea, with radius equal to nine-tenths of their separation plus the optic-disc radius. Parameters: center=0.9; radius multiplier=0.9; band crop fraction=0.12. arteries: `std_diam_crcl_inferior_arteries`; veins: `std_diam_crcl_inferior_veins`.
+### Murray Equivalent Diameter
+
+Computed combinations:
+
+- Computed in the temporal region of an optic-disc-centered annulus scaled to the optic-disc–fovea distance. arteries: `med_disc_temporal_arteries`; veins: `med_disc_temporal_veins`.
+- Computed in the superior-temporal quadrant of an optic-disc-centered annulus scaled to the optic-disc–fovea distance. arteries: `med_disc_quadrant_superior_temporal_arteries`; veins: `med_disc_quadrant_superior_temporal_veins`.
+- Computed in the inferior-temporal quadrant of an optic-disc-centered annulus scaled to the optic-disc–fovea distance. arteries: `med_disc_quadrant_inferior_temporal_arteries`; veins: `med_disc_quadrant_inferior_temporal_veins`.
+
+### Reliability
+
+![CREs, MED, diameters, and AVR: device-pair ICCs](/assets/reliability/hemifields/icc-caliber.png)
+
+Cells show ICC(2,1), complete-pair count in parentheses, and 95% confidence interval. Only estimable ICCs are shown.
+
+## Tortuosity
+
+### Length-Weighted Distance Tortuosity (max segment len=0.2)
+
+Computed combinations:
+
+- Computed in the full region of a cropped circular grid centered nine-tenths of the way from the optic disc to the fovea, with radius equal to nine-tenths of their separation plus the optic-disc radius. Parameters: center=0.9; radius multiplier=0.9; band crop fraction=0.12. arteries: `tort_crcl_full_arteries`; veins: `tort_crcl_full_veins`.
+- Computed in the superior region of a cropped circular grid centered nine-tenths of the way from the optic disc to the fovea, with radius equal to nine-tenths of their separation plus the optic-disc radius. Parameters: center=0.9; radius multiplier=0.9; band crop fraction=0.12. arteries: `tort_crcl_superior_arteries`; veins: `tort_crcl_superior_veins`.
+- Computed in the inferior region of a cropped circular grid centered nine-tenths of the way from the optic disc to the fovea, with radius equal to nine-tenths of their separation plus the optic-disc radius. Parameters: center=0.9; radius multiplier=0.9; band crop fraction=0.12. arteries: `tort_crcl_inferior_arteries`; veins: `tort_crcl_inferior_veins`.
+
+### Reliability
+
+![Tortuosity: device-pair ICCs](/assets/reliability/hemifields/icc-tortuosity.png)
+
+Cells show ICC(2,1), complete-pair count in parentheses, and 95% confidence interval. Only estimable ICCs are shown.
+
+## Image quality
+
+### Luminance
+
+Computed combinations:
+
+- Computed in the full region of a cropped circular grid centered nine-tenths of the way from the optic disc to the fovea, with radius equal to nine-tenths of their separation plus the optic-disc radius. Parameters: center=0.9; radius multiplier=0.9; band crop fraction=0.12. retina: `luminance_crcl_full`.
+- Computed in the superior region of a cropped circular grid centered nine-tenths of the way from the optic disc to the fovea, with radius equal to nine-tenths of their separation plus the optic-disc radius. Parameters: center=0.9; radius multiplier=0.9; band crop fraction=0.12. retina: `luminance_crcl_superior`.
+- Computed in the inferior region of a cropped circular grid centered nine-tenths of the way from the optic disc to the fovea, with radius equal to nine-tenths of their separation plus the optic-disc radius. Parameters: center=0.9; radius multiplier=0.9; band crop fraction=0.12. retina: `luminance_crcl_inferior`.
+### Sharpness (ESF σ)
+
+Computed combinations:
+
+- Computed in the full region of a cropped circular grid centered nine-tenths of the way from the optic disc to the fovea, with radius equal to nine-tenths of their separation plus the optic-disc radius. Parameters: center=0.9; radius multiplier=0.9; band crop fraction=0.12. vessels: `sharpness_crcl_full`.
+- Computed in the superior region of a cropped circular grid centered nine-tenths of the way from the optic disc to the fovea, with radius equal to nine-tenths of their separation plus the optic-disc radius. Parameters: center=0.9; radius multiplier=0.9; band crop fraction=0.12. vessels: `sharpness_crcl_superior`.
+- Computed in the inferior region of a cropped circular grid centered nine-tenths of the way from the optic disc to the fovea, with radius equal to nine-tenths of their separation plus the optic-disc radius. Parameters: center=0.9; radius multiplier=0.9; band crop fraction=0.12. vessels: `sharpness_crcl_inferior`.
+
+### Reliability
+
+![Image quality: device-pair ICCs](/assets/reliability/hemifields/icc-image-quality.png)
+
+Cells show ICC(2,1), complete-pair count in parentheses, and 95% confidence interval. Only estimable ICCs are shown.
+
+## Other
+
+### Vessel Density
+
+Computed combinations:
+
+- Computed in the full region of a cropped circular grid centered nine-tenths of the way from the optic disc to the fovea, with radius equal to nine-tenths of their separation plus the optic-disc radius. Parameters: center=0.9; radius multiplier=0.9; band crop fraction=0.12. arteries: `vd_crcl_full_arteries`; veins: `vd_crcl_full_veins`.
+- Computed in the superior region of a cropped circular grid centered nine-tenths of the way from the optic disc to the fovea, with radius equal to nine-tenths of their separation plus the optic-disc radius. Parameters: center=0.9; radius multiplier=0.9; band crop fraction=0.12. arteries: `vd_crcl_superior_arteries`; veins: `vd_crcl_superior_veins`.
+- Computed in the inferior region of a cropped circular grid centered nine-tenths of the way from the optic disc to the fovea, with radius equal to nine-tenths of their separation plus the optic-disc radius. Parameters: center=0.9; radius multiplier=0.9; band crop fraction=0.12. arteries: `vd_crcl_inferior_arteries`; veins: `vd_crcl_inferior_veins`.
+### Background Lab
+
+Computed combinations:
+
+- Computed in the full region of a cropped circular grid centered nine-tenths of the way from the optic disc to the fovea, with radius equal to nine-tenths of their separation plus the optic-disc radius. Parameters: center=0.9; radius multiplier=0.9; band crop fraction=0.12. retina: `background_lab_l_crcl_full`; retina: `background_lab_a_crcl_full`; retina: `background_lab_b_crcl_full`.
+- Computed in the superior region of a cropped circular grid centered nine-tenths of the way from the optic disc to the fovea, with radius equal to nine-tenths of their separation plus the optic-disc radius. Parameters: center=0.9; radius multiplier=0.9; band crop fraction=0.12. retina: `background_lab_l_crcl_superior`; retina: `background_lab_a_crcl_superior`; retina: `background_lab_b_crcl_superior`.
+- Computed in the inferior region of a cropped circular grid centered nine-tenths of the way from the optic disc to the fovea, with radius equal to nine-tenths of their separation plus the optic-disc radius. Parameters: center=0.9; radius multiplier=0.9; band crop fraction=0.12. retina: `background_lab_l_crcl_inferior`; retina: `background_lab_a_crcl_inferior`; retina: `background_lab_b_crcl_inferior`.
+
+Components:
+
+| Component | Units | Description |
+| --- | --- | --- |
+| `l` | dimensionless | Median CIELAB lightness over retinal background pixels. |
+| `a` | dimensionless | Median CIELAB green–red coordinate over retinal background pixels. |
+| `b` | dimensionless | Median CIELAB blue–yellow coordinate over retinal background pixels. |
+### Retinal pigmentation score
+
+Computed combinations:
+
+- `rps`: `background_lab_a_crcl_full` and `background_lab_b_crcl_full`, using one PCA fitted across unique QC-eligible comparison images within this feature set.
+
+
+### Reliability
+
+![Other: device-pair ICCs](/assets/reliability/hemifields/icc-other.png)
+
+Cells show ICC(2,1), complete-pair count in parentheses, and 95% confidence interval. Only estimable ICCs are shown.

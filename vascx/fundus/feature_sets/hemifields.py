@@ -1,14 +1,17 @@
 """Matched full-circle and superior/inferior measurements for fundus images."""
 
 from rtnls_enface.grids.circle import CircleField
+from rtnls_enface.grids.disc_centered import DiscCenteredQuadrant, DiscCenteredRing, DiscCenteredHemifield
 from rtnls_enface.grids.specifications import (
     CircleGridSpecification,
+    DiscCenteredGridSpecification,
     GridFieldSpecification,
 )
 
 from vascx.fundus.features.bifurcation import Bifurcation
 from vascx.fundus.features.caliber import Caliber
 from vascx.fundus.features.luminance import Luminance
+from vascx.fundus.features.murray import MurrayEquivalentDiameter
 from vascx.fundus.features.rps import BackgroundLab
 from vascx.fundus.features.sharpness import Sharpness
 from vascx.fundus.features.tortuosity import (
@@ -59,7 +62,13 @@ def make_set(
             BackgroundLab(grid_field=region),
             Sharpness(grid_field=region),
         ])
-    return FeatureSet(name, features, description=description)
+    od_grid = DiscCenteredGridSpecification()
+    for field in (DiscCenteredHemifield.Temporal, DiscCenteredQuadrant.SuperiorTemporal, DiscCenteredQuadrant.InferiorTemporal):
+        features.append(MurrayEquivalentDiameter(
+            region=GridFieldSpecification(od_grid, field), plot=True))
+    return FeatureSet(name, features, description=description +
+                      " Murray equivalent diameters use OD-centered Zone B regions "
+                      "with power 1.5 for arteries and 1.25 for veins.")
 
 
 fs_hemifields = make_set(

@@ -187,7 +187,7 @@ def cli():
     help=(
         "Directory containing manually downloaded model files. Defaults to "
         "VASCX_MODEL_DIR when set. Expected layout: quality/quality.pt, "
-        "artery_vein/av_wsoft_patches_02_finetune.pt, vessels/vessels_may26.pt, "
+        "artery_vein/av_may26.pt, vessels/vessels_may26.pt, "
         "disc/disc_may26.pt, fovea/fovea_may26.pt."
     ),
 )

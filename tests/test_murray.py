@@ -244,7 +244,11 @@ def test_hemifields_sets_add_six_med_outputs_each():
         assert {n for n in fs.names('canonical').by_name if n.startswith('med_')} == {
             f'med_disc_{field}_{layer_name}'
             for layer_name in ("arteries", "veins")
-            for field in ("full", "superior", "inferior")
+            for field in (
+                "temporal",
+                "quadrant_superior_temporal",
+                "quadrant_inferior_temporal",
+            )
         }
         assert all(f.region.grid_spec == DiscCenteredGridSpecification() for f in med)
         definitions = [d for d in get_biomarker_definitions(fs) if d.variable.startswith('med_')]

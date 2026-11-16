@@ -5,7 +5,7 @@ HUGGINGFACE_MODEL_REPO_URL = f"https://huggingface.co/{HUGGINGFACE_MODEL_REPO_ID
 
 MODEL_DIR_FILES = {
     "quality": Path("quality/quality.pt"),
-    "av": Path("artery_vein/av_wsoft_patches_02_finetune.pt"),
+    "av": Path("artery_vein/av_may26.pt"),
     "vessels": Path("vessels/vessels_may26.pt"),
     "disc": Path("disc/disc_may26.pt"),
     "fovea": Path("fovea/fovea_may26.pt"),

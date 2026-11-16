@@ -17,7 +17,7 @@
     "RAV_585808"
   ],
   "feature_count": 69,
-  "accepted_at": "2026-11-03T15:34:50.636946+00:00",
-  "accept_reason": "MED defaults set to p_arteries=1.5 and p_veins=1.25; all 63 non-MED columns verified unchanged (1e-12 tolerance) and preserved exactly.",
+  "accepted_at": "2026-11-16T11:01:57.502319+00:00",
+  "accept_reason": "accepted via --accept-vascx-reference",
   "python_version": "3.12.12"
 }

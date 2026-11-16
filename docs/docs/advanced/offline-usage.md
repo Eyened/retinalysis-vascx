@@ -11,7 +11,7 @@ For offline use, download the VascX model files on a machine with internet acces
   - quality/
     - quality.pt
   - artery_vein/
-    - av_wsoft_patches_02_finetune.pt
+    - av_may26.pt
   - vessels/
     - vessels_may26.pt
   - disc/

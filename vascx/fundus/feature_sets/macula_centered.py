@@ -53,8 +53,6 @@ def make_set(name: str, description: str, grid_description: str, center: float=1
 
         # CRE: temporal count variants and standalone superior/inferior regions
         CRE(CREMode.Temporal, plot=True),
-        CRE(CREMode.Temporal, max_vessels=3),
-        CRE(CREMode.Temporal, max_vessels=6),
 
         # ARIC-style trunks; regional variants extend the full-field protocol.
         CRE(CREMode.Temporal, measure=CREMeasure.ARIC),
